@@ -1,0 +1,2 @@
+export * from './topic.entity';
+
