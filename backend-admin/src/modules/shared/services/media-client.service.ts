@@ -12,8 +12,7 @@ export interface UploadFileOptions {
 }
 
 /**
- * Thin wrapper around MediaService that keeps the same interface
- * previously exposed by the HTTP-based media-service-admin client.
+ * Thin wrapper around MediaService.
  * All callers (post, user, community, banner, admin services) remain unchanged.
  */
 @Injectable()
