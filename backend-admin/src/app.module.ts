@@ -32,6 +32,7 @@ import { PrivacyPolicyModule } from './modules/privacy-policy/privacy-policy.mod
 import { SupportModule } from './modules/support/support.module';
 import { BannerModule } from './modules/banner/banner.module';
 import { EntitlementsModule } from './modules/entitlements/entitlements.module';
+import { MediaModule } from './modules/media/media.module';
 
 @Module({
   imports: [
@@ -127,6 +128,7 @@ import { EntitlementsModule } from './modules/entitlements/entitlements.module';
     SupportModule,
     BannerModule,
     EntitlementsModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [

@@ -19,7 +19,7 @@ export const hostType = "local"; // "local" | "live"
 const URLS = {
   local: {
     API_BASE_URL: "http://localhost:3001/api",
-    MEDIA_BASE_URL: "http://localhost:3000/api",
+    MEDIA_BASE_URL: "http://localhost:3001/api",
     BASE_URL: "http://localhost:5173",
     BASE_PATH: "",
   },

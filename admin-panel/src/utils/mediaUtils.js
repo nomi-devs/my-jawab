@@ -7,8 +7,8 @@ import { MEDIA_BASE_URL } from "../config/app";
 
 // MEDIA_BASE_URL already includes the "/api" suffix (e.g. "https://jawab.jantrah.io/jawab-media/api").
 // Derive the root (without /api) for absolute path construction.
-const MEDIA_SERVICE_URL = "https://jawab.jantrah.io/jawab-media/api";
 const MEDIA_SERVICE_ROOT = MEDIA_BASE_URL.replace(/\/api\/?$/, "");
+const MEDIA_SERVICE_URL = MEDIA_BASE_URL;
 
 /**
  * Normalizes a media URL to ensure it's an absolute URL pointing to the media service.

@@ -1,203 +1,312 @@
-# Jawab Backend
+# backend-admin
 
-A modular NestJS backend application with authentication and user management.
+NestJS REST API for the Jawab admin platform. Runs on **port 3001**.
 
-## Features
+## Architecture
 
-- 🔐 **Authentication Module**: Complete authentication system with multiple auth types
-  - Email/Phone authentication with verification
-  - Google/Apple OAuth support
-  - JWT-based token management
-  - Password reset functionality
-- 📱 **Device Management**: Track and manage user devices
-- 🗄️ **Database**: MySQL database with TypeORM
-- 🏗️ **Modular Architecture**: Organized module structure for scalability
+Two TypeORM database connections:
+- **`default`** → `db_jawab` — users, posts, comments, polls, communities, topics, subscriptions, payments, **media**
+- **`notification`** → `db_jawab_notify` — notifications, emails, jobs, email templates
 
-## Project Structure
+Redis is required for BullMQ (email queue) and `@nestjs/cache-manager`. The service will not start without it.
 
-```
-jawab-backend/
-├── src/
-│   ├── database/              # Database related files
-│   │   ├── config/            # Database configuration
-│   │   └── entities/          # TypeORM entities
-│   ├── modules/               # Application modules
-│   │   └── auth/              # Authentication module
-│   │       ├── dto/           # Data Transfer Objects
-│   │       ├── guards/        # Authentication guards
-│   │       ├── decorators/    # Custom decorators
-│   │       ├── device/        # Device management
-│   │       ├── auth.controller.ts
-│   │       ├── auth.service.ts
-│   │       └── auth.module.ts
-│   ├── app.module.ts
-│   └── main.ts
-├── database/                  # SQL schema files
-└── package.json
-```
+File uploads are handled by the built-in `MediaModule` — no separate media service needed. Files are stored in `./uploads/` by default (configurable via `UPLOAD_DIR`).
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
-- MySQL database (phpMyAdmin)
-- npm or yarn
+- Node.js 18+
+- MySQL with `db_jawab` and `db_jawab_notify` databases created
+- Redis running on `localhost:6379`
 
-## Installation
+```bash
+brew services start mysql
+brew services start redis
+```
 
-### 1. Install Dependencies
+## Setup
+
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Database Setup
+### 2. Create databases
 
-1. Create a MySQL database named `jawab_auth` in phpMyAdmin
-2. Import the SQL schema from `../database/jawab_auth.sql`
+```bash
+mysql -u root -e "
+  CREATE DATABASE IF NOT EXISTS db_jawab CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE DATABASE IF NOT EXISTS db_jawab_notify CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+"
+```
 
-### 3. Environment Configuration
-
-Create a `.env` file in the root directory:
+### 3. Create `.env`
 
 ```env
-# Database Configuration
+# Main Database
 DB_HOST=localhost
 DB_PORT=3306
 DB_USERNAME=root
 DB_PASSWORD=
-DB_NAME=jawab_auth
-DB_SYNCHRONIZE=false
-DB_LOGGING=false
+DB_NAME=db_jawab
+DB_SYNCHRONIZE=true
 
-# JWT Configuration
-JWT_SECRET=your-secret-key-change-this-in-production
-JWT_EXPIRES_IN=1h
+# Notification Database
+NOTIFICATION_DB_HOST=localhost
+NOTIFICATION_DB_PORT=3306
+NOTIFICATION_DB_USERNAME=root
+NOTIFICATION_DB_PASSWORD=
+NOTIFICATION_DB_NAME=db_jawab_notify
+NOTIFICATION_DB_SYNCHRONIZE=true
 
-# Server Configuration
-PORT=3000
+# SMTP (Hostinger example)
+SMTP_ENABLED=true
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=your@email.com
+SMTP_PASSWORD=yourpassword
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+
+# Media / File Uploads
+UPLOAD_DIR=./uploads
+APP_URL=http://localhost:3001
+API_URL=http://localhost:3001/api
+MAX_FILE_SIZE=52428800
+ALLOWED_MIME_TYPES=image/*,video/*,application/pdf
 ```
 
-**Important:** 
-- If your MySQL root user has a password, update `DB_PASSWORD`
-- Change `JWT_SECRET` to a strong random string (use: `openssl rand -base64 32`)
+> `DB_SYNCHRONIZE=true` auto-creates tables from entities. Set to `false` in production and use migrations.
 
-## Running the Application
+### 4. Environment switch (local vs production)
+
+Edit `src/config/services.config.ts`:
+
+```typescript
+export const hostType: 'local' | 'live' = 'local';
+```
+
+- `local` → Redis at `localhost:6379`, media service at `http://localhost:3000`
+- `live` → Redis at `redis_container`, media service at production URL
+
+## Running
 
 ```bash
-# Development mode (with hot reload)
-npm run start:dev
-
-# Production mode
-npm run build
-npm run start:prod
+npm run start:dev     # watch mode
+npm run build         # compile
+npm run start:prod    # run compiled dist/main
 ```
 
-The application will start on `http://localhost:3000`
+Service starts at **http://localhost:3001**, API at **http://localhost:3001/api**
 
-## API Endpoints
+## Create First Admin User
 
-All endpoints are prefixed with `/api/`
-
-### Authentication
-
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/verify` - Verify account
-- `POST /api/auth/resend-verification` - Resend verification code
-- `POST /api/auth/forgot-password` - Request password reset
-- `POST /api/auth/reset-password` - Reset password
-- `POST /api/auth/refresh-token` - Refresh access token
-- `GET /api/auth/profile` - Get user profile (protected)
-
-### Device Management
-
-- `POST /api/devices` - Register device (protected)
-- `GET /api/devices` - Get user devices (protected)
-- `PUT /api/devices/:deviceId` - Update device (protected)
-- `DELETE /api/devices/:deviceId` - Deactivate device (protected)
-
-## Example Usage
-
-### Register a User
+After the service starts and tables are created:
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "johndoe",
-    "email": "john@example.com",
-    "password": "password123",
-    "auth_type": "email"
-  }'
+# Generate bcrypt hash
+node -e "const bcrypt = require('./node_modules/bcrypt'); bcrypt.hash('YourPassword123', 10).then(h => console.log(h))"
+
+# Insert admin user (replace <hash> with output above)
+mysql -u root db_jawab -e "
+  INSERT INTO users (username, email, password_hash, role, auth_type, is_active, is_verified)
+  VALUES ('admin', 'admin@jawab.com', '<hash>', 'admin', 'email', 1, 1);
+"
 ```
 
-### Login
+## MySQL 9.x Compatibility
+
+If you see `Invalid default value for 'created_at'`, MySQL 9.x is rejecting the timestamp defaults. All entity `@CreateDateColumn` / `@UpdateDateColumn` decorators must use:
+
+```typescript
+@CreateDateColumn({
+  type: 'timestamp',
+  default: () => 'CURRENT_TIMESTAMP(6)',
+})
+created_at: Date;
+
+@UpdateDateColumn({
+  type: 'timestamp',
+  default: () => 'CURRENT_TIMESTAMP(6)',
+  onUpdate: 'CURRENT_TIMESTAMP(6)',
+})
+updated_at: Date;
+```
+
+If you get `Duplicate key name` errors, tables from a previous failed run exist. Drop and recreate:
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "identifier": "john@example.com",
-    "password": "password123",
-    "auth_type": "email"
-  }'
+mysql -u root -e "
+  DROP DATABASE IF EXISTS db_jawab;
+  DROP DATABASE IF EXISTS db_jawab_notify;
+  CREATE DATABASE db_jawab CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE DATABASE db_jawab_notify CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+"
 ```
 
-### Get Profile (Protected)
+## Commands
 
 ```bash
-curl -X GET http://localhost:3000/api/auth/profile \
-  -H "Authorization: Bearer <access_token>"
+npm run start:dev     # development with watch
+npm run start:prod    # production
+npm run build         # TypeScript compile
+npm run lint          # ESLint with auto-fix
+npm run test          # Jest unit tests
+npm run test:e2e      # E2E tests
+npm run test:cov      # coverage report
 ```
 
-## Development
+## Database Schemas
 
-### Adding New Modules
+### `db_jawab` (main database)
 
-1. Create a new folder in `src/modules/`
-2. Create module, service, and controller files
-3. Import the module in `app.module.ts`
+**`users`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `role` | enum | `admin`, `sub_admin`, `pro_user`, `user` |
+| `username` | varchar(255) | unique, indexed |
+| `email` | varchar(255) | unique, indexed |
+| `password_hash` | varchar(255) | bcrypt, nullable (social auth) |
+| `auth_type` | enum | `email`, `phone`, `google`, `apple` |
+| `is_active` | tinyint(1) | default 0 |
+| `is_verified` | tinyint(1) | default 0 |
+| `is_deleted` | tinyint(1) | soft delete flag |
+| `deleted_at` | timestamp | nullable |
+| `access_token` | varchar(500) | stored JWT, nullable |
+| `refresh_token` | varchar(500) | nullable |
+| `created_at` | timestamp(6) | |
+| `updated_at` | timestamp(6) | |
 
-### Database Migrations
+**`user_profile`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `user_id` | int | unique FK → users.id |
+| `full_name` | varchar(255) | nullable |
+| `profile_picture` | varchar(500) | URL, nullable |
+| `profile_background` | varchar(500) | URL, nullable |
+| `tagline` | varchar(255) | nullable |
+| `profile_bio` | text | nullable |
+| `profile_gender` | enum | `male`, `female`, `other`, nullable |
+| `profile_birthday` | date | nullable |
+| `profile_website` | varchar(500) | nullable |
+| `profile_location` | varchar(255) | nullable |
 
-The application uses TypeORM. For production, consider:
-- Setting `DB_SYNCHRONIZE=false`
-- Using TypeORM migrations for schema changes
+**`user_posts`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `user_id` | int | FK → users.id |
+| `post_title` | varchar(500) | nullable |
+| `post_slug` | varchar(500) | unique |
+| `post_content` | text | nullable |
+| `post_status` | enum | `draft`, `published`, `archived` |
+| `post_type` | enum | `text`, `image`, `video`, `audio`, `link`, `poll` |
+| `post_image` | varchar(500) | URL, nullable |
+| `post_video` | varchar(500) | URL, nullable |
+| `post_audio` | varchar(500) | URL, nullable |
+| `post_link` | varchar(500) | nullable |
+| `post_topic_id` | int | FK → topics.id, nullable |
+| `is_featured` | tinyint(1) | default 0 |
+| `like_count` | int | default 0 |
+| `comment_count` | int | default 0 |
+| `view_count` | int | default 0 |
 
-## Testing
+**`topics`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `parent_id` | int | self-ref for nested topics, default 0 |
+| `topic_name` | varchar(255) | indexed |
+| `topic_slug` | varchar(255) | unique |
+| `topic_description` | text | nullable |
+| `topic_image` | varchar(500) | nullable |
+| `is_active` | tinyint(1) | default 1 |
 
-```bash
-# Unit tests
-npm run test
+**`communities`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `name` | varchar(255) | |
+| `slug` | varchar(255) | |
+| `description` | text | nullable |
+| `image` | varchar(500) | nullable |
+| `is_active` | tinyint(1) | default 1 |
+| `member_count` | int | default 0 |
 
-# E2E tests
-npm run test:e2e
+**`subscriptions`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `subscription_name` | varchar(255) | unique |
+| `subscription_type` | enum | `free`, `pro`, `premium` |
+| `subscription_price` | decimal(10,2) | |
+| `subscription_duration` | int | number of units |
+| `subscription_duration_type` | enum | `days`, `weeks`, `months`, `years` |
+| `features` | json | entitlements/feature flags |
+| `is_active` | tinyint(1) | default 1 |
 
-# Test coverage
-npm run test:cov
-```
+**`users_subscriptions`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `user_id` | int | FK → users.id |
+| `subscription_id` | int | FK → subscriptions.id |
+| `subscription_status` | enum | `pending`, `active`, `inactive`, `expired` |
+| `subscription_start_date` | timestamp | nullable |
+| `subscription_end_date` | timestamp | nullable |
+| `subscription_renewal_amount` | decimal(10,2) | |
+| `subscription_renewal_currency` | varchar(10) | |
+| `subscription_renewal_gateway` | varchar(255) | |
 
-## Troubleshooting
+### `db_jawab_notify` (notification database)
 
-### Database Connection Error
-- Verify MySQL is running
-- Check database credentials in `.env`
-- Ensure database `jawab_auth` exists
-- Verify the SQL schema has been imported
+**`notifications`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `user_id` | int | recipient |
+| `notification_type` | enum | `comment`, `reply`, `like`, `follow`, `mention`, `system`, etc. |
+| `title` | varchar(255) | |
+| `body` | text | |
+| `data` | json | extra payload, nullable |
+| `is_read` | tinyint(1) | default 0 |
+| `push_status` | enum | `pending`, `sent`, `delivered`, `failed`, nullable |
+| `priority` | enum | `low`, `normal`, `high`, `urgent` |
+| `expires_at` | timestamp | nullable |
 
-### Port Already in Use
-- Change `PORT` in `.env` to a different port
-- Or stop the process using port 3000
+**`templates`**
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int PK | |
+| `name` | varchar(255) | indexed |
+| `slug` | varchar(255) | unique |
+| `type` | enum | `email`, `pdf`, `html`, `sms` |
+| `category` | enum | `verification`, `password_reset`, `welcome`, `notification`, etc. |
+| `subject` | varchar(500) | for email templates, nullable |
+| `content` | text | HTML content |
+| `text_content` | text | plain text version, nullable |
+| `variables` | json | template variable schema, nullable |
+| `is_active` | tinyint(1) | default 1 |
 
-### Module Not Found Errors
-- Run `npm install` again
-- Delete `node_modules` and `package-lock.json`, then run `npm install`
+---
 
-## Documentation
+## Key Modules
 
-- **[Application Guide](./APPLICATION_GUIDE.md)** - Complete application guide with architecture, setup, and best practices
-- **[Auth Module API](./API_AUTH_MODULE.md)** - Complete API documentation for authentication module
-
-## License
-
-UNLICENSED
+| Module | Description |
+|---|---|
+| `admin` | Main fat module — dashboard stats, user/content management, cross-module operations |
+| `auth` | User registration, login, JWT, OAuth (Google/Apple), email verification |
+| `user` | User profiles, followers, topics |
+| `post` | Posts, likes |
+| `comment` | Comments, likes |
+| `poll` | Polls, options, votes |
+| `community` | Communities, members |
+| `subscription` | Plans, user subscriptions, payments |
+| `notification` | Push/in-app/email notifications (uses `notification` DB connection) |
+| `email` | Email queue via BullMQ (uses `notification` DB connection) |
+| `templates` | Email/PDF templates (uses `notification` DB connection) |
+| `shared` | `MediaClientService` — HTTP client for media-service-admin |

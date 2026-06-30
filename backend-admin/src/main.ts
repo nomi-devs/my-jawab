@@ -21,9 +21,11 @@ async function bootstrap() {
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+        mediaSrc: ["'self'", 'data:', 'https:', 'http:'],
       },
     },
-    crossOriginEmbedderPolicy: false, // Allow embedding if needed
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false, // Set explicitly in media controller per file
   }));
 
   // Performance: Compression middleware
@@ -43,12 +45,11 @@ async function bootstrap() {
     next();
   });
 
-  // Security: Request size limits
+  // Security: Request size limits (50MB to support file uploads)
   app.use((req, res, next) => {
-    // Limit request body size to 10MB
     if (req.headers['content-length']) {
       const contentLength = parseInt(req.headers['content-length'], 10);
-      if (contentLength > 10 * 1024 * 1024) {
+      if (contentLength > 50 * 1024 * 1024) {
         return res.status(413).json({
           statusCode: 413,
           message: 'Request entity too large',
