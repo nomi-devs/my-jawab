@@ -8,11 +8,9 @@ import NotificationDropdown from './NotificationDropdown';
 const Header = ({ activeTab, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed }) => {
   // Check both localStorage and sessionStorage for user data
   const [username] = useState(
-    localStorage.getItem("username") || sessionStorage.getItem("username") || ""
+    localStorage.getItem('username') || sessionStorage.getItem('username') || '',
   );
-  const [role] = useState(
-    localStorage.getItem("role") || sessionStorage.getItem("role") || ""
-  );
+  const [role] = useState(localStorage.getItem('role') || sessionStorage.getItem('role') || '');
   const navigate = useNavigate();
 
   // Username is set from login response, no need to fetch profile

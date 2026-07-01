@@ -49,7 +49,10 @@ export class PdfService {
       // Generate PDF from HTML
       return await this.generateFromHtml(html, options);
     } catch (error) {
-      this.logger.error(`Error generating PDF from template ${templateSlug}:`, error);
+      this.logger.error(
+        `Error generating PDF from template ${templateSlug}:`,
+        error,
+      );
       throw new Error(`Failed to generate PDF: ${error.message}`);
     }
   }
@@ -79,7 +82,9 @@ export class PdfService {
       // @ts-ignore - puppeteer is an optional dependency
       puppeteer = await import('puppeteer');
     } catch (error) {
-      throw new Error('Puppeteer is not installed. Please install it with: npm install puppeteer');
+      throw new Error(
+        'Puppeteer is not installed. Please install it with: npm install puppeteer',
+      );
     }
 
     let browser;
@@ -133,7 +138,11 @@ export class PdfService {
     filename?: string,
     options?: any,
   ): Promise<string> {
-    const pdfBuffer = await this.generateFromTemplate(templateSlug, data, options);
+    const pdfBuffer = await this.generateFromTemplate(
+      templateSlug,
+      data,
+      options,
+    );
 
     const fileName = filename || `${templateSlug}-${Date.now()}.pdf`;
     const filePath = path.join(this.pdfsPath, fileName);
@@ -161,7 +170,9 @@ export class PdfService {
       // @ts-ignore - puppeteer is an optional dependency
       puppeteer = await import('puppeteer');
     } catch (error) {
-      throw new Error('Puppeteer is not installed. Please install it with: npm install puppeteer');
+      throw new Error(
+        'Puppeteer is not installed. Please install it with: npm install puppeteer',
+      );
     }
 
     let browser;

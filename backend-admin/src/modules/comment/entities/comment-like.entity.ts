@@ -77,4 +77,3 @@ export class CommentLike {
   })
   updated_at: Date;
 }
-

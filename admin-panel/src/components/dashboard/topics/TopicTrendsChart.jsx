@@ -30,12 +30,14 @@ const TopicTrendsChart = React.memo(() => {
           <div key={index}>
             <div className="flex justify-between text-sm mb-1">
               <span className="font-medium text-gray-700">{trend.name}</span>
-              <span className={`font-medium ${trend.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+              <span
+                className={`font-medium ${trend.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}
+              >
                 {trend.change}
               </span>
             </div>
             <div className="h-2 bg-purple-100 rounded-full overflow-hidden">
-              <div 
+              <div
                 className={`h-full rounded-full ${trend.color}`}
                 style={{ width: `${trend.value}%` }}
               ></div>

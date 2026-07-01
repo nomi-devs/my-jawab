@@ -7,19 +7,12 @@ import {
   Inject,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, MoreThan, LessThan, Between, In, IsNull, Not, Like, DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
-import { User, UserRole, AuthType } from '../auth/entities/user.entity';
-import { UserPasswordReset } from '../auth/entities/user-password-reset.entity';
-import { UserProfile } from '../user/entities/user-profile.entity';
-import { UserFollower } from '../user/entities/user-follower.entity';
-import { UserTopic } from '../user/entities/user-topic.entity';
-import { UserDevice, DeviceType } from '../auth/entities/user-device.entity';
+import { DeviceType } from '../auth/entities/user-device.entity';
 // Import services from other modules
 import { PostService } from '../post/post.service';
 import { CommentService } from '../comment/comment.service';
@@ -31,28 +24,32 @@ import { SubscriptionService } from '../subscription/subscription.service';
 import { NotificationService } from '../notification/notification.service';
 import { MediaClientService } from '../shared/services/media-client.service';
 import { EmailTemplatesService } from '../email/services/email-templates.service';
-// Import entities for direct repository access
-import { UserPost, PostStatus } from '../post/entities/user-post.entity';
-import { PostLike } from '../post/entities/post-like.entity';
-import { PostComment } from '../comment/entities/post-comment.entity';
-import { CommentLike } from '../comment/entities/comment-like.entity';
-import { Community } from '../community/entities/community.entity';
-import { CommunityTopic } from '../community/entities/community-topic.entity';
-import { CommunityUser, CommunityUserRole } from '../community/entities/community-user.entity';
-import { UserPoll, PollStatus } from '../poll/entities/user-poll.entity';
-import { PollOption } from '../poll/entities/poll-option.entity';
-import { PollVote } from '../poll/entities/poll-vote.entity';
-import { PollLike } from '../poll/entities/poll-like.entity';
-import { PollComment } from '../poll/entities/poll-comment.entity';
-import { Topic } from '../general/entities/topic.entity';
-import { DashboardStatsDto, TrendingTopicDto, TrendsDto } from './dto/dashboard-stats.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { SubscriptionStatus, PaymentStatus } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+import {
+  DashboardStatsDto,
+  TrendingTopicDto,
+  TrendsDto,
+} from './dto/dashboard-stats.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { ListQueryDto } from './dto/list-query.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
-import { ListUsersQueryDto, ActiveStatus, VerifiedStatus } from './dto/list-users-query.dto';
+import {
+  ListUsersQueryDto,
+  ActiveStatus,
+  VerifiedStatus,
+} from './dto/list-users-query.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
-import { ListCommentsQueryDto, ApprovedStatus, RepliesStatus } from './dto/list-comments-query.dto';
-import { ListTopicsQueryDto, ChildrenStatus } from './dto/list-topics-query.dto';
+import {
+  ListCommentsQueryDto,
+  ApprovedStatus,
+  RepliesStatus,
+} from './dto/list-comments-query.dto';
+import {
+  ListTopicsQueryDto,
+  ChildrenStatus,
+} from './dto/list-topics-query.dto';
 import { ListCommunitiesQueryDto } from './dto/list-communities-query.dto';
 import { ListPollsQueryDto } from './dto/list-polls-query.dto';
 import { BulkUpdateDto } from './dto/bulk-update.dto';
@@ -86,61 +83,17 @@ import { ListSubscriptionsQueryDto } from '../subscription/dto/list-subscription
 import { ListUserSubscriptionsQueryDto } from '../subscription/dto/list-user-subscriptions-query.dto';
 import { ListPaymentsQueryDto } from '../subscription/dto/list-payments-query.dto';
 import { CreatePaymentDto } from '../subscription/dto/create-payment.dto';
-import { SubscriptionStatus } from '../subscription/entities/user-subscription.entity';
-import { PaymentStatus, Payment } from '../subscription/entities/payment.entity';
-import { Subscription } from '../subscription/entities/subscription.entity';
-import { Notification, NotificationType } from '../notification/entities/notification.entity';
-import { ListSubscriptionPaymentNotificationsDto, ReadStatus } from './dto/list-subscription-payment-notifications.dto';
+import {
+  ListSubscriptionPaymentNotificationsDto,
+  ReadStatus,
+} from './dto/list-subscription-payment-notifications.dto';
 
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(UserPasswordReset)
-    private passwordResetRepository: Repository<UserPasswordReset>,
-    @InjectRepository(UserProfile)
-    private profileRepository: Repository<UserProfile>,
-    @InjectRepository(UserFollower)
-    private followerRepository: Repository<UserFollower>,
-    @InjectRepository(UserTopic)
-    private topicRepository: Repository<UserTopic>,
-    @InjectRepository(UserDevice)
-    private deviceRepository: Repository<UserDevice>,
-    @InjectRepository(UserPost)
-    private postRepository: Repository<UserPost>,
-    @InjectRepository(PostLike)
-    private postLikeRepository: Repository<PostLike>,
-    @InjectRepository(PostComment)
-    private commentRepository: Repository<PostComment>,
-    @InjectRepository(CommentLike)
-    private commentLikeRepository: Repository<CommentLike>,
-    @InjectRepository(Community)
-    private communityRepository: Repository<Community>,
-    @InjectRepository(CommunityTopic)
-    private communityTopicRepository: Repository<CommunityTopic>,
-    @InjectRepository(CommunityUser)
-    private communityUserRepository: Repository<CommunityUser>,
-    @InjectRepository(UserPoll)
-    private pollRepository: Repository<UserPoll>,
-    @InjectRepository(PollOption)
-    private pollOptionRepository: Repository<PollOption>,
-    @InjectRepository(PollVote)
-    private pollVoteRepository: Repository<PollVote>,
-    @InjectRepository(PollLike)
-    private pollLikeRepository: Repository<PollLike>,
-    @InjectRepository(PollComment)
-    private pollCommentRepository: Repository<PollComment>,
-    @InjectRepository(Topic)
-    private topicEntityRepository: Repository<Topic>,
-    @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>,
-    @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
-    @InjectDataSource()
-    private dataSource: DataSource,
+    private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -154,18 +107,19 @@ export class AdminService {
     private notificationService: NotificationService,
     private mediaClientService: MediaClientService,
     private emailTemplatesService: EmailTemplatesService,
-  ) { }
+  ) {}
 
   // Helper methods for token generation
-  private async generateTokens(user: User) {
+  private async generateTokens(user: {
+    id: number;
+    username: string;
+    role: string;
+  }) {
     const payload = { sub: user.id, username: user.username, role: user.role };
 
-    // Access token: 1 month (30 days)
-    const accessTokenExpiresIn = '30d'; // 1 month
-    const accessTokenExpiresInSeconds = 30 * 24 * 60 * 60; // 2,592,000 seconds
-
-    // Refresh token: 3 months (90 days)
-    const refreshTokenExpiresIn = '90d'; // 3 months
+    const accessTokenExpiresIn = '30d';
+    const accessTokenExpiresInSeconds = 30 * 24 * 60 * 60;
+    const refreshTokenExpiresIn = '90d';
 
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: accessTokenExpiresIn,
@@ -174,17 +128,17 @@ export class AdminService {
       expiresIn: refreshTokenExpiresIn,
     });
 
-    user.access_token = accessToken;
-    user.refresh_token = refreshToken;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { access_token: accessToken, refresh_token: refreshToken },
+    });
 
-    // Invalidate cache when user data changes
     await this.invalidateUserCache(user.id);
 
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
-      expires_in: accessTokenExpiresInSeconds, // Return in seconds for API response
+      expires_in: accessTokenExpiresInSeconds,
     };
   }
 
@@ -193,79 +147,71 @@ export class AdminService {
     await this.cacheManager.del(cacheKey);
   }
 
-  private async registerDevice(userId: number, deviceData: {
-    device_id: string;
-    device_type: DeviceType;
-    device_token?: string;
-  }): Promise<UserDevice> {
-    let device = await this.deviceRepository.findOne({
-      where: {
-        user_id: userId,
-        device_id: deviceData.device_id,
-      },
-      select: ['id', 'device_token', 'device_type', 'is_active'],
+  private async registerDevice(
+    userId: number,
+    deviceData: {
+      device_id: string;
+      device_type: DeviceType;
+      device_token?: string;
+    },
+  ) {
+    const device = await this.prisma.userDevice.findFirst({
+      where: { user_id: userId, device_id: deviceData.device_id },
     });
 
     if (device) {
-      device.device_token = deviceData.device_token || device.device_token;
-      device.device_type = deviceData.device_type;
-      device.is_active = true;
-      device.last_active_at = new Date();
-      return await this.deviceRepository.save(device);
+      return this.prisma.userDevice.update({
+        where: { id: device.id },
+        data: {
+          device_token: deviceData.device_token || device.device_token,
+          device_type: deviceData.device_type,
+          is_active: true,
+          last_active_at: new Date(),
+        },
+      });
     }
 
-    device = this.deviceRepository.create({
-      user_id: userId,
-      device_id: deviceData.device_id,
-      device_type: deviceData.device_type,
-      device_token: deviceData.device_token,
-      is_active: true,
-      last_active_at: new Date(),
+    return this.prisma.userDevice.create({
+      data: {
+        user_id: userId,
+        device_id: deviceData.device_id,
+        device_type: deviceData.device_type,
+        device_token: deviceData.device_token,
+        is_active: true,
+        last_active_at: new Date(),
+      },
     });
-
-    return await this.deviceRepository.save(device);
   }
 
   // Admin Login
   async login(adminLoginDto: AdminLoginDto): Promise<AuthResponseDto> {
-    // Validate input
     if (!adminLoginDto.identifier || !adminLoginDto.identifier.trim()) {
-      throw new BadRequestException('Identifier (email or username) is required');
+      throw new BadRequestException(
+        'Identifier (email or username) is required',
+      );
     }
 
     if (!adminLoginDto.password || !adminLoginDto.password.trim()) {
       throw new BadRequestException('Password is required');
     }
 
-    // Find user by identifier (email or username)
-    const user = await this.userRepository.findOne({
-      where: [
-        { email: adminLoginDto.identifier.trim() },
-        { username: adminLoginDto.identifier.trim() },
-      ],
-      select: [
-        'id',
-        'username',
-        'email',
-        'password_hash',
-        'role',
-        'auth_type',
-        'is_active',
-        'is_verified',
-        'expires_in',
-      ],
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: adminLoginDto.identifier.trim() },
+          { username: adminLoginDto.identifier.trim() },
+        ],
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Verify password exists
     if (!user.password_hash) {
       throw new UnauthorizedException('Password is not set for this account');
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(
       adminLoginDto.password,
       user.password_hash,
@@ -275,31 +221,31 @@ export class AdminService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if user has admin or sub_admin role
-    if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUB_ADMIN) {
-      throw new UnauthorizedException('Access denied. Admin or sub-admin role required.');
+    if (user.role !== 'admin' && user.role !== 'sub_admin') {
+      throw new UnauthorizedException(
+        'Access denied. Admin or sub-admin role required.',
+      );
     }
 
-    // Check if user is active
     if (!user.is_active) {
-      throw new UnauthorizedException('Account is inactive. Please contact administrator.');
+      throw new UnauthorizedException(
+        'Account is inactive. Please contact administrator.',
+      );
     }
 
-    // Check if user is verified
     if (!user.is_verified) {
       throw new UnauthorizedException('Please verify your account first');
     }
 
-    // Register/update device if provided
     if (adminLoginDto.device_id) {
       await this.registerDevice(user.id, {
         device_id: adminLoginDto.device_id,
-        device_type: (adminLoginDto.device_type as DeviceType) || DeviceType.WEB,
+        device_type:
+          (adminLoginDto.device_type as DeviceType) || DeviceType.WEB,
         device_token: adminLoginDto.device_token,
       });
     }
 
-    // Generate tokens
     const tokens = await this.generateTokens(user);
 
     return {
@@ -307,8 +253,8 @@ export class AdminService {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role,
-        auth_type: user.auth_type,
+        role: user.role as any,
+        auth_type: user.auth_type as any,
         is_active: user.is_active,
         is_verified: user.is_verified,
       },
@@ -318,59 +264,61 @@ export class AdminService {
 
   // Admin Logout
   async logout(userId: number): Promise<{ message: string }> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: ['id', 'access_token', 'refresh_token'],
-    });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Clear tokens
-    user.access_token = null;
-    user.refresh_token = null;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { access_token: null, refresh_token: null },
+    });
 
-    // Invalidate cache
     await this.invalidateUserCache(userId);
 
     return { message: 'Logged out successfully' };
   }
 
   // Admin Forgot Password
-  async forgotPassword(forgotPasswordDto: AdminForgotPasswordDto): Promise<{ message: string }> {
-    const user = await this.userRepository.findOne({
+  async forgotPassword(
+    forgotPasswordDto: AdminForgotPasswordDto,
+  ): Promise<{ message: string }> {
+    const user = await this.prisma.user.findFirst({
       where: { email: forgotPasswordDto.email },
-      select: ['id', 'email', 'role'],
     });
 
     if (!user) {
-      // Don't reveal if user exists or not for security
-      return { message: 'If the email exists, a password reset code has been sent' };
+      return {
+        message: 'If the email exists, a password reset code has been sent',
+      };
     }
 
-    // Check if user has admin or sub_admin role
-    if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUB_ADMIN) {
-      // Don't reveal role information for security
-      return { message: 'If the email exists, a password reset code has been sent' };
+    if (user.role !== 'admin' && user.role !== 'sub_admin') {
+      return {
+        message: 'If the email exists, a password reset code has been sent',
+      };
     }
 
     const resetCode = this.generateResetCode();
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+    expiresAt.setHours(expiresAt.getHours() + 1);
 
-    await this.passwordResetRepository.save({
-      user_id: user.id,
-      email: forgotPasswordDto.email,
-      reset_code: resetCode,
-      expires_at: expiresAt,
-      is_used: false,
+    await this.prisma.userPasswordReset.create({
+      data: {
+        user_id: user.id,
+        email: forgotPasswordDto.email,
+        reset_code: resetCode,
+        expires_at: expiresAt,
+        is_used: false,
+      },
     });
 
-    // Send password reset email
     try {
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
       const resetUrl = `${appUrl}/admin/reset-password?code=${resetCode}&email=${encodeURIComponent(user.email)}`;
 
       await this.emailTemplatesService.sendPasswordResetEmail({
@@ -383,37 +331,42 @@ export class AdminService {
       this.logger.log(`Password reset email sent to admin: ${user.email}`);
     } catch (error) {
       this.logger.error('Failed to send password reset email:', error);
-      // Log code for development (remove in production)
       if (this.configService.get<string>('NODE_ENV') === 'development') {
-        console.log(`Password reset code for admin ${user.email}: ${resetCode}`);
+        console.log(
+          `Password reset code for admin ${user.email}: ${resetCode}`,
+        );
       }
     }
 
-    return { message: 'If the email exists, a password reset code has been sent' };
+    return {
+      message: 'If the email exists, a password reset code has been sent',
+    };
   }
 
   // Admin Reset Password
-  async resetPassword(resetPasswordDto: AdminResetPasswordDto): Promise<{ message: string }> {
-    const user = await this.userRepository.findOne({
+  async resetPassword(
+    resetPasswordDto: AdminResetPasswordDto,
+  ): Promise<{ message: string }> {
+    const user = await this.prisma.user.findFirst({
       where: { email: resetPasswordDto.email },
-      select: ['id', 'email', 'password_hash', 'role'],
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Check if user has admin or sub_admin role
-    if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUB_ADMIN) {
-      throw new UnauthorizedException('Access denied. Admin or sub-admin role required.');
+    if (user.role !== 'admin' && user.role !== 'sub_admin') {
+      throw new UnauthorizedException(
+        'Access denied. Admin or sub-admin role required.',
+      );
     }
 
-    const passwordReset = await this.passwordResetRepository.findOne({
+    const passwordReset = await this.prisma.userPasswordReset.findFirst({
       where: {
         user_id: user.id,
         reset_code: resetPasswordDto.reset_code,
         is_used: false,
-        expires_at: MoreThan(new Date()),
+        expires_at: { gt: new Date() },
       },
     });
 
@@ -421,43 +374,43 @@ export class AdminService {
       throw new BadRequestException('Invalid or expired reset code');
     }
 
-    // Mark reset code as used
-    passwordReset.is_used = true;
-    await this.passwordResetRepository.save(passwordReset);
+    await this.prisma.userPasswordReset.update({
+      where: { id: passwordReset.id },
+      data: { is_used: true },
+    });
 
-    // Update password
     const passwordHash = await bcrypt.hash(resetPasswordDto.new_password, 10);
-    user.password_hash = passwordHash;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password_hash: passwordHash },
+    });
 
-    // Invalidate cache when password changes
     await this.invalidateUserCache(user.id);
 
     return { message: 'Password reset successfully' };
   }
 
-  // Admin Change Password (requires old password)
+  // Admin Change Password
   async changePassword(
     userId: number,
     changePasswordDto: ChangePasswordDto,
   ): Promise<{ message: string }> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: ['id', 'password_hash', 'role'],
-    });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Check if user has admin or sub_admin role
-    if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUB_ADMIN) {
-      throw new UnauthorizedException('Access denied. Admin or sub-admin role required.');
+    if (user.role !== 'admin' && user.role !== 'sub_admin') {
+      throw new UnauthorizedException(
+        'Access denied. Admin or sub-admin role required.',
+      );
     }
 
-    // Verify old password
     if (!user.password_hash) {
-      throw new BadRequestException('Password not set. Please use reset password instead.');
+      throw new BadRequestException(
+        'Password not set. Please use reset password instead.',
+      );
     }
 
     const isOldPasswordValid = await bcrypt.compare(
@@ -469,45 +422,42 @@ export class AdminService {
       throw new UnauthorizedException('Invalid old password');
     }
 
-    // Check if new password is different from old password
     const isSamePassword = await bcrypt.compare(
       changePasswordDto.new_password,
       user.password_hash,
     );
 
     if (isSamePassword) {
-      throw new BadRequestException('New password must be different from old password');
+      throw new BadRequestException(
+        'New password must be different from old password',
+      );
     }
 
-    // Update password
     const passwordHash = await bcrypt.hash(changePasswordDto.new_password, 10);
-    user.password_hash = passwordHash;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password_hash: passwordHash,
+        access_token: null,
+        refresh_token: null,
+      },
+    });
 
-    // Clear tokens to force re-login after password change
-    user.access_token = null;
-    user.refresh_token = null;
-
-    await this.userRepository.save(user);
-
-    // Invalidate cache when password changes
-    await this.invalidateUserCache(user.id);
+    await this.invalidateUserCache(userId);
 
     return { message: 'Password changed successfully. Please login again.' };
   }
 
-  // Helper method to generate reset code
   private generateResetCode(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Helper method to normalize date to start of day (00:00:00.000)
   private normalizeStartDate(date: Date): Date {
     const normalized = new Date(date);
     normalized.setHours(0, 0, 0, 0);
     return normalized;
   }
 
-  // Helper method to normalize date to end of day (23:59:59.999)
   private normalizeEndDate(date: Date): Date {
     const normalized = new Date(date);
     normalized.setHours(23, 59, 59, 999);
@@ -515,19 +465,23 @@ export class AdminService {
   }
 
   // Dashboard Stats
-  async getDashboardStats(queryDto?: DashboardStatsQueryDto): Promise<DashboardStatsDto> {
+  async getDashboardStats(
+    queryDto?: DashboardStatsQueryDto,
+  ): Promise<DashboardStatsDto> {
     try {
       const { time_range, start_date, end_date } = queryDto || {};
       const effectiveTimeRange = time_range || 'all';
 
-      // Validate: Cannot use time_range and custom dates together
       if (time_range && (start_date || end_date)) {
-        throw new BadRequestException('Cannot use time_range together with start_date/end_date. Use either time_range OR custom dates.');
+        throw new BadRequestException(
+          'Cannot use time_range together with start_date/end_date. Use either time_range OR custom dates.',
+        );
       }
 
-      // Validate custom date range
       if ((start_date && !end_date) || (!start_date && end_date)) {
-        throw new BadRequestException('Both start_date and end_date are required together');
+        throw new BadRequestException(
+          'Both start_date and end_date are required together',
+        );
       }
       if (start_date && end_date) {
         const start = new Date(start_date);
@@ -540,7 +494,6 @@ export class AdminService {
         }
       }
 
-      // Calculate date ranges
       let periodStart: Date;
       let periodEnd: Date;
       let previousPeriodStart: Date;
@@ -549,22 +502,21 @@ export class AdminService {
       const now = new Date();
 
       if (start_date && end_date) {
-        // Custom date range: normalize start to beginning of day, end to end of day
         periodStart = this.normalizeStartDate(new Date(start_date));
         periodEnd = this.normalizeEndDate(new Date(end_date));
         const periodDuration = periodEnd.getTime() - periodStart.getTime();
         previousPeriodEnd = new Date(periodStart.getTime() - 1);
-        previousPeriodStart = new Date(previousPeriodEnd.getTime() - periodDuration);
+        previousPeriodStart = new Date(
+          previousPeriodEnd.getTime() - periodDuration,
+        );
         previousPeriodStart = this.normalizeStartDate(previousPeriodStart);
         previousPeriodEnd = this.normalizeEndDate(previousPeriodEnd);
       } else {
         switch (effectiveTimeRange) {
           case 'week':
-            // Last 7 days (including today)
             periodStart = this.normalizeStartDate(new Date(now));
-            periodStart.setDate(periodStart.getDate() - 6); // Include today, so go back 6 days
+            periodStart.setDate(periodStart.getDate() - 6);
             periodEnd = this.normalizeEndDate(now);
-            // Previous week (7 days before periodStart)
             previousPeriodStart = new Date(periodStart);
             previousPeriodStart.setDate(previousPeriodStart.getDate() - 7);
             previousPeriodStart = this.normalizeStartDate(previousPeriodStart);
@@ -572,11 +524,9 @@ export class AdminService {
             previousPeriodEnd = this.normalizeEndDate(previousPeriodEnd);
             break;
           case 'month':
-            // Last 30 days (including today)
             periodStart = this.normalizeStartDate(new Date(now));
-            periodStart.setDate(periodStart.getDate() - 29); // Include today, so go back 29 days
+            periodStart.setDate(periodStart.getDate() - 29);
             periodEnd = this.normalizeEndDate(now);
-            // Previous 30 days
             previousPeriodStart = new Date(periodStart);
             previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
             previousPeriodStart = this.normalizeStartDate(previousPeriodStart);
@@ -584,11 +534,9 @@ export class AdminService {
             previousPeriodEnd = this.normalizeEndDate(previousPeriodEnd);
             break;
           case 'year':
-            // Last 365 days (including today)
             periodStart = this.normalizeStartDate(new Date(now));
-            periodStart.setDate(periodStart.getDate() - 364); // Include today, so go back 364 days
+            periodStart.setDate(periodStart.getDate() - 364);
             periodEnd = this.normalizeEndDate(now);
-            // Previous 365 days
             previousPeriodStart = new Date(periodStart);
             previousPeriodStart.setDate(previousPeriodStart.getDate() - 365);
             previousPeriodStart = this.normalizeStartDate(previousPeriodStart);
@@ -597,15 +545,13 @@ export class AdminService {
             break;
           default: // 'all'
             isAllTime = true;
-            periodStart = new Date(0); // Beginning of time
+            periodStart = new Date(0);
             periodEnd = this.normalizeEndDate(now);
             previousPeriodStart = new Date(0);
             previousPeriodEnd = new Date(0);
         }
       }
 
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const oneDayAgo = new Date();
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
       const oneWeekAgo = new Date();
@@ -613,85 +559,116 @@ export class AdminService {
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-      // Current period stats
-      const currentStats = await this.getPeriodStats(periodStart, periodEnd, isAllTime);
-      // Previous period stats for trends (only if not all time)
+      const currentStats = await this.getPeriodStats(
+        periodStart,
+        periodEnd,
+        isAllTime,
+      );
       const previousStats = isAllTime
-        ? { total_users: 0, active_users: 0, verified_users: 0, pro_users: 0, total_posts: 0, published_posts: 0, draft_posts: 0, total_comments: 0, total_topics: 0, active_topics: 0, total_communities: 0, active_communities: 0, total_polls: 0, published_polls: 0, recent_users: 0, recent_posts: 0 }
-        : await this.getPeriodStats(previousPeriodStart, previousPeriodEnd, false);
+        ? {
+            total_users: 0,
+            active_users: 0,
+            verified_users: 0,
+            pro_users: 0,
+            total_posts: 0,
+            published_posts: 0,
+            draft_posts: 0,
+            total_comments: 0,
+            total_topics: 0,
+            active_topics: 0,
+            total_communities: 0,
+            active_communities: 0,
+            total_polls: 0,
+            published_polls: 0,
+            recent_users: 0,
+            recent_posts: 0,
+          }
+        : await this.getPeriodStats(
+            previousPeriodStart,
+            previousPeriodEnd,
+            false,
+          );
 
-      // Calculate trends (percentage change)
       const trends = this.calculateTrends(currentStats, previousStats);
 
-      // Active users by period
-      const dailyActiveUsers = await this.getActiveUsersCount(oneDayAgo, new Date());
-      const weeklyActiveUsers = await this.getActiveUsersCount(oneWeekAgo, new Date());
-      const monthlyActiveUsers = await this.getActiveUsersCount(oneMonthAgo, new Date());
+      const dailyActiveUsers = await this.getActiveUsersCount(
+        oneDayAgo,
+        new Date(),
+      );
+      const weeklyActiveUsers = await this.getActiveUsersCount(
+        oneWeekAgo,
+        new Date(),
+      );
+      const monthlyActiveUsers = await this.getActiveUsersCount(
+        oneMonthAgo,
+        new Date(),
+      );
 
-      // Engagement rate calculation
-      const totalViewsResult = await this.postRepository
-        .createQueryBuilder('post')
-        .select('COALESCE(SUM(post.view_count), 0)', 'total')
-        .where('post.created_at >= :start', { start: periodStart })
-        .andWhere('post.created_at <= :end', { end: periodEnd })
-        .getRawOne();
-      const totalLikesResult = await this.postRepository
-        .createQueryBuilder('post')
-        .select('COALESCE(SUM(post.like_count), 0)', 'total')
-        .where('post.created_at >= :start', { start: periodStart })
-        .andWhere('post.created_at <= :end', { end: periodEnd })
-        .getRawOne();
-      const totalComments = await this.commentRepository.count({
-        where: {
-          created_at: Between(periodStart, periodEnd),
-        },
+      // Engagement rate
+      const totalViewsResult = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT COALESCE(SUM(view_count), 0) AS total FROM user_posts WHERE created_at >= ? AND created_at <= ?`,
+        periodStart,
+        periodEnd,
+      );
+      const totalLikesResult = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT COALESCE(SUM(like_count), 0) AS total FROM user_posts WHERE created_at >= ? AND created_at <= ?`,
+        periodStart,
+        periodEnd,
+      );
+      const totalComments = await this.prisma.postComment.count({
+        where: { created_at: { gte: periodStart, lte: periodEnd } },
       });
-      const totalInteractions = (parseInt(totalLikesResult?.total || '0', 10) + totalComments);
-      const totalViewsNum = parseInt(totalViewsResult?.total || '0', 10);
-      const engagementRate = totalViewsNum > 0 ? (totalInteractions / totalViewsNum) * 100 : 0;
+      const totalInteractions =
+        parseInt(totalLikesResult[0]?.total || '0', 10) + totalComments;
+      const totalViewsNum = parseInt(totalViewsResult[0]?.total || '0', 10);
+      const engagementRate =
+        totalViewsNum > 0 ? (totalInteractions / totalViewsNum) * 100 : 0;
 
-      // Top posts - get all posts first, then sort in memory to avoid SQL arithmetic issues
-      const allPosts = await this.postRepository
-        .createQueryBuilder('post')
-        .leftJoinAndSelect('post.user', 'user')
-        .where('post.created_at >= :start', { start: periodStart })
-        .andWhere('post.created_at <= :end', { end: periodEnd })
-        .getMany();
+      // Top posts -- fetch then sort in memory
+      const allPosts = await this.prisma.userPost.findMany({
+        where: { created_at: { gte: periodStart, lte: periodEnd } },
+        include: { user: true },
+      });
 
       const topPosts = allPosts
-        .map(post => ({
+        .map((post) => ({
           ...post,
           engagement_score: (post.like_count || 0) + (post.comment_count || 0),
         }))
         .sort((a, b) => b.engagement_score - a.engagement_score)
         .slice(0, 10);
 
-      // Top users (by activity) - simplified query
-      const topUsersRaw = await this.userRepository
-        .createQueryBuilder('user')
-        .select([
-          'user.id as user_id',
-          'user.username as user_username',
-          'user.email as user_email',
-          'COUNT(DISTINCT post.id) as post_count',
-          'COUNT(DISTINCT comment.id) as comment_count',
-        ])
-        .leftJoin('user_posts', 'post', 'post.user_id = user.id AND post.created_at BETWEEN :start AND :end', { start: periodStart, end: periodEnd })
-        .leftJoin('post_comments', 'comment', 'comment.user_id = user.id AND comment.created_at BETWEEN :start AND :end', { start: periodStart, end: periodEnd })
-        .groupBy('user.id')
-        .having('COUNT(DISTINCT post.id) > 0 OR COUNT(DISTINCT comment.id) > 0')
-        .getRawMany();
+      // Top users by activity
+      const topUsersRaw = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT
+           u.id as user_id,
+           u.username as user_username,
+           u.email as user_email,
+           COUNT(DISTINCT post.id) as post_count,
+           COUNT(DISTINCT comment.id) as comment_count
+         FROM users u
+         LEFT JOIN user_posts post
+           ON post.user_id = u.id AND post.created_at BETWEEN ? AND ?
+         LEFT JOIN post_comments comment
+           ON comment.user_id = u.id AND comment.created_at BETWEEN ? AND ?
+         GROUP BY u.id, u.username, u.email
+         HAVING COUNT(DISTINCT post.id) > 0 OR COUNT(DISTINCT comment.id) > 0`,
+        periodStart,
+        periodEnd,
+        periodStart,
+        periodEnd,
+      );
 
-      // Sort by activity score in memory
       const topUsers = topUsersRaw
-        .map(u => ({
+        .map((u) => ({
           ...u,
-          activity_score: parseInt(u.post_count || '0', 10) + parseInt(u.comment_count || '0', 10),
+          activity_score:
+            parseInt(u.post_count || '0', 10) +
+            parseInt(u.comment_count || '0', 10),
         }))
         .sort((a, b) => b.activity_score - a.activity_score)
         .slice(0, 10);
 
-      // Recent activity
       let recentActivity: any[] = [];
       try {
         recentActivity = await this.getRecentActivity(10);
@@ -699,7 +676,6 @@ export class AdminService {
         console.error('Error fetching recent activity:', error);
       }
 
-      // Trending Topics
       let trendingTopics: TrendingTopicDto[] = [];
       try {
         trendingTopics = await this.getTrendingTopics(10);
@@ -719,7 +695,10 @@ export class AdminService {
           post_title: p.post_title,
           like_count: p.like_count,
           comment_count: p.comment_count,
-          user: { id: p.user?.id, username: p.user?.username },
+          user: {
+            id: (p as any).user?.id,
+            username: (p as any).user?.username,
+          },
         })),
         top_users: topUsers.map((u) => ({
           id: u.user_id,
@@ -736,102 +715,120 @@ export class AdminService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException(`Failed to fetch dashboard stats: ${error.message || 'Unknown error'}`);
+      throw new BadRequestException(
+        `Failed to fetch dashboard stats: ${error.message || 'Unknown error'}`,
+      );
     }
   }
 
-  private async getPeriodStats(start: Date, end: Date, isAllTime: boolean = false) {
-    // For "all time", get current totals, not historical counts
+  private async getPeriodStats(
+    start: Date,
+    end: Date,
+    isAllTime: boolean = false,
+  ) {
     if (isAllTime) {
       return {
-        total_users: await this.userRepository.count(),
-        active_users: await this.userRepository.count({
+        total_users: await this.prisma.user.count(),
+        active_users: await this.prisma.user.count({
           where: { is_active: true },
         }),
-        verified_users: await this.userRepository.count({
+        verified_users: await this.prisma.user.count({
           where: { is_verified: true },
         }),
-        pro_users: await this.userRepository.count({
-          where: { role: UserRole.PRO_USER },
+        pro_users: await this.prisma.user.count({
+          where: { role: 'pro_user' },
         }),
-        total_posts: await this.postRepository.count(),
-        published_posts: await this.postRepository.count({
-          where: { post_status: PostStatus.PUBLISHED },
+        total_posts: await this.prisma.userPost.count(),
+        published_posts: await this.prisma.userPost.count({
+          where: { post_status: 'published' },
         }),
-        draft_posts: await this.postRepository.count({
-          where: { post_status: PostStatus.DRAFT },
+        draft_posts: await this.prisma.userPost.count({
+          where: { post_status: 'draft' },
         }),
-        total_comments: await this.commentRepository.count(),
-        total_topics: await this.topicEntityRepository.count(),
-        active_topics: await this.topicEntityRepository.count({
+        total_comments: await this.prisma.postComment.count(),
+        total_topics: await this.prisma.topic.count(),
+        active_topics: await this.prisma.topic.count({
           where: { is_active: true },
         }),
-        total_communities: await this.communityRepository.count(),
-        active_communities: await this.communityRepository.count({
+        total_communities: await this.prisma.community.count(),
+        active_communities: await this.prisma.community.count({
           where: { is_active: true },
         }),
-        total_polls: await this.pollRepository.count(),
-        published_polls: await this.pollRepository.count({
-          where: { poll_status: PollStatus.PUBLISHED },
+        total_polls: await this.prisma.userPoll.count(),
+        published_polls: await this.prisma.userPoll.count({
+          where: { poll_status: 'published' },
         }),
-        recent_users: await this.userRepository.count({
-          where: { created_at: MoreThan(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) },
+        recent_users: await this.prisma.user.count({
+          where: {
+            created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+          },
         }),
-        recent_posts: await this.postRepository.count({
-          where: { created_at: MoreThan(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) },
+        recent_posts: await this.prisma.userPost.count({
+          where: {
+            created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+          },
         }),
       };
     }
 
-    // For specific time ranges, count items created in that period
     return {
-      total_users: await this.userRepository.count({
-        where: { created_at: Between(start, end) },
+      total_users: await this.prisma.user.count({
+        where: { created_at: { gte: start, lte: end } },
       }),
-      active_users: await this.userRepository.count({
-        where: { is_active: true, created_at: Between(start, end) },
+      active_users: await this.prisma.user.count({
+        where: { is_active: true, created_at: { gte: start, lte: end } },
       }),
-      verified_users: await this.userRepository.count({
-        where: { is_verified: true, created_at: Between(start, end) },
+      verified_users: await this.prisma.user.count({
+        where: { is_verified: true, created_at: { gte: start, lte: end } },
       }),
-      pro_users: await this.userRepository.count({
-        where: { role: UserRole.PRO_USER, created_at: Between(start, end) },
+      pro_users: await this.prisma.user.count({
+        where: { role: 'pro_user', created_at: { gte: start, lte: end } },
       }),
-      total_posts: await this.postRepository.count({
-        where: { created_at: Between(start, end) },
+      total_posts: await this.prisma.userPost.count({
+        where: { created_at: { gte: start, lte: end } },
       }),
-      published_posts: await this.postRepository.count({
-        where: { post_status: PostStatus.PUBLISHED, created_at: Between(start, end) },
+      published_posts: await this.prisma.userPost.count({
+        where: {
+          post_status: 'published',
+          created_at: { gte: start, lte: end },
+        },
       }),
-      draft_posts: await this.postRepository.count({
-        where: { post_status: PostStatus.DRAFT, created_at: Between(start, end) },
+      draft_posts: await this.prisma.userPost.count({
+        where: { post_status: 'draft', created_at: { gte: start, lte: end } },
       }),
-      total_comments: await this.commentRepository.count({
-        where: { created_at: Between(start, end) },
+      total_comments: await this.prisma.postComment.count({
+        where: { created_at: { gte: start, lte: end } },
       }),
-      total_topics: await this.topicEntityRepository.count({
-        where: { created_at: Between(start, end) },
+      total_topics: await this.prisma.topic.count({
+        where: { created_at: { gte: start, lte: end } },
       }),
-      active_topics: await this.topicEntityRepository.count({
-        where: { is_active: true, created_at: Between(start, end) },
+      active_topics: await this.prisma.topic.count({
+        where: { is_active: true, created_at: { gte: start, lte: end } },
       }),
-      total_communities: await this.communityRepository.count({
-        where: { created_at: Between(start, end) },
+      total_communities: await this.prisma.community.count({
+        where: { created_at: { gte: start, lte: end } },
       }),
-      active_communities: await this.communityRepository.count({
-        where: { is_active: true, created_at: Between(start, end) },
+      active_communities: await this.prisma.community.count({
+        where: { is_active: true, created_at: { gte: start, lte: end } },
       }),
-      total_polls: await this.pollRepository.count({
-        where: { created_at: Between(start, end) },
+      total_polls: await this.prisma.userPoll.count({
+        where: { created_at: { gte: start, lte: end } },
       }),
-      published_polls: await this.pollRepository.count({
-        where: { poll_status: PollStatus.PUBLISHED, created_at: Between(start, end) },
+      published_polls: await this.prisma.userPoll.count({
+        where: {
+          poll_status: 'published',
+          created_at: { gte: start, lte: end },
+        },
       }),
-      recent_users: await this.userRepository.count({
-        where: { created_at: MoreThan(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) },
+      recent_users: await this.prisma.user.count({
+        where: {
+          created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        },
       }),
-      recent_posts: await this.postRepository.count({
-        where: { created_at: MoreThan(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) },
+      recent_posts: await this.prisma.userPost.count({
+        where: {
+          created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        },
       }),
     };
   }
@@ -843,86 +840,128 @@ export class AdminService {
     };
 
     return {
-      total_users_change: calculateChange(current.total_users, previous.total_users),
-      active_users_change: calculateChange(current.active_users, previous.active_users),
-      verified_users_change: calculateChange(current.verified_users, previous.verified_users),
+      total_users_change: calculateChange(
+        current.total_users,
+        previous.total_users,
+      ),
+      active_users_change: calculateChange(
+        current.active_users,
+        previous.active_users,
+      ),
+      verified_users_change: calculateChange(
+        current.verified_users,
+        previous.verified_users,
+      ),
       pro_users_change: calculateChange(current.pro_users, previous.pro_users),
-      total_posts_change: calculateChange(current.total_posts, previous.total_posts),
-      published_posts_change: calculateChange(current.published_posts, previous.published_posts),
-      draft_posts_change: calculateChange(current.draft_posts, previous.draft_posts),
-      total_comments_change: calculateChange(current.total_comments, previous.total_comments),
-      total_topics_change: calculateChange(current.total_topics, previous.total_topics),
-      active_topics_change: calculateChange(current.active_topics, previous.active_topics),
-      total_communities_change: calculateChange(current.total_communities, previous.total_communities),
-      active_communities_change: calculateChange(current.active_communities, previous.active_communities),
-      total_polls_change: calculateChange(current.total_polls, previous.total_polls),
-      published_polls_change: calculateChange(current.published_polls, previous.published_polls),
+      total_posts_change: calculateChange(
+        current.total_posts,
+        previous.total_posts,
+      ),
+      published_posts_change: calculateChange(
+        current.published_posts,
+        previous.published_posts,
+      ),
+      draft_posts_change: calculateChange(
+        current.draft_posts,
+        previous.draft_posts,
+      ),
+      total_comments_change: calculateChange(
+        current.total_comments,
+        previous.total_comments,
+      ),
+      total_topics_change: calculateChange(
+        current.total_topics,
+        previous.total_topics,
+      ),
+      active_topics_change: calculateChange(
+        current.active_topics,
+        previous.active_topics,
+      ),
+      total_communities_change: calculateChange(
+        current.total_communities,
+        previous.total_communities,
+      ),
+      active_communities_change: calculateChange(
+        current.active_communities,
+        previous.active_communities,
+      ),
+      total_polls_change: calculateChange(
+        current.total_polls,
+        previous.total_polls,
+      ),
+      published_polls_change: calculateChange(
+        current.published_polls,
+        previous.published_polls,
+      ),
     };
   }
 
   private async getActiveUsersCount(start: Date, end: Date): Promise<number> {
-    // Users who have created posts, comments, or polls in the period
-    const result = await this.userRepository
-      .createQueryBuilder('user')
-      .select('COUNT(DISTINCT user.id)', 'count')
-      .leftJoin('user_posts', 'post', 'post.user_id = user.id AND post.created_at BETWEEN :start AND :end', { start, end })
-      .leftJoin('post_comments', 'comment', 'comment.user_id = user.id AND comment.created_at BETWEEN :start AND :end', { start, end })
-      .leftJoin('user_polls', 'poll', 'poll.user_id = user.id AND poll.created_at BETWEEN :start AND :end', { start, end })
-      .where('post.id IS NOT NULL OR comment.id IS NOT NULL OR poll.id IS NOT NULL')
-      .getRawOne();
-    return parseInt(result?.count || '0');
+    const result = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT COUNT(DISTINCT u.id) AS \`count\`
+       FROM users u
+       LEFT JOIN user_posts post
+         ON post.user_id = u.id AND post.created_at BETWEEN ? AND ?
+       LEFT JOIN post_comments comment
+         ON comment.user_id = u.id AND comment.created_at BETWEEN ? AND ?
+       LEFT JOIN user_polls poll
+         ON poll.user_id = u.id AND poll.created_at BETWEEN ? AND ?
+       WHERE post.id IS NOT NULL OR comment.id IS NOT NULL OR poll.id IS NOT NULL`,
+      start,
+      end,
+      start,
+      end,
+      start,
+      end,
+    );
+    return parseInt(result[0]?.count || '0');
   }
 
   private async getRecentActivity(limit: number = 10): Promise<any[]> {
     const activities: any[] = [];
 
-    // Recent posts
-    const recentPosts = await this.postRepository.find({
+    const recentPosts = await this.prisma.userPost.findMany({
       take: limit,
-      order: { created_at: 'DESC' },
-      relations: ['user'],
-      select: ['id', 'post_title', 'created_at', 'user'],
+      orderBy: { created_at: 'desc' },
+      include: { user: true },
     });
     activities.push(
       ...recentPosts.map((p) => ({
         type: 'post',
         id: p.id,
         title: p.post_title,
-        user: { id: p.user?.id, username: p.user?.username },
+        user: { id: (p as any).user?.id, username: (p as any).user?.username },
         created_at: p.created_at,
       })),
     );
 
-    // Recent comments
-    const recentComments = await this.commentRepository.find({
+    const recentComments = await this.prisma.postComment.findMany({
       take: limit,
-      order: { created_at: 'DESC' },
-      relations: ['user', 'post'],
-      select: ['id', 'comment_content', 'created_at', 'user', 'post'],
+      orderBy: { created_at: 'desc' },
+      include: { user: true, post: true },
     });
     activities.push(
       ...recentComments.map((c) => ({
         type: 'comment',
         id: c.id,
         content: c.comment_content.substring(0, 50),
-        user: { id: c.user?.id, username: c.user?.username },
+        user: { id: (c as any).user?.id, username: (c as any).user?.username },
         post_id: c.post_id,
         created_at: c.created_at,
       })),
     );
 
-    // Sort by created_at and return top limit
-    return activities.sort((a, b) => b.created_at.getTime() - a.created_at.getTime()).slice(0, limit);
+    return activities
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .slice(0, limit);
   }
 
-  // Get Trending Topics based on usage in communities and posts
-  private async getTrendingTopics(limit: number = 10): Promise<TrendingTopicDto[]> {
+  private async getTrendingTopics(
+    limit: number = 10,
+  ): Promise<TrendingTopicDto[]> {
     try {
-      // Query to get trending topics based on:
-      // 1. Number of communities using the topic (from community_topics table)
-      // 2. Number of posts using the topic (from user_posts.post_topic_id)
       const query = `
-        SELECT 
+        SELECT
           t.id as topic_id,
           t.topic_name,
           t.topic_slug,
@@ -931,19 +970,13 @@ export class AdminService {
           (COALESCE(ct.community_count, 0) + COALESCE(pt.post_count, 0)) as usage_count
         FROM topics t
         LEFT JOIN (
-          SELECT 
-            topic_id,
-            COUNT(*) as community_count
-          FROM community_topics
-          WHERE is_active = 1
+          SELECT topic_id, COUNT(*) as community_count
+          FROM community_topics WHERE is_active = 1
           GROUP BY topic_id
         ) ct ON t.id = ct.topic_id
         LEFT JOIN (
-          SELECT 
-            post_topic_id as topic_id,
-            COUNT(*) as post_count
-          FROM user_posts
-          WHERE post_status = 'published'
+          SELECT post_topic_id as topic_id, COUNT(*) as post_count
+          FROM user_posts WHERE post_status = 'published'
           GROUP BY post_topic_id
         ) pt ON t.id = pt.topic_id
         WHERE t.is_active = 1
@@ -951,7 +984,7 @@ export class AdminService {
         LIMIT ?
       `;
 
-      const results = await this.dataSource.query(query, [limit]);
+      const results = await this.prisma.$queryRawUnsafe<any[]>(query, limit);
 
       return results.map((row: any) => ({
         topic_id: row.topic_id,
@@ -962,97 +995,96 @@ export class AdminService {
         post_count: parseInt(row.post_count) || 0,
       }));
     } catch (error) {
-      // If tables don't exist yet, return empty array
-      // This will work once topic/post/community modules are implemented
-      console.warn('Trending topics query failed (tables may not exist yet):', error.message);
+      console.warn(
+        'Trending topics query failed (tables may not exist yet):',
+        error.message,
+      );
       return [];
     }
   }
 
   // User Management
-  async createUser(
-    createUserDto: CreateUserDto,
-    adminId: number,
-  ) {
-    // Validate that at least email or phone_number is provided
+  async createUser(createUserDto: CreateUserDto, adminId: number) {
     if (!createUserDto.email && !createUserDto.phone_number) {
-      throw new BadRequestException('Either email or phone_number must be provided');
+      throw new BadRequestException(
+        'Either email or phone_number must be provided',
+      );
     }
 
-    // Determine auth_type based on provided fields
-    let authType = createUserDto.auth_type;
+    let authType: string = createUserDto.auth_type ?? '';
     if (!authType) {
       if (createUserDto.email && !createUserDto.phone_number) {
-        authType = AuthType.EMAIL;
+        authType = 'email';
       } else if (createUserDto.phone_number && !createUserDto.email) {
-        authType = AuthType.PHONE;
+        authType = 'phone';
       } else {
-        // If both are provided, default to email
-        authType = AuthType.EMAIL;
+        authType = 'email';
       }
     }
 
-    // For phone auth, username should be the phone number
-    // For email auth, username is provided separately
-    const username = authType === AuthType.PHONE && createUserDto.phone_number
-      ? createUserDto.phone_number
-      : createUserDto.username;
+    const username =
+      authType === 'phone' && createUserDto.phone_number
+        ? createUserDto.phone_number
+        : createUserDto.username;
 
-    // Check if user already exists
-    const whereConditions: any[] = [{ username: username }];
+    const whereConditions: any[] = [{ username }];
     if (createUserDto.email) {
       whereConditions.push({ email: createUserDto.email });
     }
 
-    const existingUser = await this.userRepository.findOne({
-      where: whereConditions,
-      select: ['id'],
+    const existingUser = await this.prisma.user.findFirst({
+      where: { OR: whereConditions },
     });
 
     if (existingUser) {
-      throw new ConflictException('User with this email or username already exists');
+      throw new ConflictException(
+        'User with this email or username already exists',
+      );
     }
 
-    // Hash password if provided
     let passwordHash: string | null = null;
-    if (createUserDto.password && (authType === AuthType.EMAIL || authType === AuthType.PHONE)) {
+    if (
+      createUserDto.password &&
+      (authType === 'email' || authType === 'phone')
+    ) {
       passwordHash = await bcrypt.hash(createUserDto.password, 10);
     }
 
-    // Create user - ensure email is always a string (not null)
-    // If email is not provided, use empty string (entity requires string, not nullable)
-    // Determine default values for is_active and is_verified based on role
-    // Use is_active from DTO if provided, otherwise use default logic
-    const defaultIsActive = createUserDto.role === UserRole.ADMIN || createUserDto.role === UserRole.SUB_ADMIN
-      ? true
-      : (createUserDto.role === UserRole.PRO_USER ? true : false);
-    const defaultIsVerified = createUserDto.role === UserRole.ADMIN || createUserDto.role === UserRole.SUB_ADMIN
-      ? true
-      : false;
+    const role = createUserDto.role || 'user';
+    const defaultIsActive =
+      role === 'admin' || role === 'sub_admin'
+        ? true
+        : role === 'pro_user'
+          ? true
+          : false;
+    const defaultIsVerified =
+      role === 'admin' || role === 'sub_admin' ? true : false;
 
-    const user = this.userRepository.create({
-      username: username,
-      email: createUserDto.email || '',
-      password_hash: passwordHash,
-      auth_type: authType,
-      role: createUserDto.role || UserRole.USER,
-      is_active: createUserDto.is_active !== undefined ? createUserDto.is_active : defaultIsActive,
-      is_verified: defaultIsVerified,
-      created_by: adminId,
-    } as Partial<User>);
+    const savedUser = await this.prisma.user.create({
+      data: {
+        username,
+        email: createUserDto.email || '',
+        password_hash: passwordHash,
+        auth_type: authType as any,
+        role,
+        is_active:
+          createUserDto.is_active !== undefined
+            ? createUserDto.is_active
+            : defaultIsActive,
+        is_verified: defaultIsVerified,
+        created_by: adminId,
+      },
+    });
 
-    const savedUser: User = await this.userRepository.save(user);
-
-    // Register device if provided
     if (createUserDto.device_id) {
       await this.registerDevice(savedUser.id, {
         device_id: createUserDto.device_id,
-        device_type: (createUserDto.device_type as DeviceType) || DeviceType.WEB,
+        device_type:
+          (createUserDto.device_type as DeviceType) || DeviceType.WEB,
         device_token: createUserDto.device_token,
       });
     }
 
-    // Invalidate cache
     await this.invalidateUserCache(savedUser.id);
 
     return {
@@ -1067,103 +1099,62 @@ export class AdminService {
     };
   }
 
-  async getUsers(listQueryDto: ListUsersQueryDto, options: { onlyDeleted?: boolean } = {}) {
+  async getUsers(
+    listQueryDto: ListUsersQueryDto,
+    options: { onlyDeleted?: boolean } = {},
+  ) {
     const {
       page = 1,
       limit = 10,
-      search,
       sort_by = 'created_at',
       sort_order = 'DESC',
-      role,
-      is_active,
-      is_verified,
-      created_from,
-      created_to,
-      user_id,
     } = listQueryDto;
 
-    // Explicit casting to ensure numbers
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    // Debug logging
-    this.logger.debug(`getUsers: page=${pageNum}, limit=${limitNum}, skip=${skip}, sort=${sort_by}, order=${sort_order}, onlyDeleted=${!!options.onlyDeleted}`);
+    this.logger.debug(
+      `getUsers: page=${pageNum}, limit=${limitNum}, skip=${skip}, sort=${sort_by}, order=${sort_order}, onlyDeleted=${!!options.onlyDeleted}`,
+    );
 
-    const queryBuilder = this.getUsersQueryBuilder(listQueryDto, options);
+    const where = this.buildUsersWhere(listQueryDto, options);
+    const total = await this.prisma.user.count({ where });
 
-    // Clone query builder for count (without joins to avoid counting issues)
-    const countQueryBuilder = queryBuilder.clone();
-
-    // Get total count before adding joins and pagination
-    const total = await countQueryBuilder.getCount();
-
-    const sortField = this.getUserSortField(sort_by || 'created_at');
-
-    // Create a subquery to get paginated user IDs first
-    const paginatedUserIdsQuery = queryBuilder
-      .clone()
-      .select('user.id', 'user_id')
-      .addSelect(`user.${sortField}`) // Required for DISTINCT + ORDER BY
-      .distinct(true) // Ensure unique user IDs
-      .orderBy(`user.${sortField}`, sort_order)
-      .offset(skip)
-      .limit(limitNum);
-
-    // Get the paginated user IDs
-    const paginatedUserIds = await paginatedUserIdsQuery.getRawMany();
-    const userIds = paginatedUserIds.map((row: any) => row.user_id);
-
-    // If no users found, return empty result
-    if (userIds.length === 0) {
+    if (total === 0) {
       return {
         data: [],
-        meta: {
-          total,
-          page: pageNum,
-          limit: limitNum,
-          total_pages: Math.ceil(total / limitNum),
-        },
+        meta: { total, page: pageNum, limit: limitNum, total_pages: 0 },
       };
     }
 
-    // Now fetch the full user data with profiles for these specific IDs
-    const usersQueryBuilder = this.userRepository.createQueryBuilder('user')
-      .leftJoin('user_profile', 'profile', 'profile.user_id = user.id')
-      .where('user.id IN (:...userIds)', { userIds })
-      .orderBy(`user.${sortField}`, sort_order)
-      .select([
-        'user.id',
-        'user.username',
-        'user.email',
-        'user.role',
-        'user.auth_type',
-        'user.is_active',
-        'user.is_verified',
-        'user.created_at',
-        'user.updated_at',
-        'profile.full_name',
-        'profile.profile_picture',
-      ]);
+    const sortField = this.getUserSortField(sort_by || 'created_at');
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
 
-    // Get raw results to access joined profile data
-    const usersRaw = await usersQueryBuilder.getRawMany();
+    const users = await this.prisma.user.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limitNum,
+      include: { profile: true },
+    });
 
-    // Map users to include profile data in the response
-    const usersWithProfile = usersRaw.map((row: any) => ({
-      id: row.user_id,
-      username: row.user_username,
-      email: row.user_email,
-      role: row.user_role,
-      auth_type: row.user_auth_type,
-      is_active: Boolean(row.user_is_active),
-      is_verified: Boolean(row.user_is_verified),
-      created_at: row.user_created_at,
-      updated_at: row.user_updated_at,
-      profile: row.profile_full_name || row.profile_profile_picture ? {
-        full_name: row.profile_full_name || null,
-        profile_picture: row.profile_profile_picture || null,
-      } : null,
+    const usersWithProfile = users.map((user: any) => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      auth_type: user.auth_type,
+      is_active: user.is_active,
+      is_verified: user.is_verified,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+      profile: user.profile
+        ? {
+            full_name: user.profile.full_name || null,
+            profile_picture: user.profile.profile_picture || null,
+          }
+        : null,
     }));
 
     return {
@@ -1178,71 +1169,42 @@ export class AdminService {
   }
 
   async getUserById(userId: number) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: [
-        'id',
-        'username',
-        'email',
-        'role',
-        'auth_type',
-        'is_active',
-        'is_verified',
-        'created_at',
-        'updated_at',
-      ],
-    });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Get user profile with all fields if exists
-    const profile = await this.profileRepository.findOne({
+    const profile = await this.prisma.userProfile.findFirst({
       where: { user_id: userId },
-      select: [
-        'id',
-        'user_id',
-        'full_name',
-        'profile_picture',
-        'profile_background',
-        'tagline',
-        'profile_bio',
-        'profile_gender',
-        'profile_birthday',
-        'profile_website',
-        'profile_location',
-        'created_by',
-        'updated_by',
-        'created_at',
-        'updated_at',
-      ],
     });
 
-    // Get follower counts
-    const followerCount = await this.followerRepository.count({
+    const followerCount = await this.prisma.userFollower.count({
       where: { user_id: userId, is_active: true },
     });
-
-    const followingCount = await this.followerRepository.count({
+    const followingCount = await this.prisma.userFollower.count({
       where: { follower_id: userId, is_active: true },
     });
-
-    // Get additional statistics
-    const postsCount = await this.postRepository.count({
+    const postsCount = await this.prisma.userPost.count({
       where: { user_id: userId },
     });
-
-    const commentsCount = await this.commentRepository.count({
+    const commentsCount = await this.prisma.postComment.count({
       where: { user_id: userId },
     });
-
-    const communitiesCount = await this.communityUserRepository.count({
+    const communitiesCount = await this.prisma.communityUser.count({
       where: { user_id: userId, is_active: true },
     });
 
     return {
-      ...user,
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      auth_type: user.auth_type,
+      is_active: user.is_active,
+      is_verified: user.is_verified,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
       profile: profile || null,
       follower_count: followerCount,
       following_count: followingCount,
@@ -1257,46 +1219,42 @@ export class AdminService {
     updateUserStatusDto: UpdateUserStatusDto,
     adminId: number,
   ) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Prevent admin from deactivating themselves
     if (userId === adminId && updateUserStatusDto.is_active === false) {
       throw new BadRequestException('Cannot deactivate your own account');
     }
 
-    // Prevent changing role of admin accounts (only super admin should do this)
-    if (user.role === UserRole.ADMIN && updateUserStatusDto.role) {
+    if (user.role === 'admin' && updateUserStatusDto.role) {
       throw new BadRequestException('Cannot change role of admin accounts');
     }
 
-    if (updateUserStatusDto.is_active !== undefined) {
-      user.is_active = updateUserStatusDto.is_active;
-    }
-    if (updateUserStatusDto.is_verified !== undefined) {
-      user.is_verified = updateUserStatusDto.is_verified;
-    }
-    if (updateUserStatusDto.role !== undefined) {
-      user.role = updateUserStatusDto.role;
-    }
+    const data: any = { updated_by: adminId };
+    if (updateUserStatusDto.is_active !== undefined)
+      data.is_active = updateUserStatusDto.is_active;
+    if (updateUserStatusDto.is_verified !== undefined)
+      data.is_verified = updateUserStatusDto.is_verified;
+    if (updateUserStatusDto.role !== undefined)
+      data.role = updateUserStatusDto.role;
 
-    user.updated_by = adminId;
-    await this.userRepository.save(user);
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
 
     return {
       message: 'User status updated successfully',
       user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        is_active: user.is_active,
-        is_verified: user.is_verified,
+        id: updated.id,
+        username: updated.username,
+        email: updated.email,
+        role: updated.role,
+        is_active: updated.is_active,
+        is_verified: updated.is_verified,
       },
     };
   }
@@ -1307,83 +1265,83 @@ export class AdminService {
     adminId: number,
     files?: Express.Multer.File[],
   ) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Prevent admin from deactivating themselves
-    if (userId === adminId && updateUserDto.is_active === ActiveStatus.INACTIVE) {
+    if (
+      userId === adminId &&
+      updateUserDto.is_active === ActiveStatus.INACTIVE
+    ) {
       throw new BadRequestException('Cannot deactivate your own account');
     }
 
-    // Prevent changing role of admin accounts
-    if (user.role === UserRole.ADMIN && updateUserDto.role && updateUserDto.role !== UserRole.ADMIN) {
+    if (
+      user.role === 'admin' &&
+      updateUserDto.role &&
+      updateUserDto.role !== 'admin'
+    ) {
       throw new BadRequestException('Cannot change role of admin accounts');
     }
 
-    // Check if username is being changed and if it's already taken
+    const userUpdateData: any = { updated_by: adminId };
+
     if (updateUserDto.username && updateUserDto.username !== user.username) {
-      const existingUser = await this.userRepository.findOne({
+      const existingUser = await this.prisma.user.findFirst({
         where: { username: updateUserDto.username },
       });
       if (existingUser && existingUser.id !== userId) {
         throw new ConflictException('Username already taken');
       }
-      user.username = updateUserDto.username;
+      userUpdateData.username = updateUserDto.username;
     }
 
-    // Check if email is being changed and if it's already taken
     if (updateUserDto.email && updateUserDto.email !== user.email) {
-      const existingUser = await this.userRepository.findOne({
+      const existingUser = await this.prisma.user.findFirst({
         where: { email: updateUserDto.email },
       });
       if (existingUser && existingUser.id !== userId) {
         throw new ConflictException('Email already taken');
       }
-      user.email = updateUserDto.email;
+      userUpdateData.email = updateUserDto.email;
     }
 
-    // Update password if provided
     if (updateUserDto.password) {
-      const passwordHash = await bcrypt.hash(updateUserDto.password, 10);
-      user.password_hash = passwordHash;
-      // Clear tokens to force re-login after password change
-      user.access_token = null;
-      user.refresh_token = null;
+      userUpdateData.password_hash = await bcrypt.hash(
+        updateUserDto.password,
+        10,
+      );
+      userUpdateData.access_token = null;
+      userUpdateData.refresh_token = null;
     }
 
-    // Update auth_type if provided
-    if (updateUserDto.auth_type !== undefined) {
-      user.auth_type = updateUserDto.auth_type;
-    }
+    if (updateUserDto.auth_type !== undefined)
+      userUpdateData.auth_type = updateUserDto.auth_type;
 
-    // Update role if provided (with validation)
     if (updateUserDto.role !== undefined) {
-      // Additional validation: prevent downgrading admin role
-      if (user.role === UserRole.ADMIN && updateUserDto.role !== UserRole.ADMIN) {
+      if (user.role === 'admin' && updateUserDto.role !== 'admin') {
         throw new BadRequestException('Cannot change role of admin accounts');
       }
-      user.role = updateUserDto.role;
+      userUpdateData.role = updateUserDto.role;
     }
 
-    // Update is_active if provided (convert from enum to boolean)
     if (updateUserDto.is_active !== undefined) {
-      user.is_active = updateUserDto.is_active === ActiveStatus.ACTIVE;
+      userUpdateData.is_active =
+        updateUserDto.is_active === ActiveStatus.ACTIVE;
     }
 
-    // Update is_verified if provided (convert from enum to boolean)
     if (updateUserDto.is_verified !== undefined) {
-      user.is_verified = updateUserDto.is_verified === VerifiedStatus.VERIFIED;
+      userUpdateData.is_verified =
+        updateUserDto.is_verified === VerifiedStatus.VERIFIED;
     }
 
-    user.updated_by = adminId;
-    await this.userRepository.save(user);
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: userUpdateData,
+    });
 
-    // Update profile if profile fields are provided
     const profileFields = [
       'full_name',
       'profile_picture',
@@ -1396,39 +1354,32 @@ export class AdminService {
       'profile_location',
     ];
 
-    const hasProfileFields = profileFields.some(
-      (field) => updateUserDto[field] !== undefined,
-    ) || (files && files.length > 0);
+    const hasProfileFields =
+      profileFields.some((field) => updateUserDto[field] !== undefined) ||
+      (files && files.length > 0);
 
     if (hasProfileFields) {
-      let profile = await this.profileRepository.findOne({
+      const profile = await this.prisma.userProfile.findFirst({
         where: { user_id: userId },
       });
 
-      if (!profile) {
-        // Create profile if it doesn't exist
-        profile = this.profileRepository.create({
-          user_id: userId,
-          created_by: adminId,
-        });
-      }
+      const hasFileUploads = files && files.length > 0;
+      const profileUpdateData: any = { updated_by: adminId };
 
-      // Handle file uploads
       if (files && files.length > 0) {
-        // Determine which file is profile picture and which is background
-        // Files are sent in order: profile_picture first, then profile_background
-        // If only one file is sent, it's assumed to be profile_picture
         const profilePictureFile = files.length >= 1 ? files[0] : null;
         const profileBackgroundFile = files.length >= 2 ? files[1] : null;
 
-        // Upload profile picture if provided
         if (profilePictureFile) {
           try {
-            // Validate file before upload
-            if (!profilePictureFile.originalname || !profilePictureFile.mimetype) {
-              throw new BadRequestException('Invalid file: missing originalname or mimetype');
+            if (
+              !profilePictureFile.originalname ||
+              !profilePictureFile.mimetype
+            ) {
+              throw new BadRequestException(
+                'Invalid file: missing originalname or mimetype',
+              );
             }
-
             const mediaResponse = await this.mediaClientService.uploadFile(
               profilePictureFile,
               {
@@ -1441,18 +1392,16 @@ export class AdminService {
             this.logger.log(
               `File uploaded to media service - ID: ${mediaResponse.id}, file_path: ${mediaResponse.file_path}, filename: ${mediaResponse.filename}`,
             );
-            // Get the proper file URL from media service using media ID
-            // This ensures we get the correct serving URL format
             try {
-              profile.profile_picture = await this.mediaClientService.getFileUrl(
-                mediaResponse.id,
-                false, // not optimized
-              );
+              profileUpdateData.profile_picture =
+                await this.mediaClientService.getFileUrl(
+                  mediaResponse.id,
+                  false,
+                );
               this.logger.log(
-                `Profile picture URL retrieved successfully: ${profile.profile_picture} for media ID: ${mediaResponse.id}`,
+                `Profile picture URL retrieved successfully: ${profileUpdateData.profile_picture} for media ID: ${mediaResponse.id}`,
               );
             } catch (urlError) {
-              // Fallback: use buildFileUrl if getFileUrl fails
               this.logger.error(
                 `Failed to get file URL by ID (${mediaResponse.id}), using file_path fallback. Error: ${urlError.message}`,
                 urlError.stack,
@@ -1463,7 +1412,7 @@ export class AdminService {
               this.logger.warn(
                 `Using fallback URL: ${fallbackUrl} (file_path: ${mediaResponse.file_path})`,
               );
-              profile.profile_picture = fallbackUrl;
+              profileUpdateData.profile_picture = fallbackUrl;
             }
           } catch (error) {
             this.logger.error(
@@ -1476,14 +1425,16 @@ export class AdminService {
           }
         }
 
-        // Upload profile background if provided
         if (profileBackgroundFile) {
           try {
-            // Validate file before upload
-            if (!profileBackgroundFile.originalname || !profileBackgroundFile.mimetype) {
-              throw new BadRequestException('Invalid file: missing originalname or mimetype');
+            if (
+              !profileBackgroundFile.originalname ||
+              !profileBackgroundFile.mimetype
+            ) {
+              throw new BadRequestException(
+                'Invalid file: missing originalname or mimetype',
+              );
             }
-
             const mediaResponse = await this.mediaClientService.uploadFile(
               profileBackgroundFile,
               {
@@ -1496,18 +1447,16 @@ export class AdminService {
             this.logger.log(
               `File uploaded to media service - ID: ${mediaResponse.id}, file_path: ${mediaResponse.file_path}, filename: ${mediaResponse.filename}`,
             );
-            // Get the proper file URL from media service using media ID
-            // This ensures we get the correct serving URL format
             try {
-              profile.profile_background = await this.mediaClientService.getFileUrl(
-                mediaResponse.id,
-                false, // not optimized
-              );
+              profileUpdateData.profile_background =
+                await this.mediaClientService.getFileUrl(
+                  mediaResponse.id,
+                  false,
+                );
               this.logger.log(
-                `Profile background URL retrieved successfully: ${profile.profile_background} for media ID: ${mediaResponse.id}`,
+                `Profile background URL retrieved successfully: ${profileUpdateData.profile_background} for media ID: ${mediaResponse.id}`,
               );
             } catch (urlError) {
-              // Fallback: use buildFileUrl if getFileUrl fails
               this.logger.error(
                 `Failed to get file URL by ID (${mediaResponse.id}), using file_path fallback. Error: ${urlError.message}`,
                 urlError.stack,
@@ -1518,7 +1467,7 @@ export class AdminService {
               this.logger.warn(
                 `Using fallback URL: ${fallbackUrl} (file_path: ${mediaResponse.file_path})`,
               );
-              profile.profile_background = fallbackUrl;
+              profileUpdateData.profile_background = fallbackUrl;
             }
           } catch (error) {
             this.logger.error(
@@ -1532,80 +1481,73 @@ export class AdminService {
         }
       }
 
-      // Update profile fields (only if not set by file upload)
-      // Don't update profile_picture/profile_background if files were uploaded
-      const hasFileUploads = files && files.length > 0;
-
-      if (updateUserDto.full_name !== undefined) {
-        profile.full_name = updateUserDto.full_name || null;
-      }
-      // Only update profile_picture from DTO if no file was uploaded
-      if (updateUserDto.profile_picture !== undefined && !hasFileUploads) {
-        profile.profile_picture = updateUserDto.profile_picture || null;
-      }
-      // Only update profile_background from DTO if no file was uploaded
-      if (updateUserDto.profile_background !== undefined && !hasFileUploads) {
-        profile.profile_background = updateUserDto.profile_background || null;
-      }
-      if (updateUserDto.tagline !== undefined) {
-        profile.tagline = updateUserDto.tagline || null;
-      }
-      if (updateUserDto.profile_bio !== undefined) {
-        profile.profile_bio = updateUserDto.profile_bio || null;
-      }
-      if (updateUserDto.profile_gender !== undefined) {
-        profile.profile_gender = updateUserDto.profile_gender || null;
-      }
+      if (updateUserDto.full_name !== undefined)
+        profileUpdateData.full_name = updateUserDto.full_name || null;
+      if (updateUserDto.profile_picture !== undefined && !hasFileUploads)
+        profileUpdateData.profile_picture =
+          updateUserDto.profile_picture || null;
+      if (updateUserDto.profile_background !== undefined && !hasFileUploads)
+        profileUpdateData.profile_background =
+          updateUserDto.profile_background || null;
+      if (updateUserDto.tagline !== undefined)
+        profileUpdateData.tagline = updateUserDto.tagline || null;
+      if (updateUserDto.profile_bio !== undefined)
+        profileUpdateData.profile_bio = updateUserDto.profile_bio || null;
+      if (updateUserDto.profile_gender !== undefined)
+        profileUpdateData.profile_gender = updateUserDto.profile_gender || null;
       if (updateUserDto.profile_birthday !== undefined) {
-        profile.profile_birthday = updateUserDto.profile_birthday
+        profileUpdateData.profile_birthday = updateUserDto.profile_birthday
           ? new Date(updateUserDto.profile_birthday)
           : null;
       }
-      if (updateUserDto.profile_website !== undefined) {
-        profile.profile_website = updateUserDto.profile_website || null;
-      }
-      if (updateUserDto.profile_location !== undefined) {
-        profile.profile_location = updateUserDto.profile_location || null;
-      }
+      if (updateUserDto.profile_website !== undefined)
+        profileUpdateData.profile_website =
+          updateUserDto.profile_website || null;
+      if (updateUserDto.profile_location !== undefined)
+        profileUpdateData.profile_location =
+          updateUserDto.profile_location || null;
 
-      profile.updated_by = adminId;
-      await this.profileRepository.save(profile);
+      if (profile) {
+        await this.prisma.userProfile.update({
+          where: { id: profile.id },
+          data: profileUpdateData,
+        });
+      } else {
+        await this.prisma.userProfile.create({
+          data: { user_id: userId, created_by: adminId, ...profileUpdateData },
+        });
+      }
     }
 
-    // Invalidate cache
     await this.invalidateUserCache(userId);
 
     return {
       message: 'User updated successfully',
       user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        auth_type: user.auth_type,
-        is_active: user.is_active,
-        is_verified: user.is_verified,
-        updated_at: user.updated_at,
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        auth_type: updatedUser.auth_type,
+        is_active: updatedUser.is_active,
+        is_verified: updatedUser.is_verified,
+        updated_at: updatedUser.updated_at,
       },
     };
   }
 
   async deleteUser(userId: number, adminId: number) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Prevent admin from deleting themselves
     if (userId === adminId) {
       throw new BadRequestException('Cannot delete your own account');
     }
 
-    // Prevent deleting admin accounts
-    if (user.role === UserRole.ADMIN) {
+    if (user.role === 'admin') {
       throw new BadRequestException('Cannot delete admin accounts');
     }
 
@@ -1613,46 +1555,41 @@ export class AdminService {
       return { message: 'User is already deleted.' };
     }
 
-    // Soft delete: mark is_deleted + clear tokens so sessions invalidate
-    user.is_deleted = true;
-    user.is_active = false;
-    user.deleted_at = new Date();
-    user.access_token = null;
-    user.refresh_token = null;
-    user.updated_by = adminId;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_deleted: true,
+        is_active: false,
+        deleted_at: new Date(),
+        access_token: null,
+        refresh_token: null,
+        updated_by: adminId,
+      },
+    });
 
     this.logger.log(`User ${userId} soft-deleted by admin ${adminId}`);
 
-    return { message: 'User deleted successfully. They cannot log in anymore.' };
+    return {
+      message: 'User deleted successfully. They cannot log in anymore.',
+    };
   }
 
-  /**
-   * Admin: list soft-deleted users.
-   */
   async getDeletedUsers(listQueryDto: ListUsersQueryDto) {
     return this.getUsers(listQueryDto, { onlyDeleted: true });
   }
 
-  /**
-   * Admin: restore a soft-deleted user (only if the email/username hasn't been re-taken).
-   */
   async restoreUser(userId: number, adminId: number) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    if (!user.is_deleted) {
-      throw new BadRequestException('User is not deleted');
-    }
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.is_deleted) throw new BadRequestException('User is not deleted');
 
-    // Ensure no other active user has grabbed the same email/username
-    const clash = await this.userRepository.findOne({
-      where: [
-        { email: user.email, is_deleted: false },
-        { username: user.username, is_deleted: false },
-      ],
-      select: ['id'],
+    const clash = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: user.email, is_deleted: false },
+          { username: user.username, is_deleted: false },
+        ],
+      },
     });
     if (clash) {
       throw new ConflictException(
@@ -1660,40 +1597,36 @@ export class AdminService {
       );
     }
 
-    user.is_deleted = false;
-    user.deleted_at = null;
-    user.is_active = true;
-    user.updated_by = adminId;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_deleted: false,
+        deleted_at: null,
+        is_active: true,
+        updated_by: adminId,
+      },
+    });
 
     this.logger.log(`User ${userId} restored by admin ${adminId}`);
 
     return { message: 'User restored successfully.' };
   }
 
-  /**
-   * Admin: permanently (hard) delete a user from the database.
-   * Only allowed for users with NO content. Frees up the email/username.
-   */
   async hardDeleteUser(userId: number, adminId: number) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    if (userId === adminId) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (userId === adminId)
       throw new BadRequestException('Cannot hard-delete your own account');
-    }
-    if (user.role === UserRole.ADMIN) {
+    if (user.role === 'admin')
       throw new BadRequestException('Cannot hard-delete admin accounts');
-    }
 
-    // Block if user has content — they must remain as soft-deleted
-    const [postCount, pollCount, postComments, pollComments] = await Promise.all([
-      this.postRepository.count({ where: { user_id: userId } }),
-      this.pollRepository.count({ where: { user_id: userId } }),
-      this.commentRepository.count({ where: { user_id: userId } }),
-      this.pollCommentRepository.count({ where: { user_id: userId } }),
-    ]);
+    const [postCount, pollCount, postComments, pollComments] =
+      await Promise.all([
+        this.prisma.userPost.count({ where: { user_id: userId } }),
+        this.prisma.userPoll.count({ where: { user_id: userId } }),
+        this.prisma.postComment.count({ where: { user_id: userId } }),
+        this.prisma.pollComment.count({ where: { user_id: userId } }),
+      ]);
     const totalContent = postCount + pollCount + postComments + pollComments;
 
     if (totalContent > 0) {
@@ -1702,19 +1635,20 @@ export class AdminService {
       );
     }
 
-    // Clean up related rows with no FK cascade
-    await this.profileRepository.delete({ user_id: userId });
-    await this.followerRepository.delete([{ user_id: userId }, { follower_id: userId }]);
-    await this.topicRepository.delete({ user_id: userId });
-    await this.communityUserRepository.delete({ user_id: userId });
-    await this.userRepository.delete(userId);
+    await this.prisma.userProfile.deleteMany({ where: { user_id: userId } });
+    await this.prisma.userFollower.deleteMany({
+      where: { OR: [{ user_id: userId }, { follower_id: userId }] },
+    });
+    await this.prisma.userTopic.deleteMany({ where: { user_id: userId } });
+    await this.prisma.communityUser.deleteMany({ where: { user_id: userId } });
+    await this.prisma.user.delete({ where: { id: userId } });
 
     this.logger.log(`User ${userId} HARD-deleted by admin ${adminId}`);
 
     return { message: 'User permanently deleted.' };
   }
 
-  // Post Management - using PostService with enhanced filters
+  // Post Management
   async getPosts(listQueryDto: ListPostsQueryDto) {
     const {
       page = 1,
@@ -1732,82 +1666,57 @@ export class AdminService {
       created_to,
     } = listQueryDto;
 
-    const queryBuilder = this.postRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.user', 'user')
-      .leftJoinAndSelect('post.topic', 'topic');
+    const where: any = {};
+    const andConditions: any[] = [];
 
-    // Search filter
     if (search) {
-      queryBuilder.andWhere(
-        '(post.post_title LIKE :search OR post.post_content LIKE :search OR post.post_slug LIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    // Status filter
-    if (post_status && post_status !== 'all') {
-      queryBuilder.andWhere('post.post_status = :post_status', { post_status });
-    }
-
-    // Featured filter - convert string to boolean
-    // Featured filter
-    if (is_featured !== undefined) {
-      queryBuilder.andWhere('post.is_featured = :is_featured', {
-        is_featured: is_featured === true ? 1 : 0
+      andConditions.push({
+        OR: [
+          { post_title: { contains: search } },
+          { post_content: { contains: search } },
+          { post_slug: { contains: search } },
+        ],
       });
     }
 
-    // Media filters
+    if (post_status && post_status !== 'all') where.post_status = post_status;
+    if (is_featured !== undefined) where.is_featured = is_featured === true;
+
     if (has_media !== undefined) {
       if (has_media) {
-        queryBuilder.andWhere(
-          '(post.post_image IS NOT NULL OR post.post_video IS NOT NULL OR post.post_audio IS NOT NULL)',
-        );
+        andConditions.push({
+          OR: [
+            { post_image: { not: null } },
+            { post_video: { not: null } },
+            { post_audio: { not: null } },
+          ],
+        });
       } else {
-        queryBuilder.andWhere(
-          '(post.post_image IS NULL AND post.post_video IS NULL AND post.post_audio IS NULL)',
-        );
+        where.post_image = null;
+        where.post_video = null;
+        where.post_audio = null;
       }
     }
 
     if (media_type) {
-      if (media_type === 'image') {
-        queryBuilder.andWhere('post.post_image IS NOT NULL');
-      } else if (media_type === 'video') {
-        queryBuilder.andWhere('post.post_video IS NOT NULL');
-      } else if (media_type === 'audio') {
-        queryBuilder.andWhere('post.post_audio IS NOT NULL');
-      } else if (media_type === 'none') {
-        queryBuilder.andWhere(
-          '(post.post_image IS NULL AND post.post_video IS NULL AND post.post_audio IS NULL)',
-        );
+      if (media_type === 'image') where.post_image = { not: null };
+      else if (media_type === 'video') where.post_video = { not: null };
+      else if (media_type === 'audio') where.post_audio = { not: null };
+      else if (media_type === 'none') {
+        where.post_image = null;
+        where.post_video = null;
+        where.post_audio = null;
       }
     }
 
-    // User filter
-    if (user_id) {
-      queryBuilder.andWhere('post.user_id = :user_id', { user_id });
-    }
+    if (user_id) where.user_id = user_id;
+    if (topic_id) where.post_topic_id = topic_id;
+    if (created_from)
+      where.created_at = { ...where.created_at, gte: new Date(created_from) };
+    if (created_to)
+      where.created_at = { ...where.created_at, lte: new Date(created_to) };
+    if (andConditions.length > 0) where.AND = andConditions;
 
-    // Topic filter
-    if (topic_id) {
-      queryBuilder.andWhere('post.post_topic_id = :topic_id', { topic_id });
-    }
-
-    // Date range filters
-    if (created_from) {
-      queryBuilder.andWhere('post.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-    if (created_to) {
-      queryBuilder.andWhere('post.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
-    }
-
-    // Validate sort_by field
     const allowedSortFields = [
       'id',
       'post_title',
@@ -1817,40 +1726,35 @@ export class AdminService {
       'created_at',
       'updated_at',
     ];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
     const skip = (page - 1) * limit;
 
-    // Clone query builder for count (before pagination and joins)
-    const countQueryBuilder = queryBuilder.clone();
-    const total = await countQueryBuilder.getCount();
+    const total = await this.prisma.userPost.count({ where });
 
-    // Apply ordering and pagination
-    queryBuilder
-      .orderBy(`post.${sortField}`, sort_order)
-      .skip(skip)
-      .take(limit);
+    const posts = await this.prisma.userPost.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: { user: true, topic: true },
+    });
 
-    // Get posts with user and topic relations
-    const posts = await queryBuilder.getMany();
+    const userIds = [
+      ...new Set(posts.map((post) => post.user_id).filter(Boolean)),
+    ];
 
-    // Get all unique user IDs from posts
-    const userIds = [...new Set(posts.map((post) => post.user_id).filter(Boolean))];
+    const profiles =
+      userIds.length > 0
+        ? await this.prisma.userProfile.findMany({
+            where: { user_id: { in: userIds } },
+          })
+        : [];
 
-    // Fetch all profiles for these users in one query
-    const profiles = userIds.length > 0
-      ? await this.profileRepository.find({
-        where: { user_id: In(userIds) },
-        select: ['user_id', 'full_name', 'profile_picture'],
-      })
-      : [];
+    const profileMap = new Map(profiles.map((p) => [p.user_id, p]));
 
-    // Create a map of user_id -> profile for quick lookup
-    const profileMap = new Map(
-      profiles.map((profile) => [profile.user_id, profile]),
-    );
-
-    // Map posts to include profile data in user object
     const postsWithProfile = posts.map((post: any) => {
       if (post.user) {
         const profile = profileMap.get(post.user.id);
@@ -1866,17 +1770,11 @@ export class AdminService {
 
     return {
       data: postsWithProfile,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
     };
   }
 
   async getPostById(postId: number) {
-    // Skip view count increment for admin views
     return this.postService.getPostById(postId, undefined, true);
   }
 
@@ -1885,7 +1783,6 @@ export class AdminService {
     adminId: number,
     files?: Express.Multer.File[],
   ) {
-    // Admin can create posts using the PostService
     return this.postService.createPost(createPostDto, adminId, files);
   }
 
@@ -1895,44 +1792,33 @@ export class AdminService {
     adminId: number,
     files?: Express.Multer.File[],
   ) {
-    // Debug: Log received is_featured value
-    this.logger.debug(`UpdatePost - is_featured value: ${JSON.stringify(updatePostDto.is_featured)}, type: ${typeof updatePostDto.is_featured}`);
-    // Get the post first to check if it exists
-    const post = await this.postRepository.findOne({
+    this.logger.debug(
+      `UpdatePost - is_featured value: ${JSON.stringify(updatePostDto.is_featured)}, type: ${typeof updatePostDto.is_featured}`,
+    );
+
+    const post = await this.prisma.userPost.findUnique({
       where: { id: postId },
     });
 
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
+    if (!post) throw new NotFoundException('Post not found');
 
-    // Admin can update any post, so we need to bypass ownership check
-    // We'll use the repository directly for admin updates
-    // But first validate topic if being updated
     if (updatePostDto.post_topic_id) {
-      const topic = await this.topicEntityRepository.findOne({
+      const topic = await this.prisma.topic.findFirst({
         where: { id: updatePostDto.post_topic_id, is_active: true },
-        select: ['id'],
       });
-
-      if (!topic) {
-        throw new NotFoundException('Topic not found or inactive');
-      }
+      if (!topic) throw new NotFoundException('Topic not found or inactive');
     }
 
-    // Check if slug is being updated and if it already exists
     if (updatePostDto.post_slug && updatePostDto.post_slug !== post.post_slug) {
-      const existingPost = await this.postRepository.findOne({
+      const existingPost = await this.prisma.userPost.findFirst({
         where: { post_slug: updatePostDto.post_slug },
-        select: ['id'],
       });
-
-      if (existingPost) {
+      if (existingPost)
         throw new ConflictException('Post with this slug already exists');
-      }
     }
 
-    // Process file uploads if provided
+    const updateData: any = { updated_by: adminId };
+
     if (files && files.length > 0) {
       for (const file of files) {
         try {
@@ -1942,18 +1828,16 @@ export class AdminService {
             optimize: true,
             is_public: false,
           });
-
-          // Determine media type based on mime type
           if (file.mimetype.startsWith('image/')) {
-            post.post_image = this.mediaClientService.buildFileUrl(
+            updateData.post_image = this.mediaClientService.buildFileUrl(
               mediaResponse.file_path,
             );
           } else if (file.mimetype.startsWith('video/')) {
-            // Note: Video updates are disabled - videos can only be set during creation
-            // Skip video file uploads during update
-            this.logger.warn(`Video file upload attempted during post update (postId: ${postId}). Video updates are disabled.`);
+            this.logger.warn(
+              `Video file upload attempted during post update (postId: ${postId}). Video updates are disabled.`,
+            );
           } else if (file.mimetype.startsWith('audio/')) {
-            post.post_audio = this.mediaClientService.buildFileUrl(
+            updateData.post_audio = this.mediaClientService.buildFileUrl(
               mediaResponse.file_path,
             );
           }
@@ -1965,58 +1849,53 @@ export class AdminService {
       }
     }
 
-    // Update media URLs if provided directly (without file upload)
-    if (updatePostDto.post_image && !files?.some(f => f.mimetype.startsWith('image/'))) {
-      post.post_image = updatePostDto.post_image;
+    if (
+      updatePostDto.post_image &&
+      !files?.some((f) => f.mimetype.startsWith('image/'))
+    ) {
+      updateData.post_image = updatePostDto.post_image;
     }
-    // Note: post_video is not updatable - videos can only be set during creation
-    // Video updates via URL or file upload are disabled for security reasons
-    if (updatePostDto.post_audio && !files?.some(f => f.mimetype.startsWith('audio/'))) {
-      post.post_audio = updatePostDto.post_audio;
+    if (
+      updatePostDto.post_audio &&
+      !files?.some((f) => f.mimetype.startsWith('audio/'))
+    ) {
+      updateData.post_audio = updatePostDto.post_audio;
     }
 
-    // Convert community_ids array to comma-separated string if provided
     if (updatePostDto.community_ids !== undefined) {
-      post.community_ids = updatePostDto.community_ids.length > 0
-        ? updatePostDto.community_ids.join(',')
-        : null;
+      updateData.community_ids =
+        updatePostDto.community_ids.length > 0
+          ? updatePostDto.community_ids.join(',')
+          : null;
     }
 
-    // Convert post_tags array to comma-separated string if provided
     if (updatePostDto.post_tags !== undefined) {
-      post.post_tags = updatePostDto.post_tags.length > 0
-        ? updatePostDto.post_tags.join(',')
-        : null;
+      updateData.post_tags =
+        updatePostDto.post_tags.length > 0
+          ? updatePostDto.post_tags.join(',')
+          : null;
     }
 
-    // Update other fields
-    if (updatePostDto.post_slug !== undefined) {
-      post.post_slug = updatePostDto.post_slug;
-    }
-    if (updatePostDto.post_title !== undefined) {
-      post.post_title = updatePostDto.post_title;
-    }
-    if (updatePostDto.post_content !== undefined) {
-      post.post_content = updatePostDto.post_content;
-    }
-    if (updatePostDto.post_link !== undefined) {
-      post.post_link = updatePostDto.post_link;
-    }
-    if (updatePostDto.post_status !== undefined) {
-      post.post_status = updatePostDto.post_status;
-    }
-    if (updatePostDto.post_topic_id !== undefined) {
-      post.post_topic_id = updatePostDto.post_topic_id;
-    }
-    if (updatePostDto.is_featured !== undefined) {
-      post.is_featured = updatePostDto.is_featured === 'featured';
-    }
+    if (updatePostDto.post_slug !== undefined)
+      updateData.post_slug = updatePostDto.post_slug;
+    if (updatePostDto.post_title !== undefined)
+      updateData.post_title = updatePostDto.post_title;
+    if (updatePostDto.post_content !== undefined)
+      updateData.post_content = updatePostDto.post_content;
+    if (updatePostDto.post_link !== undefined)
+      updateData.post_link = updatePostDto.post_link;
+    if (updatePostDto.post_status !== undefined)
+      updateData.post_status = updatePostDto.post_status;
+    if (updatePostDto.post_topic_id !== undefined)
+      updateData.post_topic_id = updatePostDto.post_topic_id;
+    if (updatePostDto.is_featured !== undefined)
+      updateData.is_featured = updatePostDto.is_featured === 'featured';
 
-    post.updated_by = adminId;
-    await this.postRepository.save(post);
+    await this.prisma.userPost.update({
+      where: { id: postId },
+      data: updateData,
+    });
 
-    // Get updated post using service for proper formatting
-    // Skip view count increment for admin views
     return this.postService.getPostById(postId, undefined, true);
   }
 
@@ -2025,72 +1904,60 @@ export class AdminService {
     updatePostStatusDto: UpdatePostStatusDto,
     adminId: number,
   ) {
-    // Get the post first to check if it exists
-    const post = await this.postRepository.findOne({
+    const post = await this.prisma.userPost.findUnique({
       where: { id: postId },
     });
 
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
+    if (!post) throw new NotFoundException('Post not found');
 
-    // Admin can update any post status directly via repository
-    if (updatePostStatusDto.post_status !== undefined) {
-      post.post_status = updatePostStatusDto.post_status;
-    }
-    if (updatePostStatusDto.is_featured !== undefined) {
-      post.is_featured = !!updatePostStatusDto.is_featured;
-    }
-    post.updated_by = adminId;
-    await this.postRepository.save(post);
+    const updateData: any = { updated_by: adminId };
+    if (updatePostStatusDto.post_status !== undefined)
+      updateData.post_status = updatePostStatusDto.post_status;
+    if (updatePostStatusDto.is_featured !== undefined)
+      updateData.is_featured = !!updatePostStatusDto.is_featured;
 
-    // Get updated post using service for proper formatting
-    // Skip view count increment for admin views
-    const updatedPost = await this.postService.getPostById(postId, undefined, true);
+    await this.prisma.userPost.update({
+      where: { id: postId },
+      data: updateData,
+    });
 
-    return {
-      message: 'Post status updated successfully',
-      post: updatedPost,
-    };
+    const updatedPost = await this.postService.getPostById(
+      postId,
+      undefined,
+      true,
+    );
+
+    return { message: 'Post status updated successfully', post: updatedPost };
   }
 
   async deletePost(postId: number, adminId: number) {
-    // Get the post first to check if it exists
-    const post = await this.postRepository.findOne({
+    const post = await this.prisma.userPost.findUnique({
       where: { id: postId },
     });
 
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
+    if (!post) throw new NotFoundException('Post not found');
 
-    // Get all comments for this post (including nested/replies)
-    const comments = await this.commentRepository.find({
+    const comments = await this.prisma.postComment.findMany({
       where: { post_id: postId },
     });
 
-    // Delete all comment likes for comments on this post
     if (comments.length > 0) {
       const commentIds = comments.map((c) => c.id);
-      await this.commentLikeRepository.delete({
-        comment_id: In(commentIds),
+      await this.prisma.commentLike.deleteMany({
+        where: { comment_id: { in: commentIds } },
       });
     }
 
-    // Delete all comments (including nested/replies) for this post
-    // This will cascade delete nested comments due to parent_comment_id foreign key
-    await this.commentRepository.delete({ post_id: postId });
+    await this.prisma.postComment.deleteMany({ where: { post_id: postId } });
+    await this.prisma.postLike.deleteMany({ where: { post_id: postId } });
+    await this.prisma.userPost.deleteMany({ where: { id: postId } });
 
-    // Delete all post likes for this post
-    await this.postLikeRepository.delete({ post_id: postId });
-
-    // Permanently delete the post from the database (NOT archiving - complete removal)
-    await this.postRepository.delete({ id: postId });
-
-    return { message: 'Post and all related data permanently deleted successfully' };
+    return {
+      message: 'Post and all related data permanently deleted successfully',
+    };
   }
 
-  // Comment Management - with enhanced filters
+  // Comment Management
   async getComments(listQueryDto: ListCommentsQueryDto) {
     const {
       page = 1,
@@ -2106,62 +1973,33 @@ export class AdminService {
       created_to,
     } = listQueryDto;
 
-    const queryBuilder = this.commentRepository
-      .createQueryBuilder('comment')
-      .leftJoinAndSelect('comment.user', 'user')
-      .leftJoinAndSelect('comment.post', 'post');
+    const where: any = {};
 
-    // Search filter
-    if (search) {
-      queryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${search}%`,
-      });
+    if (search) where.comment_content = { contains: search };
+    if (is_approved !== undefined)
+      where.is_approved = is_approved === ApprovedStatus.APPROVED;
+    if (post_id) where.post_id = post_id;
+    if (user_id) where.user_id = user_id;
+    if (created_from)
+      where.created_at = { ...where.created_at, gte: new Date(created_from) };
+    if (created_to)
+      where.created_at = { ...where.created_at, lte: new Date(created_to) };
+
+    if (has_replies === RepliesStatus.WITH_REPLIES) {
+      const rows = await this.prisma.$queryRawUnsafe<{ id: number }[]>(
+        `SELECT DISTINCT parent_comment_id as id FROM post_comments WHERE parent_comment_id IS NOT NULL`,
+      );
+      const ids = rows.map((r) => r.id);
+      if (ids.length > 0) where.id = { in: ids };
+      else return { data: [], meta: { total: 0, page, limit, total_pages: 0 } };
+    } else if (has_replies === RepliesStatus.WITHOUT_REPLIES) {
+      const rows = await this.prisma.$queryRawUnsafe<{ id: number }[]>(
+        `SELECT DISTINCT parent_comment_id as id FROM post_comments WHERE parent_comment_id IS NOT NULL`,
+      );
+      const withRepliesIds = rows.map((r) => r.id);
+      if (withRepliesIds.length > 0) where.id = { notIn: withRepliesIds };
     }
 
-    // Approval filter
-    // Approved filter
-    if (is_approved !== undefined) {
-      queryBuilder.andWhere('comment.is_approved = :is_approved', {
-        is_approved: is_approved === ApprovedStatus.APPROVED ? 1 : 0,
-      });
-    }
-
-    // Post filter
-    if (post_id) {
-      queryBuilder.andWhere('comment.post_id = :post_id', { post_id });
-    }
-
-    // User filter
-    if (user_id) {
-      queryBuilder.andWhere('comment.user_id = :user_id', { user_id });
-    }
-
-    // Has replies filter
-    if (has_replies) {
-      if (has_replies === RepliesStatus.WITH_REPLIES) {
-        queryBuilder.andWhere(
-          'EXISTS (SELECT 1 FROM post_comments pc WHERE pc.parent_comment_id = comment.id)',
-        );
-      } else if (has_replies === RepliesStatus.WITHOUT_REPLIES) {
-        queryBuilder.andWhere(
-          'NOT EXISTS (SELECT 1 FROM post_comments pc WHERE pc.parent_comment_id = comment.id)',
-        );
-      }
-    }
-
-    // Date range filters
-    if (created_from) {
-      queryBuilder.andWhere('comment.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-    if (created_to) {
-      queryBuilder.andWhere('comment.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
-    }
-
-    // Validate sort_by field
     const allowedSortFields = [
       'id',
       'like_count',
@@ -2169,65 +2007,61 @@ export class AdminService {
       'created_at',
       'updated_at',
     ];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
     const skip = (page - 1) * limit;
-    queryBuilder
-      .orderBy(`comment.${sortField}`, sort_order)
-      .skip(skip)
-      .take(limit);
 
-    const [comments, total] = await queryBuilder.getManyAndCount();
+    const total = await this.prisma.postComment.count({ where });
 
-    // Get unique user IDs
+    const comments = await this.prisma.postComment.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: { user: true, post: true },
+    });
+
     const userIds = new Set<number>();
-    comments.forEach((comment) => {
+    comments.forEach((comment: any) => {
       if (comment.user_id) userIds.add(comment.user_id);
     });
 
-    // Load user profiles in batch
     const userProfilesMap = new Map<number, any>();
     if (userIds.size > 0) {
-      const profiles = await this.profileRepository.find({
-        where: { user_id: In(Array.from(userIds)) },
-        select: ['user_id', 'full_name', 'profile_picture'],
+      const profiles = await this.prisma.userProfile.findMany({
+        where: { user_id: { in: Array.from(userIds) } },
       });
-      profiles.forEach((profile) => {
-        userProfilesMap.set(profile.user_id, profile);
+      profiles.forEach((p) => {
+        userProfilesMap.set(p.user_id, p);
       });
     }
 
-    // Add replies count and map to DTOs
     const mappedData = await Promise.all(
-      comments.map(async (comment) => {
-        const repliesCount = await this.commentRepository.count({
+      comments.map(async (comment: any) => {
+        const repliesCount = await this.prisma.postComment.count({
           where: { parent_comment_id: comment.id },
         });
-
         const commentWithExtras: any = {
           ...comment,
           replies_count: repliesCount,
         };
-
-        // Attach profile data
         if (comment.user && userProfilesMap.has(comment.user.id)) {
           const profile = userProfilesMap.get(comment.user.id);
-          commentWithExtras.user.profile_picture = profile?.profile_picture || null;
+          commentWithExtras.user.profile_picture =
+            profile?.profile_picture || null;
           commentWithExtras.user.full_name = profile?.full_name || null;
         }
-
-        return this.commentService.mapPostCommentToResponseDto(commentWithExtras);
+        return this.commentService.mapPostCommentToResponseDto(
+          commentWithExtras,
+        );
       }),
     );
 
     return {
       data: mappedData,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
     };
   }
 
@@ -2240,63 +2074,51 @@ export class AdminService {
     updateCommentDto: UpdateCommentDto,
     adminId: number,
   ) {
-    // Admin can update any comment (approve/unapprove, edit content)
-    const comment = await this.commentRepository.findOne({
+    const comment = await this.prisma.postComment.findUnique({
       where: { id: commentId },
     });
 
-    if (!comment) {
-      throw new NotFoundException('Comment not found');
-    }
+    if (!comment) throw new NotFoundException('Comment not found');
 
-    // Admin can update any comment without ownership check
-    if (updateCommentDto.comment_content !== undefined) {
-      comment.comment_content = updateCommentDto.comment_content;
-    }
-    if (updateCommentDto.is_approved !== undefined) {
-      comment.is_approved = updateCommentDto.is_approved;
-    }
+    const updateData: any = { updated_by: adminId };
+    if (updateCommentDto.comment_content !== undefined)
+      updateData.comment_content = updateCommentDto.comment_content;
+    if (updateCommentDto.is_approved !== undefined)
+      updateData.is_approved = updateCommentDto.is_approved;
 
-    comment.updated_by = adminId;
-    await this.commentRepository.save(comment);
+    await this.prisma.postComment.update({
+      where: { id: commentId },
+      data: updateData,
+    });
 
     return this.commentService.getCommentById(commentId);
   }
 
   async deleteComment(commentId: number, adminId: number) {
-    // Get the comment first to check if it exists
-    const comment = await this.commentRepository.findOne({
+    const comment = await this.prisma.postComment.findUnique({
       where: { id: commentId },
     });
 
-    if (!comment) {
-      throw new NotFoundException('Comment not found');
-    }
+    if (!comment) throw new NotFoundException('Comment not found');
 
-    // Admin can delete any comment, so we'll directly update the repository
-    // Check if comment has replies
-    const repliesCount = await this.commentRepository.count({
+    const repliesCount = await this.prisma.postComment.count({
       where: { parent_comment_id: commentId },
     });
 
     if (repliesCount > 0) {
-      // Soft delete: mark as not approved instead of deleting
-      comment.is_approved = false;
-      comment.updated_by = adminId;
-      await this.commentRepository.save(comment);
+      await this.prisma.postComment.update({
+        where: { id: commentId },
+        data: { is_approved: false, updated_by: adminId },
+      });
       return { message: 'Comment deleted successfully (soft delete)' };
     }
 
-    // Hard delete if no replies
-    await this.commentRepository.remove(comment);
+    await this.prisma.postComment.delete({ where: { id: commentId } });
 
-    // Update post comment count
-    await this.commentRepository.manager.decrement(
-      'user_posts',
-      { id: comment.post_id },
-      'comment_count',
-      1,
-    );
+    await this.prisma.userPost.update({
+      where: { id: comment.post_id },
+      data: { comment_count: { decrement: 1 } },
+    });
 
     return { message: 'Comment deleted successfully' };
   }
@@ -2305,20 +2127,23 @@ export class AdminService {
     commentId: number,
     listQueryDto: ListCommentsQueryDto,
   ) {
-    // Convert Admin DTO to Comment DTO format
-    // Comment module expects boolean for is_approved
     const { is_approved, ...rest } = listQueryDto;
     const commentListQueryDto: any = {
       ...rest,
-      is_approved: is_approved === ApprovedStatus.APPROVED ? true :
-        is_approved === ApprovedStatus.NOT_APPROVED ? false :
-          undefined,
+      is_approved:
+        is_approved === ApprovedStatus.APPROVED
+          ? true
+          : is_approved === ApprovedStatus.NOT_APPROVED
+            ? false
+            : undefined,
     };
-
-    return this.commentService.getCommentReplies(commentId, commentListQueryDto);
+    return this.commentService.getCommentReplies(
+      commentId,
+      commentListQueryDto,
+    );
   }
 
-  // Topic Management - with enhanced filters
+  // Topic Management
   async getTopics(listQueryDto: ListTopicsQueryDto) {
     const {
       page = 1,
@@ -2334,63 +2159,44 @@ export class AdminService {
       created_to,
     } = listQueryDto;
 
-    const queryBuilder = this.topicEntityRepository.createQueryBuilder('topic');
+    const where: any = {};
 
-    // Search filter
     if (search) {
-      queryBuilder.andWhere(
-        '(topic.topic_name LIKE :search OR topic.topic_slug LIKE :search OR topic.topic_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { topic_name: { contains: search } },
+        { topic_slug: { contains: search } },
+        { topic_description: { contains: search } },
+      ];
     }
 
-    // Active status filter
-    if (is_active) {
-      const activeValue = is_active === ActiveStatus.ACTIVE;
-      queryBuilder.andWhere('topic.is_active = :is_active', { is_active: activeValue });
-    }
+    if (is_active) where.is_active = is_active === ActiveStatus.ACTIVE;
+    if (parent_id !== undefined) where.parent_id = parent_id;
 
-    // Parent ID filter
-    if (parent_id !== undefined) {
-      queryBuilder.andWhere('topic.parent_id = :parent_id', { parent_id });
-    }
-
-    // Type filter
     if (type) {
-      if (type === 'categories') {
-        queryBuilder.andWhere('topic.parent_id = 0');
-      } else if (type === 'subtopics') {
-        queryBuilder.andWhere('topic.parent_id > 0');
-      }
+      if (type === 'categories') where.parent_id = 0;
+      else if (type === 'subtopics') where.parent_id = { gt: 0 };
     }
 
-    // Has children filter
-    if (has_children) {
-      if (has_children === ChildrenStatus.WITH_CHILDREN) {
-        queryBuilder.andWhere(
-          'EXISTS (SELECT 1 FROM topics t WHERE t.parent_id = topic.id)',
-        );
-      } else if (has_children === ChildrenStatus.WITHOUT_CHILDREN) {
-        queryBuilder.andWhere(
-          'NOT EXISTS (SELECT 1 FROM topics t WHERE t.parent_id = topic.id)',
-        );
-      }
+    if (created_from)
+      where.created_at = { ...where.created_at, gte: new Date(created_from) };
+    if (created_to)
+      where.created_at = { ...where.created_at, lte: new Date(created_to) };
+
+    if (has_children === ChildrenStatus.WITH_CHILDREN) {
+      const rows = await this.prisma.$queryRawUnsafe<{ parent_id: number }[]>(
+        `SELECT DISTINCT parent_id FROM topics WHERE parent_id > 0`,
+      );
+      const ids = rows.map((r) => r.parent_id);
+      if (ids.length > 0) where.id = { in: ids };
+      else return { data: [], meta: { total: 0, page, limit, total_pages: 0 } };
+    } else if (has_children === ChildrenStatus.WITHOUT_CHILDREN) {
+      const rows = await this.prisma.$queryRawUnsafe<{ parent_id: number }[]>(
+        `SELECT DISTINCT parent_id FROM topics WHERE parent_id > 0`,
+      );
+      const withChildrenIds = rows.map((r) => r.parent_id);
+      if (withChildrenIds.length > 0) where.id = { notIn: withChildrenIds };
     }
 
-
-    // Date range filters
-    if (created_from) {
-      queryBuilder.andWhere('topic.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-    if (created_to) {
-      queryBuilder.andWhere('topic.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
-    }
-
-    // Validate sort_by field
     const allowedSortFields = [
       'id',
       'topic_name',
@@ -2398,112 +2204,111 @@ export class AdminService {
       'created_at',
       'updated_at',
     ];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
     const skip = (page - 1) * limit;
-    queryBuilder.orderBy(`topic.${sortField}`, sort_order).skip(skip).take(limit);
 
-    // Load parent relation for child topics
-    queryBuilder.leftJoinAndSelect('topic.parent', 'parent');
+    const total = await this.prisma.topic.count({ where });
 
-    const [topics, total] = await queryBuilder.getManyAndCount();
+    const topics: any[] = await this.prisma.topic.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+    });
 
-    // If fetching parent topics (parent_id = 0 or undefined), load their children
-    // Check if we're fetching parent topics based on filters
     const isFetchingParents = parent_id === undefined || parent_id === 0;
 
     if (isFetchingParents && topics.length > 0) {
-      // Get parent topic IDs (only those with parent_id = 0)
-      const parentTopicIds = topics.filter(t => t.parent_id === 0).map(t => t.id);
+      const parentTopicIds = topics
+        .filter((t) => t.parent_id === 0)
+        .map((t) => t.id);
 
       if (parentTopicIds.length > 0) {
-        // Load children for these parent topics
-        const childQueryBuilder = this.topicEntityRepository.createQueryBuilder('topic');
-        childQueryBuilder.where('topic.parent_id IN (:...parentIds)', { parentIds: parentTopicIds });
-
-        // Apply same is_active filter to children if specified
-        if (is_active) {
-          const activeValue = is_active === ActiveStatus.ACTIVE;
-          childQueryBuilder.andWhere('topic.is_active = :is_active', { is_active: activeValue });
-        } else {
-          // If is_active filter not specified, only get active children
-          childQueryBuilder.andWhere('topic.is_active = :is_active', { is_active: true });
-        }
-
-        // Apply same search filter to children if specified
+        const childWhere: any = { parent_id: { in: parentTopicIds } };
+        if (is_active) childWhere.is_active = is_active === ActiveStatus.ACTIVE;
+        else childWhere.is_active = true;
         if (search) {
-          childQueryBuilder.andWhere(
-            '(topic.topic_name LIKE :search OR topic.topic_slug LIKE :search OR topic.topic_description LIKE :search)',
-            { search: `%${search}%` },
-          );
+          childWhere.OR = [
+            { topic_name: { contains: search } },
+            { topic_slug: { contains: search } },
+            { topic_description: { contains: search } },
+          ];
         }
 
-        childQueryBuilder.orderBy('topic.parent_id', 'ASC');
-        childQueryBuilder.addOrderBy('topic.created_at', 'ASC');
-        const childTopics = await childQueryBuilder.getMany();
+        const childTopics = await this.prisma.topic.findMany({
+          where: childWhere,
+          orderBy: [{ parent_id: 'asc' }, { created_at: 'asc' }],
+        });
 
-        // Group children by parent_id
         const childrenByParent = new Map<number, any[]>();
         childTopics.forEach((child) => {
-          if (!childrenByParent.has(child.parent_id)) {
+          if (!childrenByParent.has(child.parent_id))
             childrenByParent.set(child.parent_id, []);
-          }
           childrenByParent.get(child.parent_id)!.push(child);
         });
 
-        // Attach children to their parents
         topics.forEach((topic) => {
-          if (topic.parent_id === 0) {
+          if (topic.parent_id === 0)
             topic.children = childrenByParent.get(topic.id) || [];
-          }
         });
       }
     }
 
-    // Add usage counts for each topic
+    // For child topics, fetch parent info separately
+    const childTopicEntries = topics.filter((t) => t.parent_id > 0);
+    const uniqueParentIds = [
+      ...new Set(childTopicEntries.map((t) => t.parent_id)),
+    ] as number[];
+    const parentInfoMap = new Map<number, any>();
+    if (uniqueParentIds.length > 0) {
+      const parentInfos = await this.prisma.topic.findMany({
+        where: { id: { in: uniqueParentIds } },
+        select: { id: true, topic_name: true, topic_slug: true },
+      });
+      parentInfos.forEach((p) => parentInfoMap.set(p.id, p));
+    }
+
     const topicsWithUsage = await Promise.all(
       topics.map(async (topic) => {
-        const postsCount = await this.postRepository.count({
-          where: { post_topic_id: topic.id, post_status: PostStatus.PUBLISHED },
+        const postsCount = await this.prisma.userPost.count({
+          where: { post_topic_id: topic.id, post_status: 'published' },
         });
-        const communitiesCount = await this.communityTopicRepository.count({
+        const communitiesCount = await this.prisma.communityTopic.count({
           where: { topic_id: topic.id, is_active: true },
         });
+        const parentInfo =
+          topic.parent_id > 0 ? parentInfoMap.get(topic.parent_id) : null;
         return {
           ...topic,
           posts_count: postsCount,
           communities_count: communitiesCount,
           usage_count: postsCount + communitiesCount,
-          ...(topic.parent && { parent_name: topic.parent.topic_name }),
-          // Include children names for parent topics (only basic info)
-          ...(topic.children && topic.children.length > 0 && {
-            children: topic.children.map((child) => ({
-              id: child.id,
-              topic_name: child.topic_name,
-              topic_slug: child.topic_slug,
-            })),
-          }),
+          ...(parentInfo && { parent_name: parentInfo.topic_name }),
+          ...(topic.children &&
+            topic.children.length > 0 && {
+              children: topic.children.map((child: any) => ({
+                id: child.id,
+                topic_name: child.topic_name,
+                topic_slug: child.topic_slug,
+              })),
+            }),
         };
       }),
     );
 
     return {
       data: topicsWithUsage,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
     };
   }
 
-  // Get Topics for Select List (Parent-Child format for dropdowns)
   async getTopicsForSelectList(): Promise<TopicSelectListDto[]> {
     return this.generalService.getTopicsForSelectList();
   }
 
-  // Get Parent Topics Only (parent_id = 0)
   async getParentTopics(listQueryDto: ListQueryDto) {
     const {
       page = 1,
@@ -2513,20 +2318,16 @@ export class AdminService {
       sort_order = 'DESC',
     } = listQueryDto;
 
-    const queryBuilder = this.topicEntityRepository.createQueryBuilder('topic');
+    const where: any = { parent_id: 0 };
 
-    // Only get parent topics (parent_id = 0)
-    queryBuilder.where('topic.parent_id = :parent_id', { parent_id: 0 });
-
-    // Search filter
     if (search) {
-      queryBuilder.andWhere(
-        '(topic.topic_name LIKE :search OR topic.topic_slug LIKE :search OR topic.topic_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { topic_name: { contains: search } },
+        { topic_slug: { contains: search } },
+        { topic_description: { contains: search } },
+      ];
     }
 
-    // Validate sort_by field
     const allowedSortFields = [
       'id',
       'topic_name',
@@ -2534,26 +2335,31 @@ export class AdminService {
       'created_at',
       'updated_at',
     ];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
     const skip = (page - 1) * limit;
-    queryBuilder.orderBy(`topic.${sortField}`, sort_order).skip(skip).take(limit);
 
-    // Load parent relation (though parent topics don't have parents, this is for consistency)
-    queryBuilder.leftJoinAndSelect('topic.parent', 'parent');
+    const total = await this.prisma.topic.count({ where });
 
-    const [topics, total] = await queryBuilder.getManyAndCount();
+    const topics: any[] = await this.prisma.topic.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+    });
 
-    // Add usage counts for each topic
+    // getParentTopics only fetches parent_id=0 rows, so no parent lookup needed
     const topicsWithUsage = await Promise.all(
       topics.map(async (topic) => {
-        const postsCount = await this.postRepository.count({
-          where: { post_topic_id: topic.id, post_status: PostStatus.PUBLISHED },
+        const postsCount = await this.prisma.userPost.count({
+          where: { post_topic_id: topic.id, post_status: 'published' },
         });
-        const communitiesCount = await this.communityTopicRepository.count({
+        const communitiesCount = await this.prisma.communityTopic.count({
           where: { topic_id: topic.id, is_active: true },
         });
-        const childrenCount = await this.topicEntityRepository.count({
+        const childrenCount = await this.prisma.topic.count({
           where: { parent_id: topic.id, is_active: true },
         });
         return {
@@ -2562,19 +2368,13 @@ export class AdminService {
           communities_count: communitiesCount,
           children_count: childrenCount,
           usage_count: postsCount + communitiesCount,
-          ...(topic.parent && { parent_name: topic.parent.topic_name }),
         };
       }),
     );
 
     return {
       data: topicsWithUsage,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
     };
   }
 
@@ -2588,18 +2388,23 @@ export class AdminService {
     file?: Express.Multer.File,
   ) {
     try {
-      // Admin can create topics using the GeneralService
-      return await this.generalService.createTopic(createTopicDto, adminId, file);
+      return await this.generalService.createTopic(
+        createTopicDto,
+        adminId,
+        file,
+      );
     } catch (error) {
-      // Re-throw known exceptions
-      if (error instanceof BadRequestException ||
+      if (
+        error instanceof BadRequestException ||
         error instanceof ConflictException ||
-        error instanceof NotFoundException) {
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
-      // Log and wrap unknown errors
       console.error('Error in admin createTopic:', error);
-      throw new BadRequestException(`Failed to create topic: ${error.message || 'Unknown error'}`);
+      throw new BadRequestException(
+        `Failed to create topic: ${error.message || 'Unknown error'}`,
+      );
     }
   }
 
@@ -2609,8 +2414,12 @@ export class AdminService {
     adminId: number,
     file?: Express.Multer.File,
   ) {
-    // Admin can update any topic using the GeneralService
-    return this.generalService.updateTopic(topicId, updateTopicDto, adminId, file);
+    return this.generalService.updateTopic(
+      topicId,
+      updateTopicDto,
+      adminId,
+      file,
+    );
   }
 
   async updateTopicStatus(
@@ -2618,26 +2427,18 @@ export class AdminService {
     updateTopicStatusDto: UpdateTopicStatusDto,
     adminId: number,
   ) {
-    // Get the topic first to check if it exists
-    const topic = await this.topicEntityRepository.findOne({
+    const topic = await this.prisma.topic.findUnique({
       where: { id: topicId },
     });
 
-    if (!topic) {
-      throw new NotFoundException('Topic not found');
-    }
+    if (!topic) throw new NotFoundException('Topic not found');
 
-    // Update topic status using GeneralService's updateTopic method
-    // Pass the ActiveStatus enum value directly (not boolean)
     await this.generalService.updateTopic(
       topicId,
-      {
-        is_active: updateTopicStatusDto.is_active, // Pass ActiveStatus enum ('active' or 'inactive')
-      },
+      { is_active: updateTopicStatusDto.is_active },
       adminId,
     );
 
-    // Get updated topic
     const updatedTopic = await this.generalService.getTopicById(topicId);
 
     return {
@@ -2646,70 +2447,62 @@ export class AdminService {
     };
   }
 
-  async deleteTopic(topicId: number, adminId: number): Promise<{ message: string }> {
-    // Check if topic exists
-    const topic = await this.topicEntityRepository.findOne({
+  async deleteTopic(
+    topicId: number,
+    adminId: number,
+  ): Promise<{ message: string }> {
+    const topic = await this.prisma.topic.findUnique({
       where: { id: topicId },
     });
 
-    if (!topic) {
-      throw new NotFoundException('Topic not found');
-    }
+    if (!topic) throw new NotFoundException('Topic not found');
 
-    // Check if topic has children (child topics that reference this as parent)
-    const childrenCount = await this.topicEntityRepository.count({
+    const childrenCount = await this.prisma.topic.count({
       where: { parent_id: topicId },
     });
-
     if (childrenCount > 0) {
       throw new BadRequestException(
         `Cannot delete topic: This topic has ${childrenCount} child topic(s). Please delete or reassign child topics first.`,
       );
     }
 
-    // Check if topic is used in posts
-    const postsCount = await this.postRepository.count({
+    const postsCount = await this.prisma.userPost.count({
       where: { post_topic_id: topicId },
     });
-
     if (postsCount > 0) {
       throw new BadRequestException(
         `Cannot delete topic: This topic is used in ${postsCount} post(s). The topic is currently in use and cannot be deleted.`,
       );
     }
 
-    // Check if topic is used in communities (community_topics)
-    const communityTopicsCount = await this.communityTopicRepository.count({
+    const communityTopicsCount = await this.prisma.communityTopic.count({
       where: { topic_id: topicId },
     });
-
     if (communityTopicsCount > 0) {
       throw new BadRequestException(
         `Cannot delete topic: This topic is associated with ${communityTopicsCount} community/communities. The topic is currently in use and cannot be deleted.`,
       );
     }
 
-    // Check if topic is subscribed by users (user_topics)
-    const userTopicsCount = await this.topicRepository.count({
+    const userTopicsCount = await this.prisma.userTopic.count({
       where: { topic_id: topicId },
     });
-
     if (userTopicsCount > 0) {
       throw new BadRequestException(
         `Cannot delete topic: This topic is subscribed by ${userTopicsCount} user(s). The topic is currently in use and cannot be deleted.`,
       );
     }
 
-    // If topic is not used anywhere, proceed with permanent hard delete from database
-    // This is NOT a soft delete - the topic will be permanently removed
-    await this.topicEntityRepository.delete({ id: topicId });
+    await this.prisma.topic.delete({ where: { id: topicId } });
 
-    this.logger.log(`Topic ${topicId} permanently deleted from database by admin ${adminId}`);
+    this.logger.log(
+      `Topic ${topicId} permanently deleted from database by admin ${adminId}`,
+    );
 
     return { message: 'Topic permanently deleted from database' };
   }
 
-  // Community Management - with enhanced filters
+  // Community Management
   async getCommunities(listQueryDto: ListCommunitiesQueryDto) {
     const {
       page = 1,
@@ -2725,63 +2518,50 @@ export class AdminService {
       created_to,
     } = listQueryDto;
 
-    const queryBuilder = this.communityRepository.createQueryBuilder('community');
+    const where: any = {};
 
-    // Search filter
     if (search) {
-      queryBuilder.andWhere(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search OR community.community_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { community_name: { contains: search } },
+        { community_slug: { contains: search } },
+        { community_description: { contains: search } },
+      ];
     }
 
-    // Active status filter - convert enum to boolean
-    if (is_active !== undefined) {
-      const activeValue = is_active === ActiveStatus.ACTIVE;
-      queryBuilder.andWhere('community.is_active = :is_active', { is_active: activeValue });
-    }
+    if (is_active !== undefined)
+      where.is_active = is_active === ActiveStatus.ACTIVE;
+    if (category_id) where.category_id = category_id;
+    if (created_from)
+      where.created_at = { ...where.created_at, gte: new Date(created_from) };
+    if (created_to)
+      where.created_at = { ...where.created_at, lte: new Date(created_to) };
 
-    // Category filter (if category_id field exists)
-    if (category_id) {
-      // This assumes category_id exists, adjust if needed
-      queryBuilder.andWhere('community.category_id = :category_id', { category_id });
-    }
-
-    // Member count filters - using subqueries to avoid groupBy issues with getManyAndCount
     if (min_members !== undefined || max_members !== undefined) {
-      // We use a subquery string to safely include in andWhere/having
-      const memberCountSubQuery = this.communityUserRepository
-        .createQueryBuilder('cu_filter')
-        .select('COUNT(cu_filter.id)')
-        .where('cu_filter.community_id = community.id')
-        .andWhere('cu_filter.is_active = 1')
-        .getQuery();
-
+      const havingParts: string[] = [];
+      const havingParams: any[] = [];
       if (min_members !== undefined) {
-        queryBuilder.andWhere(`(${memberCountSubQuery}) >= :min_members`, {
-          min_members,
-        });
+        havingParts.push('member_count >= ?');
+        havingParams.push(Number(min_members));
       }
       if (max_members !== undefined) {
-        queryBuilder.andWhere(`(${memberCountSubQuery}) <= :max_members`, {
-          max_members,
-        });
+        havingParts.push('member_count <= ?');
+        havingParams.push(Number(max_members));
       }
+      const havingClause = havingParts.join(' AND ');
+
+      const rows = await this.prisma.$queryRawUnsafe<
+        { community_id: number }[]
+      >(
+        `SELECT community_id, COUNT(*) as member_count
+         FROM community_users WHERE is_active = 1
+         GROUP BY community_id HAVING ${havingClause}`,
+        ...havingParams,
+      );
+      const communityIdFilter = rows.map((r) => r.community_id);
+      if (communityIdFilter.length > 0) where.id = { in: communityIdFilter };
+      else return { data: [], meta: { total: 0, page, limit, total_pages: 0 } };
     }
 
-    // Date range filters
-    if (created_from) {
-      queryBuilder.andWhere('community.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-    if (created_to) {
-      queryBuilder.andWhere('community.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
-    }
-
-    // Validate sort_by field
     const allowedSortFields = [
       'id',
       'community_name',
@@ -2790,47 +2570,90 @@ export class AdminService {
       'created_at',
       'updated_at',
     ];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
     const skip = (page - 1) * limit;
 
-    // If sorting by members_count, need to use a subquery to avoid groupBy issues
-    if (sortField === 'members_count') {
-      const memberCountSortSubQuery = this.communityUserRepository
-        .createQueryBuilder('cu_sort')
-        .select('COUNT(cu_sort.id)')
-        .where('cu_sort.community_id = community.id')
-        .andWhere('cu_sort.is_active = 1')
-        .getQuery();
+    const total = await this.prisma.community.count({ where });
 
-      queryBuilder
-        .orderBy(`(${memberCountSortSubQuery})`, sort_order)
-        .skip(skip)
-        .take(limit);
-    } else {
-      queryBuilder.orderBy(`community.${sortField}`, sort_order).skip(skip).take(limit);
+    if (sortField === 'members_count') {
+      const whereIds = where.id?.in;
+      const idFilter =
+        whereIds && whereIds.length > 0
+          ? `AND c.id IN (${whereIds.join(',')})`
+          : '';
+      const isActiveFilter =
+        where.is_active !== undefined
+          ? `AND c.is_active = ${where.is_active ? 1 : 0}`
+          : '';
+      const sortRows = await this.prisma.$queryRawUnsafe<
+        { community_id: number }[]
+      >(
+        `SELECT c.id as community_id
+         FROM communities c
+         LEFT JOIN (
+           SELECT community_id, COUNT(*) as cnt
+           FROM community_users WHERE is_active = 1
+           GROUP BY community_id
+         ) mc ON mc.community_id = c.id
+         WHERE 1=1 ${idFilter} ${isActiveFilter}
+         ORDER BY COALESCE(mc.cnt, 0) ${sort_order}
+         LIMIT ${Number(limit)} OFFSET ${skip}`,
+      );
+      const sortedIds = sortRows.map((r) => r.community_id);
+      if (sortedIds.length === 0) {
+        return {
+          data: [],
+          meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+        };
+      }
+      const communities = await this.prisma.community.findMany({
+        where: { id: { in: sortedIds } },
+      });
+      const communityMap = new Map(communities.map((c) => [c.id, c]));
+      const orderedCommunities = sortedIds
+        .map((id) => communityMap.get(id))
+        .filter(Boolean);
+      const communitiesWithCounts = await this.enrichCommunities(
+        orderedCommunities as any[],
+      );
+      return {
+        data: communitiesWithCounts,
+        meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+      };
     }
 
-    const [communities, total] = await queryBuilder.getManyAndCount();
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
+    const communities = await this.prisma.community.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+    });
+    const communitiesWithCounts = await this.enrichCommunities(communities);
 
-    // Get all community IDs
+    return {
+      data: communitiesWithCounts,
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  private async enrichCommunities(communities: any[]) {
     const communityIds = communities.map((c) => c.id);
 
-    // Fetch all topics for these communities in one query
-    const communityTopics = communityIds.length > 0
-      ? await this.communityTopicRepository.find({
-        where: { community_id: In(communityIds), is_active: true },
-        relations: ['topic'],
-        select: ['community_id', 'topic_id', 'topic'],
-      })
-      : [];
+    const communityTopics =
+      communityIds.length > 0
+        ? await this.prisma.communityTopic.findMany({
+            where: { community_id: { in: communityIds }, is_active: true },
+            include: { topic: true },
+          })
+        : [];
 
-    // Group topics by community_id
     const topicsByCommunity = new Map<number, any[]>();
-    communityTopics.forEach((ct) => {
-      if (!topicsByCommunity.has(ct.community_id)) {
+    communityTopics.forEach((ct: any) => {
+      if (!topicsByCommunity.has(ct.community_id))
         topicsByCommunity.set(ct.community_id, []);
-      }
       if (ct.topic) {
         topicsByCommunity.get(ct.community_id)!.push({
           id: ct.topic.id,
@@ -2840,30 +2663,29 @@ export class AdminService {
       }
     });
 
-    // Add member and topic counts, and topics
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const communitiesWithCounts = await Promise.all(
+    return Promise.all(
       communities.map(async (community) => {
-        const memberCount = await this.communityUserRepository.count({
+        const memberCount = await this.prisma.communityUser.count({
           where: { community_id: community.id, is_active: true },
         });
-        const topicCount = await this.communityTopicRepository.count({
+        const topicCount = await this.prisma.communityTopic.count({
           where: { community_id: community.id, is_active: true },
         });
 
-        // Calculate posts per day based on last 30 days
-        const last30DaysPosts = await this.postRepository
-          .createQueryBuilder('post')
-          .where('(FIND_IN_SET(:communityId, post.community_ids) > 0 OR post.community_ids = :communityIdStr)', {
-            communityId: community.id,
-            communityIdStr: community.id.toString()
-          })
-          .andWhere('post.created_at >= :thirtyDaysAgo', { thirtyDaysAgo })
-          .getCount();
-
-        const posts_per_day = parseFloat((last30DaysPosts / 30).toFixed(2));
+        const last30DaysPostsResult = await this.prisma.$queryRawUnsafe<any[]>(
+          `SELECT COUNT(*) as cnt FROM user_posts
+           WHERE (FIND_IN_SET(?, community_ids) > 0 OR community_ids = ?)
+           AND created_at >= ?`,
+          community.id,
+          community.id.toString(),
+          thirtyDaysAgo,
+        );
+        const posts_per_day = parseFloat(
+          ((Number(last30DaysPostsResult[0]?.cnt) || 0) / 30).toFixed(2),
+        );
 
         return {
           ...community,
@@ -2874,16 +2696,6 @@ export class AdminService {
         };
       }),
     );
-
-    return {
-      data: communitiesWithCounts,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
   }
 
   async getCommunityById(communityId: number) {
@@ -2895,8 +2707,11 @@ export class AdminService {
     adminId: number,
     file?: Express.Multer.File,
   ) {
-    // Admin can create communities using the CommunityService
-    return this.communityService.createCommunity(createCommunityDto, adminId, file);
+    return this.communityService.createCommunity(
+      createCommunityDto,
+      adminId,
+      file,
+    );
   }
 
   async updateCommunity(
@@ -2905,97 +2720,94 @@ export class AdminService {
     adminId: number,
     file?: Express.Multer.File,
   ) {
-    // Get the community first to check if it exists
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findUnique({
       where: { id: communityId },
     });
 
-    if (!community) {
-      throw new NotFoundException('Community not found');
-    }
+    if (!community) throw new NotFoundException('Community not found');
 
-    // Admin can update any community, bypassing community admin/moderator check
-    // We'll use the repository directly for admin updates
-    // But we still need to handle file uploads if provided
-    // For now, we'll use the service but need to modify it or use repository directly
-
-    // Check if slug is being updated and if it already exists
-    if (updateCommunityDto.community_slug && updateCommunityDto.community_slug !== community.community_slug) {
-      const existingCommunity = await this.communityRepository.findOne({
+    if (
+      updateCommunityDto.community_slug &&
+      updateCommunityDto.community_slug !== community.community_slug
+    ) {
+      const existingCommunity = await this.prisma.community.findFirst({
         where: { community_slug: updateCommunityDto.community_slug },
-        select: ['id'],
       });
-
-      if (existingCommunity) {
+      if (existingCommunity)
         throw new ConflictException('Community with this slug already exists');
-      }
     }
 
-    // Helper function to transform is_active value (handles various input formats)
     const transformIsActive = (value: any): boolean | undefined => {
-      if (value === undefined || value === null || value === '') return undefined;
+      if (value === undefined || value === null || value === '')
+        return undefined;
       if (typeof value === 'boolean') return value;
       const stringValue = String(value).toLowerCase().trim();
-      if (stringValue === 'active' || stringValue === 'true' || stringValue === '1') return true;
-      if (stringValue === 'inactive' || stringValue === 'false' || stringValue === '0') return false;
+      if (
+        stringValue === 'active' ||
+        stringValue === 'true' ||
+        stringValue === '1'
+      )
+        return true;
+      if (
+        stringValue === 'inactive' ||
+        stringValue === 'false' ||
+        stringValue === '0'
+      )
+        return false;
       if (value === 1 || value === '1') return true;
       if (value === 0 || value === '0') return false;
       return undefined;
     };
 
-    // Update fields (exclude topic_ids - handled separately)
     const { topic_ids, ...communityUpdateData } = updateCommunityDto;
-    if (communityUpdateData.community_slug !== undefined) {
-      community.community_slug = communityUpdateData.community_slug;
-    }
-    if (communityUpdateData.community_name !== undefined) {
-      community.community_name = communityUpdateData.community_name;
-    }
-    if (communityUpdateData.community_description !== undefined) {
-      community.community_description = communityUpdateData.community_description;
-    }
-    if (communityUpdateData.community_image !== undefined) {
-      community.community_image = communityUpdateData.community_image;
-    }
+    const updateData: any = { updated_by: adminId };
 
-    // Handle is_active/active status update
-    // Support both 'is_active' and 'active' field names
-    // Check if either field is explicitly provided in the DTO (including false values)
+    if (communityUpdateData.community_slug !== undefined)
+      updateData.community_slug = communityUpdateData.community_slug;
+    if (communityUpdateData.community_name !== undefined)
+      updateData.community_name = communityUpdateData.community_name;
+    if (communityUpdateData.community_description !== undefined)
+      updateData.community_description =
+        communityUpdateData.community_description;
+    if (communityUpdateData.community_image !== undefined)
+      updateData.community_image = communityUpdateData.community_image;
+
     let activeValue: any = undefined;
-
-    if ('is_active' in updateCommunityDto) {
+    if ('is_active' in updateCommunityDto)
       activeValue = updateCommunityDto.is_active;
-    } else if ('active' in updateCommunityDto) {
-      // Support 'active' field as alternative to 'is_active'
+    else if ('active' in updateCommunityDto)
       activeValue = (updateCommunityDto as any).active;
-    }
 
-    // Always process is_active if it's provided (even if it's a string from FormData)
-    if (activeValue !== undefined && activeValue !== null && activeValue !== '') {
-      // Transform the value to boolean if needed
+    if (
+      activeValue !== undefined &&
+      activeValue !== null &&
+      activeValue !== ''
+    ) {
       const transformedIsActive = transformIsActive(activeValue);
-
       if (transformedIsActive !== undefined) {
-        // Successfully transformed to boolean
-        community.is_active = transformedIsActive;
+        updateData.is_active = transformedIsActive;
       } else if (typeof activeValue === 'boolean') {
-        // Already a boolean (shouldn't happen if Transform works, but handle it)
-        community.is_active = activeValue;
+        updateData.is_active = activeValue;
       } else {
-        // If transformation fails, log for debugging but try to handle common cases
-        this.logger.warn(`Unable to transform is_active value: ${activeValue} (type: ${typeof activeValue})`);
-        // Try one more time with direct string comparison
+        this.logger.warn(
+          `Unable to transform is_active value: ${activeValue} (type: ${typeof activeValue})`,
+        );
         const stringValue = String(activeValue).toLowerCase().trim();
-        if (stringValue === 'active' || stringValue === 'true' || stringValue === '1') {
-          community.is_active = true;
-        } else if (stringValue === 'inactive' || stringValue === 'false' || stringValue === '0') {
-          community.is_active = false;
-        }
-        // If still can't determine, preserve existing value
+        if (
+          stringValue === 'active' ||
+          stringValue === 'true' ||
+          stringValue === '1'
+        )
+          updateData.is_active = true;
+        else if (
+          stringValue === 'inactive' ||
+          stringValue === 'false' ||
+          stringValue === '0'
+        )
+          updateData.is_active = false;
       }
     }
 
-    // Handle file upload if provided
     if (file) {
       try {
         const mediaResponse = await this.mediaClientService.uploadFile(file, {
@@ -3004,7 +2816,7 @@ export class AdminService {
           optimize: true,
           is_public: true,
         });
-        community.community_image = this.mediaClientService.buildFileUrl(
+        updateData.community_image = this.mediaClientService.buildFileUrl(
           mediaResponse.file_path,
         );
       } catch (error) {
@@ -3012,1312 +2824,115 @@ export class AdminService {
       }
     }
 
-    community.updated_by = adminId;
-    await this.communityRepository.save(community);
+    await this.prisma.community.update({
+      where: { id: communityId },
+      data: updateData,
+    });
 
-    // Handle topic_ids update if provided
     if (updateCommunityDto.topic_ids !== undefined) {
-      // Get existing community topics
-      const existingTopics = await this.communityTopicRepository.find({
+      const existingTopics = await this.prisma.communityTopic.findMany({
         where: { community_id: communityId },
       });
-
-      // Get the topic IDs that should remain
       const topicIdsToKeep = updateCommunityDto.topic_ids || [];
       const existingTopicIds = existingTopics.map((ct) => ct.topic_id);
-
-      // Topics to add (in new list but not in existing)
       const topicIdsToAdd = topicIdsToKeep.filter(
         (id) => !existingTopicIds.includes(id),
       );
-
-      // Topics to remove (in existing but not in new list)
       const topicIdsToRemove = existingTopicIds.filter(
         (id) => !topicIdsToKeep.includes(id),
       );
 
-      // Validate topics to add exist and are active
       if (topicIdsToAdd.length > 0) {
-        const topicsToAdd = await this.topicRepository.find({
-          where: { id: In(topicIdsToAdd), is_active: true },
-          select: ['id'],
+        const topicsToAdd = await this.prisma.topic.findMany({
+          where: { id: { in: topicIdsToAdd }, is_active: true },
         });
-
         if (topicsToAdd.length !== topicIdsToAdd.length) {
           throw new BadRequestException(
             'One or more topics not found or inactive',
           );
         }
-
-        // Create new community-topic associations
-        const newCommunityTopics = topicIdsToAdd.map((topicId) =>
-          this.communityTopicRepository.create({
+        await this.prisma.communityTopic.createMany({
+          data: topicIdsToAdd.map((topicId) => ({
             community_id: communityId,
             topic_id: topicId,
             is_active: true,
             created_by: adminId,
-          }),
-        );
-
-        await this.communityTopicRepository.save(newCommunityTopics);
+          })),
+        });
       }
 
-      // Remove topics that are no longer in the list
       if (topicIdsToRemove.length > 0) {
-        await this.communityTopicRepository.update(
-          {
+        await this.prisma.communityTopic.updateMany({
+          where: {
             community_id: communityId,
-            topic_id: In(topicIdsToRemove),
+            topic_id: { in: topicIdsToRemove },
           },
-          {
-            is_active: false,
-            updated_by: adminId,
-          },
-        );
+          data: { is_active: false, updated_by: adminId },
+        });
       }
     }
 
-    // Get updated community using service for proper formatting
     return this.communityService.getCommunityById(communityId);
   }
 
-  async updateCommunityStatus(
-    communityId: number,
-    updateCommunityStatusDto: UpdateCommunityStatusDto,
-    adminId: number,
-  ) {
-    // Get the community first to check if it exists
-    const community = await this.communityRepository.findOne({
-      where: { id: communityId },
-    });
-
-    if (!community) {
-      throw new NotFoundException('Community not found');
-    }
-
-    // Admin can update any community status directly
-    // Update community status using repository
-    community.is_active = updateCommunityStatusDto.is_active;
-    community.updated_by = adminId;
-    await this.communityRepository.save(community);
-
-    // Get updated community
-    const updatedCommunity = await this.communityService.getCommunityById(
-      communityId,
-    );
-
-    return {
-      message: 'Community status updated successfully',
-      community: updatedCommunity,
-    };
-  }
-
-  async deleteCommunity(communityId: number, adminId: number) {
-    // Get the community first to check if it exists
-    const community = await this.communityRepository.findOne({
-      where: { id: communityId },
-    });
-
-    if (!community) {
-      throw new NotFoundException('Community not found');
-    }
-
-    // Admin can delete any community, bypassing community admin check
-    // Count active members
-    const memberCount = await this.communityUserRepository.count({
-      where: { community_id: communityId, is_active: true },
-    });
-
-    // Delete all related community-topic associations
-    await this.communityTopicRepository.delete({
-      community_id: communityId,
-    });
-
-    // If community has only one member, delete the record from database
-    if (memberCount === 1) {
-      await this.communityRepository.remove(community);
-      return { message: 'Community deleted successfully (hard delete - only one member)' };
-    }
-
-    // If community has more than one member, soft delete (inactivate)
-    community.is_active = false;
-    community.updated_by = adminId;
-    await this.communityRepository.save(community);
-
-    return { message: 'Community deleted successfully (soft delete - multiple members)' };
-  }
-
-  async getCommunityMembers(communityId: number, listQueryDto: ListQueryDto) {
-    // Admin can view members of any community
-    const membersData = await this.communityService.getCommunityMembers(communityId, {
-      page: listQueryDto.page || 1,
-      limit: listQueryDto.limit || 10,
-      role: undefined, // Admin can see all roles
-      sort_by: listQueryDto.sort_by || 'created_at',
-      sort_order: listQueryDto.sort_order || 'DESC',
-    });
-
-    // Enrich with post count and profile info specifically for admin view
-    const enrichedData = await Promise.all(
-      membersData.data.map(async (member) => {
-        // Count posts by this user in this specific community
-        // Using FIND_IN_SET because community_ids is a comma-separated string
-        const postsCount = await this.postRepository
-          .createQueryBuilder('post')
-          .where('post.user_id = :userId', { userId: member.user_id })
-          .andWhere(
-            '(FIND_IN_SET(:communityId, post.community_ids) > 0 OR post.community_ids = :communityIdStr)',
-            { communityId, communityIdStr: communityId.toString() },
-          )
-          .getCount();
-
-        // Fetch user profile for more details (avatar/full name)
-        const profile = await this.profileRepository.findOne({
-          where: { user_id: member.user_id },
-          select: ['full_name', 'profile_picture'],
-        });
-
-        return {
-          ...member,
-          posts_count: postsCount,
-          user: {
-            ...member.user,
-            full_name: profile?.full_name || null,
-            profile_picture: profile?.profile_picture || null,
-          },
-        };
-      }),
-    );
-
-    return {
-      ...membersData,
-      data: enrichedData,
-    };
-  }
-
-  async updateMemberRole(
-    communityId: number,
-    memberId: number,
-    updateMemberRoleDto: UpdateMemberRoleDto,
-    adminId: number,
-  ) {
-    // Admin can update member roles in any community, bypassing community admin check
-    // Get the member first
-    const targetMember = await this.communityUserRepository.findOne({
-      where: {
-        community_id: communityId,
-        user_id: memberId,
-        is_active: true,
-      },
-      relations: ['user'],
-    });
-
-    if (!targetMember) {
-      throw new NotFoundException('Member not found');
-    }
-
-    // Prevent removing the last admin
-    if (
-      targetMember.role === CommunityUserRole.ADMIN &&
-      updateMemberRoleDto.role !== CommunityUserRole.ADMIN
-    ) {
-      const adminCount = await this.communityUserRepository.count({
-        where: {
-          community_id: communityId,
-          role: CommunityUserRole.ADMIN,
-          is_active: true,
-        },
-      });
-
-      if (adminCount === 1) {
-        throw new BadRequestException(
-          'Cannot change role: this is the only admin. Please assign another admin first.',
-        );
-      }
-    }
-
-    targetMember.role = updateMemberRoleDto.role;
-    targetMember.updated_by = adminId;
-    await this.communityUserRepository.save(targetMember);
-
-    // Return properly formatted member response
-    return {
-      id: targetMember.id,
-      community_id: targetMember.community_id,
-      user_id: targetMember.user_id,
-      role: targetMember.role,
-      is_active: targetMember.is_active,
-      created_at: targetMember.created_at,
-      updated_at: targetMember.updated_at,
-      user: targetMember.user ? {
-        id: targetMember.user.id,
-        username: targetMember.user.username,
-        email: targetMember.user.email,
-      } : null,
-    };
-  }
-
-  async getCommunityTopics(communityId: number) {
-    // Admin can view topics of any community
-    return this.communityService.getCommunityTopics(communityId);
-  }
-
-  async addTopicToCommunity(
-    communityId: number,
-    addTopicDto: AddTopicToCommunityDto,
-    adminId: number,
-  ) {
-    // Admin can add topics to any community, bypassing community admin/moderator check
-    // Check if community exists (admin can add to inactive communities too)
-    const community = await this.communityRepository.findOne({
-      where: { id: communityId },
-      select: ['id'],
-    });
-
-    if (!community) {
-      throw new NotFoundException('Community not found');
-    }
-
-    // Check if topic exists
-    const topic = await this.topicEntityRepository.findOne({
-      where: { id: addTopicDto.topic_id, is_active: true },
-      select: ['id'],
-    });
-
-    if (!topic) {
-      throw new NotFoundException('Topic not found or inactive');
-    }
-
-    // Check if topic is already associated
-    const existingAssociation = await this.communityTopicRepository.findOne({
-      where: {
-        community_id: communityId,
-        topic_id: addTopicDto.topic_id,
-      },
-      relations: ['topic'],
-    });
-
-    if (existingAssociation) {
-      if (existingAssociation.is_active) {
-        throw new ConflictException('Topic is already associated with this community');
-      } else {
-        // Reactivate association
-        existingAssociation.is_active = true;
-        existingAssociation.updated_by = adminId;
-        await this.communityTopicRepository.save(existingAssociation);
-        // Get updated association with relations
-        const updated = await this.communityTopicRepository.findOne({
-          where: { id: existingAssociation.id },
-          relations: ['topic'],
-        });
-
-        if (!updated) {
-          throw new NotFoundException('Failed to retrieve updated topic association');
-        }
-
-        return {
-          id: updated.id,
-          community_id: updated.community_id,
-          topic_id: updated.topic_id,
-          is_active: updated.is_active,
-          topic: updated.topic ? {
-            id: updated.topic.id,
-            topic_name: updated.topic.topic_name,
-            topic_slug: updated.topic.topic_slug,
-          } : null,
-        };
-      }
-    }
-
-    // Create new association
-    const communityTopic = this.communityTopicRepository.create({
-      community_id: communityId,
-      topic_id: addTopicDto.topic_id,
-      is_active: true,
-      created_by: adminId,
-    });
-
-    const savedAssociation = await this.communityTopicRepository.save(communityTopic);
-
-    // Get with relations for proper response
-    const withRelations = await this.communityTopicRepository.findOne({
-      where: { id: savedAssociation.id },
-      relations: ['topic'],
-    });
-
-    if (!withRelations) {
-      throw new NotFoundException('Failed to retrieve created topic association');
-    }
-
-    return {
-      id: withRelations.id,
-      community_id: withRelations.community_id,
-      topic_id: withRelations.topic_id,
-      is_active: withRelations.is_active,
-      topic: withRelations.topic ? {
-        id: withRelations.topic.id,
-        topic_name: withRelations.topic.topic_name,
-        topic_slug: withRelations.topic.topic_slug,
-      } : null,
-    };
-  }
-
-  async removeTopicFromCommunity(
-    communityId: number,
-    topicId: number,
-    adminId: number,
-  ) {
-    // Admin can remove topics from any community, bypassing community admin/moderator check
-    const association = await this.communityTopicRepository.findOne({
-      where: {
-        community_id: communityId,
-        topic_id: topicId,
-        is_active: true,
-      },
-    });
-
-    if (!association) {
-      throw new NotFoundException('Topic is not associated with this community');
-    }
-
-    // Soft delete
-    association.is_active = false;
-    association.updated_by = adminId;
-    await this.communityTopicRepository.save(association);
-
-    return { message: 'Topic removed from community successfully' };
-  }
-
-  // Poll Management - using PollService
-  async getPolls(listQueryDto: ListPollsQueryDto) {
+  private buildUsersWhere(
+    listQueryDto: ListUsersQueryDto,
+    options: { onlyDeleted?: boolean } = {},
+  ): Prisma.UserWhereInput {
     const {
-      page = 1,
-      limit = 10,
       search,
-      sort_by = 'created_at',
-      sort_order = 'DESC',
-      poll_status,
-      is_featured,
-      is_expired,
-      user_id,
-      expires_from,
-      expires_to,
+      role,
+      is_active,
+      is_verified,
       created_from,
       created_to,
+      user_id,
     } = listQueryDto;
 
-    const queryBuilder = this.pollRepository
-      .createQueryBuilder('poll')
-      .leftJoinAndSelect('poll.user', 'user')
-      .leftJoinAndSelect('poll.options', 'options');
+    const where: Prisma.UserWhereInput = {};
 
-    // Search filter
+    if (options.onlyDeleted) {
+      where.is_deleted = true;
+    } else {
+      where.is_deleted = false;
+    }
+
     if (search) {
-      queryBuilder.andWhere(
-        '(poll.poll_title LIKE :search OR poll.poll_description LIKE :search OR poll.poll_slug LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { username: { contains: search } },
+        { email: { contains: search } },
+        { profile: { full_name: { contains: search } } },
+      ];
     }
 
-    // Status filter
-    if (poll_status && poll_status !== 'all') {
-      if (poll_status === 'active') {
-        queryBuilder.andWhere('poll.poll_status = :status', { status: PollStatus.PUBLISHED });
-        queryBuilder.andWhere('poll.poll_expires_at > :now', { now: new Date() });
-      } else {
-        queryBuilder.andWhere('poll.poll_status = :status', { status: poll_status });
-      }
+    if (role && role !== 'all') where.role = role;
+    if (is_active !== undefined)
+      where.is_active = is_active === ActiveStatus.ACTIVE;
+    if (is_verified !== undefined)
+      where.is_verified = is_verified === VerifiedStatus.VERIFIED;
+    if (user_id) where.id = user_id;
+    if (created_from || created_to) {
+      const dateFilter: Prisma.DateTimeFilter = {};
+      if (created_from) dateFilter.gte = new Date(created_from);
+      if (created_to) dateFilter.lte = new Date(created_to);
+      where.created_at = dateFilter;
     }
 
-    // Featured filter
-    if (is_featured !== undefined) {
-      queryBuilder.andWhere('poll.is_featured = :is_featured', { is_featured });
-    }
+    return where;
+  }
 
-    // Expired filter
-    if (is_expired !== undefined) {
-      if (is_expired) {
-        queryBuilder.andWhere('poll.poll_expires_at < :now', { now: new Date() });
-      } else {
-        queryBuilder.andWhere('poll.poll_expires_at >= :now', { now: new Date() });
-      }
-    }
-
-    // User filter
-    if (user_id) {
-      queryBuilder.andWhere('poll.user_id = :user_id', { user_id });
-    }
-
-    // Expiration date range filters
-    if (expires_from) {
-      queryBuilder.andWhere('poll.poll_expires_at >= :expires_from', {
-        expires_from: new Date(expires_from),
-      });
-    }
-    if (expires_to) {
-      queryBuilder.andWhere('poll.poll_expires_at <= :expires_to', {
-        expires_to: new Date(expires_to),
-      });
-    }
-
-    // Created date range filters
-    if (created_from) {
-      queryBuilder.andWhere('poll.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-    if (created_to) {
-      queryBuilder.andWhere('poll.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
-    }
-
-    // Validate sort_by field
+  private getUserSortField(sort_by: string): string {
     const allowedSortFields = [
       'id',
-      'poll_title',
-      'vote_count',
-      'view_count',
-      'poll_expires_at',
+      'username',
+      'email',
+      'role',
+      'is_active',
+      'is_verified',
       'created_at',
       'updated_at',
     ];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
-    const skip = (page - 1) * limit;
-    queryBuilder
-      .orderBy(`poll.${sortField}`, sort_order)
-      .skip(skip)
-      .take(limit);
-
-    const [polls, total] = await queryBuilder.getManyAndCount();
-
-    // Check and mark expired polls as ended
-    const now = new Date();
-    const expiredPollsToUpdate: UserPoll[] = [];
-
-    for (const poll of polls) {
-      if (
-        poll.poll_expires_at &&
-        new Date(poll.poll_expires_at) <= now &&
-        poll.poll_status !== PollStatus.ENDED
-      ) {
-        expiredPollsToUpdate.push(poll);
-      }
-    }
-
-    // Update expired polls in batch
-    if (expiredPollsToUpdate.length > 0) {
-      await Promise.all(
-        expiredPollsToUpdate.map((poll) => {
-          poll.poll_status = PollStatus.ENDED;
-          return this.pollRepository.save(poll);
-        })
-      );
-
-      // Update the status in the returned data
-      expiredPollsToUpdate.forEach((updatedPoll) => {
-        const pollInResult = polls.find((p) => p.id === updatedPoll.id);
-        if (pollInResult) {
-          pollInResult.poll_status = PollStatus.ENDED;
-        }
-      });
-    }
-
-    return {
-      data: polls.map(poll => ({
-        ...poll,
-        // Format poll_expires_at to match the format used in getPollById
-        poll_expires_at: poll.poll_expires_at
-          ? this.pollService['convertUtcToLocalString'](new Date(poll.poll_expires_at))
-          : null,
-      })),
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getPollById(pollId: number) {
-    // Skip view count increment for admin views
-    return this.pollService.getPollById(pollId, undefined, true);
-  }
-
-  async createPoll(
-    createPollDto: CreatePollDto,
-    adminId: number,
-  ) {
-    // Admin can create polls using the PollService
-    return this.pollService.createPoll(createPollDto, adminId);
-  }
-
-  async updatePoll(
-    pollId: number,
-    updatePollDto: UpdatePollDto,
-    adminId: number,
-  ) {
-    // Get the poll first to check if it exists
-    const poll = await this.pollRepository.findOne({
-      where: { id: pollId },
-    });
-
-    if (!poll) {
-      throw new NotFoundException('Poll not found');
-    }
-
-    // Admin can update any poll, so we need to bypass ownership check
-    // We'll use the repository directly for admin updates
-
-    // Check if slug is being updated and if it already exists
-    if (updatePollDto.poll_slug && updatePollDto.poll_slug !== poll.poll_slug) {
-      const existingPoll = await this.pollRepository.findOne({
-        where: { poll_slug: updatePollDto.poll_slug },
-        select: ['id'],
-      });
-
-      if (existingPoll) {
-        throw new ConflictException('Poll with this slug already exists');
-      }
-    }
-
-    // Validate expiration date if being updated - must be at least tomorrow
-    if (updatePollDto.poll_expires_at) {
-      // Parse date string properly (handles datetime-local format from frontend)
-      let expiresAt: Date;
-      const dateString = updatePollDto.poll_expires_at;
-      if (dateString.includes('T') && !dateString.includes('Z') && !dateString.includes('+') && !dateString.includes('-', 10)) {
-        // Format: YYYY-MM-DDTHH:mm (datetime-local format)
-        // Parse as UTC to match MySQL TIMESTAMP storage (which stores in UTC)
-        const [datePart, timePart] = dateString.split('T');
-        const [year, month, day] = datePart.split('-').map(Number);
-        const timeComponents = timePart.split(':');
-        const hours = Number(timeComponents[0]) || 0;
-        const minutes = Number(timeComponents[1]) || 0;
-        const seconds = Number(timeComponents[2]) || 0;
-        expiresAt = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds, 0));
-      } else {
-        expiresAt = new Date(dateString);
-      }
-
-      // Get tomorrow at 00:00:00 UTC for consistent comparison
-      const now = new Date();
-      const tomorrow = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() + 1,
-        0, 0, 0, 0
-      ));
-
-      if (expiresAt < tomorrow) {
-        throw new BadRequestException('Poll expiration date must be at least tomorrow. Polls cannot expire on the same day they are created.');
-      }
-      poll.poll_expires_at = expiresAt;
-    }
-
-    // Convert community_ids array to comma-separated string if provided
-    if (updatePollDto.community_ids !== undefined) {
-      poll.community_ids = updatePollDto.community_ids.length > 0
-        ? updatePollDto.community_ids.join(',')
-        : null;
-    }
-
-    // Update other fields
-    if (updatePollDto.poll_slug !== undefined) {
-      poll.poll_slug = updatePollDto.poll_slug;
-    }
-    if (updatePollDto.poll_title !== undefined) {
-      poll.poll_title = updatePollDto.poll_title;
-    }
-    if (updatePollDto.poll_description !== undefined) {
-      poll.poll_description = updatePollDto.poll_description;
-    }
-    if (updatePollDto.poll_status !== undefined) {
-      poll.poll_status = updatePollDto.poll_status;
-    }
-    if (updatePollDto.is_featured !== undefined) {
-      poll.is_featured = updatePollDto.is_featured === 'featured';
-    }
-    if (updatePollDto.poll_winner_option_id !== undefined) {
-      poll.poll_winner_option_id = updatePollDto.poll_winner_option_id;
-    }
-
-    // Handle options update if provided
-    let optionsToSave: PollOption[] = [];
-    if (updatePollDto.options) {
-      const existingOptions = await this.pollOptionRepository.find({
-        where: { poll_id: pollId },
-      });
-
-      const newOptionsDto = updatePollDto.options;
-      const keepOptionIds: number[] = [];
-
-      // Process provided options
-      for (const optionDto of newOptionsDto) {
-        if (optionDto.id) {
-          // Update existing option
-          const existingOption = existingOptions.find(o => o.id == optionDto.id);
-          if (existingOption) {
-            existingOption.option_text = optionDto.option_text;
-            existingOption.display_order = optionDto.display_order ?? existingOption.display_order;
-            optionsToSave.push(existingOption);
-            keepOptionIds.push(existingOption.id);
-          }
-        } else {
-          // Create new option
-          const newOption = this.pollOptionRepository.create({
-            poll_id: pollId,
-            option_text: optionDto.option_text,
-            display_order: optionDto.display_order ?? 0,
-            vote_count: 0,
-            is_active: true,
-            created_by: adminId,
-          });
-          optionsToSave.push(newOption);
-        }
-      }
-
-      // Delete removed options (those present in DB but not in payload)
-      const optionsToDelete = existingOptions.filter(o => !keepOptionIds.includes(o.id));
-      if (optionsToDelete.length > 0) {
-        await this.pollOptionRepository.remove(optionsToDelete);
-      }
-
-      // Save updated/new options
-      if (optionsToSave.length > 0) {
-        await this.pollOptionRepository.save(optionsToSave);
-      }
-    }
-
-    poll.updated_by = adminId;
-    await this.pollRepository.save(poll);
-
-    // Get updated poll using service for proper formatting
-    // Skip view count increment for admin views
-    return this.pollService.getPollById(pollId, undefined, true);
-  }
-
-  async deletePoll(pollId: number, adminId: number) {
-    // Get the poll first to check if it exists
-    const poll = await this.pollRepository.findOne({
-      where: { id: pollId },
-    });
-
-    if (!poll) {
-      throw new NotFoundException('Poll not found');
-    }
-
-    // Admin can delete any poll - perform hard delete (remove from database)
-    // Delete related records first to avoid foreign key constraints
-
-    // Use transaction to ensure all deletions succeed or none
-    await this.dataSource.transaction(async (transactionalEntityManager) => {
-      // Delete poll comments (including nested replies)
-      // Delete all comments for this poll - TypeORM handles nested relationships
-      await transactionalEntityManager.delete(PollComment, { poll_id: pollId });
-
-      // Delete poll votes
-      await transactionalEntityManager.delete(PollVote, { poll_id: pollId });
-
-      // Delete poll likes
-      await transactionalEntityManager.delete(PollLike, { poll_id: pollId });
-
-      // Delete poll options
-      await transactionalEntityManager.delete(PollOption, { poll_id: pollId });
-
-      // Finally, delete the poll itself
-      await transactionalEntityManager.delete(UserPoll, { id: pollId });
-    });
-
-    this.logger.log(`Poll ${pollId} deleted by admin ${adminId}`);
-    return { message: 'Poll deleted successfully' };
-  }
-
-  // ========== Subscription Management ==========
-
-  async getSubscriptions(listQueryDto: ListSubscriptionsQueryDto) {
-    return this.subscriptionService.getSubscriptions(listQueryDto);
-  }
-
-  async getSubscriptionById(id: number) {
-    return this.subscriptionService.getSubscriptionById(id);
-  }
-
-  async createSubscription(
-    createSubscriptionDto: CreateSubscriptionDto,
-    adminId: number,
-  ) {
-    return this.subscriptionService.createSubscription(createSubscriptionDto, adminId);
-  }
-
-  async updateSubscription(
-    id: number,
-    updateSubscriptionDto: UpdateSubscriptionDto,
-    adminId: number,
-  ) {
-    return this.subscriptionService.updateSubscription(id, updateSubscriptionDto, adminId);
-  }
-
-  async deleteSubscription(id: number, adminId: number) {
-    return this.subscriptionService.deleteSubscription(id, adminId);
-  }
-
-  // ========== User Subscription Management ==========
-
-  async getUserSubscriptions(listQueryDto: ListUserSubscriptionsQueryDto) {
-    return this.subscriptionService.getUserSubscriptions(listQueryDto);
-  }
-
-  async getUserSubscriptionById(id: number) {
-    return this.subscriptionService.getUserSubscriptionById(id);
-  }
-
-  async updateUserSubscriptionStatus(
-    id: number,
-    status: SubscriptionStatus,
-    adminId: number,
-  ) {
-    return this.subscriptionService.updateUserSubscriptionStatus(id, status, adminId);
-  }
-
-  // ========== Payment Management ==========
-
-  async getPayments(listQueryDto: ListPaymentsQueryDto) {
-    return this.subscriptionService.getPayments(listQueryDto);
-  }
-
-  async getPaymentById(id: number) {
-    return this.subscriptionService.getPaymentById(id);
-  }
-
-  async createPayment(createPaymentDto: CreatePaymentDto, adminId: number) {
-    return this.subscriptionService.createPayment(createPaymentDto, adminId);
-  }
-
-  async updatePaymentStatus(id: number, status: PaymentStatus, adminId: number) {
-    return this.subscriptionService.updatePaymentStatus(id, status, adminId);
-  }
-
-  // ========== Detail Modal Endpoints ==========
-
-  async getUserPosts(userId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 10, search, sort_by = 'created_at', sort_order = 'DESC' } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.postRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.topic', 'topic')
-      .where('post.user_id = :userId', { userId });
-
-    if (search) {
-      queryBuilder.andWhere(
-        '(post.post_title LIKE :search OR post.post_content LIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    const allowedSortFields = ['id', 'post_title', 'like_count', 'comment_count', 'view_count', 'created_at', 'updated_at'];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
-    queryBuilder.orderBy(`post.${sortField}`, sort_order).skip(skip).take(limit);
-
-    const [posts, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data: posts,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getUserCommunities(userId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 10, search, sort_by = 'created_at', sort_order = 'DESC' } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.communityUserRepository
-      .createQueryBuilder('cu')
-      .leftJoinAndSelect('cu.community', 'community')
-      .where('cu.user_id = :userId', { userId })
-      .andWhere('cu.is_active = :isActive', { isActive: true });
-
-    if (search) {
-      queryBuilder.andWhere(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    const allowedSortFields = ['id', 'created_at', 'updated_at'];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
-    queryBuilder.orderBy(`cu.${sortField}`, sort_order).skip(skip).take(limit);
-
-    const [memberships, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data: memberships.map((m) => ({
-        ...m.community,
-        role: m.role,
-        joined_at: m.created_at,
-      })),
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getUserComments(userId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 10, search, sort_by = 'created_at', sort_order = 'DESC' } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.commentRepository
-      .createQueryBuilder('comment')
-      .leftJoinAndSelect('comment.post', 'post')
-      .where('comment.user_id = :userId', { userId });
-
-    if (search) {
-      queryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${search}%`,
-      });
-    }
-
-    const allowedSortFields = ['id', 'like_count', 'created_at', 'updated_at'];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
-    queryBuilder.orderBy(`comment.${sortField}`, sort_order).skip(skip).take(limit);
-
-    const [comments, total] = await queryBuilder.getManyAndCount();
-
-    // Map to DTOs
-    const mappedData = await Promise.all(
-      comments.map(async (comment) => {
-        const repliesCount = await this.commentRepository.count({
-          where: { parent_comment_id: comment.id },
-        });
-        const commentWithExtras = { ...comment, replies_count: repliesCount };
-        return this.commentService.mapPostCommentToResponseDto(commentWithExtras);
-      }),
-    );
-
-    return {
-      data: mappedData,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getUserStats(userId: number) {
-    const postsCount = await this.postRepository.count({ where: { user_id: userId } });
-    const commentsCount = await this.commentRepository.count({ where: { user_id: userId } });
-    const communitiesCount = await this.communityUserRepository.count({
-      where: { user_id: userId, is_active: true },
-    });
-    const pollsCount = await this.pollRepository.count({ where: { user_id: userId } });
-
-    return {
-      posts_count: postsCount,
-      comments_count: commentsCount,
-      communities_count: communitiesCount,
-      polls_count: pollsCount,
-    };
-  }
-
-  async getPostComments(postId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 10, search, sort_by = 'created_at', sort_order = 'DESC' } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.commentRepository
-      .createQueryBuilder('comment')
-      .leftJoinAndSelect('comment.user', 'user')
-      .where('comment.post_id = :postId', { postId })
-      .andWhere('comment.parent_comment_id IS NULL'); // Top-level comments only
-
-    if (search) {
-      queryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${search}%`,
-      });
-    }
-
-    const allowedSortFields = ['id', 'like_count', 'created_at', 'updated_at'];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
-    queryBuilder.orderBy(`comment.${sortField}`, sort_order).skip(skip).take(limit);
-
-    const [comments, total] = await queryBuilder.getManyAndCount();
-
-    // Get unique user IDs
-    const userIds = new Set<number>();
-    comments.forEach((comment) => {
-      if (comment.user_id) userIds.add(comment.user_id);
-    });
-
-    // Load user profiles in batch
-    const userProfilesMap = new Map<number, any>();
-    if (userIds.size > 0) {
-      const profiles = await this.profileRepository.find({
-        where: { user_id: In(Array.from(userIds)) },
-        select: ['user_id', 'full_name', 'profile_picture'],
-      });
-      profiles.forEach((profile) => {
-        userProfilesMap.set(profile.user_id, profile);
-      });
-    }
-
-    // Add replies for each comment (using common mapping)
-    const mappedData = await Promise.all(
-      comments.map(async (comment) => {
-        const replies = await this.commentRepository.find({
-          where: { parent_comment_id: comment.id },
-          relations: ['user'],
-          order: { created_at: 'ASC' },
-        });
-
-        // Load profiles for replies too
-        const replyUserIds = replies.map(r => r.user_id).filter(id => !userProfilesMap.has(id));
-        if (replyUserIds.length > 0) {
-          const replyProfiles = await this.profileRepository.find({
-            where: { user_id: In(replyUserIds) },
-            select: ['user_id', 'full_name', 'profile_picture'],
-          });
-          replyProfiles.forEach(p => userProfilesMap.set(p.user_id, p));
-        }
-
-        const commentWithReplies: any = {
-          ...comment,
-          replies,
-          replies_count: replies.length,
-        };
-
-        // Attach profile to comment user
-        if (commentWithReplies.user && userProfilesMap.has(commentWithReplies.user.id)) {
-          const p = userProfilesMap.get(commentWithReplies.user.id);
-          commentWithReplies.user.profile_picture = p.profile_picture || null;
-          commentWithReplies.user.full_name = p.full_name || null;
-        }
-
-        // Attach profiles to reply users
-        commentWithReplies.replies.forEach((r: any) => {
-          if (r.user && userProfilesMap.has(r.user.id)) {
-            const p = userProfilesMap.get(r.user.id);
-            r.user.profile_picture = p.profile_picture || null;
-            r.user.full_name = p.full_name || null;
-          }
-        });
-
-        return this.commentService.mapPostCommentToResponseDto(commentWithReplies);
-      }),
-    );
-
-    return {
-      data: mappedData,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getPostAnalytics(postId: number, timeRange?: string) {
-    const post = await this.postRepository.findOne({ where: { id: postId } });
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
-
-    // Calculate engagement rate
-    const totalInteractions = post.like_count + post.comment_count;
-    const engagementRate = post.view_count > 0 ? (totalInteractions / post.view_count) * 100 : 0;
-
-    // Calculate trending score (based on recent activity)
-    const recentComments = await this.commentRepository.count({
-      where: {
-        post_id: postId,
-        created_at: MoreThan(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
-      },
-    });
-    const trendingScore = (post.like_count * 0.4 + recentComments * 0.6) / (post.view_count || 1) * 100;
-
-    return {
-      engagement_rate: engagementRate,
-      trending_score: trendingScore,
-      total_interactions: totalInteractions,
-      recent_comments: recentComments,
-    };
-  }
-
-  async getCommunityPosts(communityId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 10, search, sort_by = 'created_at', sort_order = 'DESC' } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.postRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.user', 'user')
-      .leftJoinAndSelect('post.topic', 'topic')
-      .where('post.community_ids LIKE :communityId', {
-        communityId: `%${communityId}%`,
-      });
-
-    if (search) {
-      queryBuilder.andWhere(
-        '(post.post_title LIKE :search OR post.post_content LIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    const allowedSortFields = ['id', 'post_title', 'like_count', 'comment_count', 'view_count', 'created_at', 'updated_at'];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
-    queryBuilder.orderBy(`post.${sortField}`, sort_order).skip(skip).take(limit);
-
-    const [posts, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data: posts,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getCommunityActivity(communityId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 20 } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    // Get recent posts
-    const recentPosts = await this.postRepository.find({
-      where: {
-        community_ids: Like(`%${communityId}%`),
-      },
-      take: limit,
-      order: { created_at: 'DESC' },
-      relations: ['user'],
-    });
-
-    // Get recent comments on community posts
-    const recentComments = await this.commentRepository
-      .createQueryBuilder('comment')
-      .leftJoinAndSelect('comment.post', 'post')
-      .leftJoinAndSelect('comment.user', 'user')
-      .where('post.community_ids LIKE :communityId', { communityId: `%${communityId}%` })
-      .orderBy('comment.created_at', 'DESC')
-      .take(limit)
-      .getMany();
-
-    const activities = [
-      ...recentPosts.map((p) => ({
-        type: 'post',
-        id: p.id,
-        title: p.post_title,
-        user: { id: p.user?.id, username: p.user?.username },
-        created_at: p.created_at,
-      })),
-      ...recentComments.map((c) => ({
-        type: 'comment',
-        id: c.id,
-        content: c.comment_content.substring(0, 50),
-        user: { id: c.user?.id, username: c.user?.username },
-        post_id: c.post_id,
-        created_at: c.created_at,
-      })),
-    ]
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-      .slice(skip, skip + limit);
-
-    return {
-      data: activities,
-      meta: {
-        total: activities.length,
-        page,
-        limit,
-        total_pages: Math.ceil(activities.length / limit),
-      },
-    };
-  }
-
-  async getCommunityStats(communityId: number) {
-    const postsCount = await this.postRepository
-      .createQueryBuilder('post')
-      .where('post.community_ids LIKE :communityId', { communityId: `%${communityId}%` })
-      .getCount();
-    const topicsCount = await this.communityTopicRepository.count({
-      where: { community_id: communityId, is_active: true },
-    });
-    const membersCount = await this.communityUserRepository.count({
-      where: { community_id: communityId, is_active: true },
-    });
-
-    return {
-      posts_count: postsCount,
-      topics_count: topicsCount,
-      members_count: membersCount,
-    };
-  }
-
-  async getTopicPosts(topicId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 10, search, sort_by = 'created_at', sort_order = 'DESC' } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.postRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.user', 'user')
-      .where('post.post_topic_id = :topicId', { topicId });
-
-    if (search) {
-      queryBuilder.andWhere(
-        '(post.post_title LIKE :search OR post.post_content LIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    const allowedSortFields = ['id', 'post_title', 'like_count', 'comment_count', 'view_count', 'created_at', 'updated_at'];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
-    queryBuilder.orderBy(`post.${sortField}`, sort_order).skip(skip).take(limit);
-
-    const [posts, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data: posts,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getTopicCommunities(topicId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 10, search, sort_by = 'created_at', sort_order = 'DESC' } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.communityTopicRepository
-      .createQueryBuilder('ct')
-      .leftJoinAndSelect('ct.community', 'community')
-      .where('ct.topic_id = :topicId', { topicId })
-      .andWhere('ct.is_active = :isActive', { isActive: true });
-
-    if (search) {
-      queryBuilder.andWhere(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    const allowedSortFields = ['id', 'created_at', 'updated_at'];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-
-    queryBuilder.orderBy(`ct.${sortField}`, sort_order).skip(skip).take(limit);
-
-    const [associations, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data: associations.map((a) => a.community),
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getTopicStats(topicId: number) {
-    const postsCount = await this.postRepository.count({
-      where: { post_topic_id: topicId, post_status: PostStatus.PUBLISHED },
-    });
-    const communitiesCount = await this.communityTopicRepository.count({
-      where: { topic_id: topicId, is_active: true },
-    });
-
-    return {
-      posts_count: postsCount,
-      communities_count: communitiesCount,
-      usage_count: postsCount + communitiesCount,
-    };
-  }
-
-  async getPollAnalytics(pollId: number) {
-    const poll = await this.pollRepository.findOne({
-      where: { id: pollId },
-      relations: ['options'],
-    });
-
-    if (!poll) {
-      throw new NotFoundException('Poll not found');
-    }
-
-    const totalVotes = poll.vote_count;
-    const engagementRate = poll.view_count > 0 ? (totalVotes / poll.view_count) * 100 : 0;
-
-    return {
-      total_votes: totalVotes,
-      engagement_rate: engagementRate,
-      options: poll.options.map((opt) => ({
-        id: opt.id,
-        option_text: opt.option_text,
-        vote_count: opt.vote_count,
-        percentage: totalVotes > 0 ? (opt.vote_count / totalVotes) * 100 : 0,
-      })),
-    };
-  }
-
-  async getPollVotes(pollId: number, listQueryDto: ListQueryDto) {
-    const { page = 1, limit = 50 } = listQueryDto;
-    const skip = (page - 1) * limit;
-
-    // Note: This requires poll_votes table which should exist
-    const votes = await this.dataSource.query(
-      `
-      SELECT 
-        pv.id,
-        pv.user_id,
-        pv.vote_option_id,
-        pv.created_at,
-        u.username,
-        u.email,
-        po.option_text
-      FROM poll_votes pv
-      LEFT JOIN users u ON pv.user_id = u.id
-      LEFT JOIN poll_options po ON pv.vote_option_id = po.id
-      WHERE pv.poll_id = ?
-      ORDER BY pv.created_at DESC
-      LIMIT ? OFFSET ?
-    `,
-      [pollId, limit, skip],
-    );
-
-    const total = await this.dataSource.query(
-      'SELECT COUNT(*) as count FROM poll_votes WHERE poll_id = ?',
-      [pollId],
-    );
-
-    return {
-      data: votes,
-      meta: {
-        total: parseInt(total[0]?.count || '0'),
-        page,
-        limit,
-        total_pages: Math.ceil(parseInt(total[0]?.count || '0') / limit),
-      },
-    };
+    return allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
   }
 
   // ========== Bulk Operations ==========
@@ -4329,22 +2944,23 @@ export class AdminService {
       throw new BadRequestException('At least one user ID is required');
     }
 
-    // Prevent admin from updating themselves
     if (updates.is_active === false && ids.includes(adminId)) {
       throw new BadRequestException('Cannot deactivate your own account');
     }
 
-    // Prevent updating admin roles
-    const adminUsers = await this.userRepository.find({
-      where: { id: In(ids), role: In([UserRole.ADMIN, UserRole.SUB_ADMIN]) },
-      select: ['id'],
+    const adminUsers = await this.prisma.user.findMany({
+      where: { id: { in: ids }, role: { in: ['admin', 'sub_admin'] } },
+      select: { id: true },
     });
 
     if (adminUsers.length > 0 && updates.role) {
       throw new BadRequestException('Cannot change role of admin accounts');
     }
 
-    await this.userRepository.update({ id: In(ids) }, { ...updates, updated_by: adminId });
+    await this.prisma.user.updateMany({
+      where: { id: { in: ids } },
+      data: { ...updates, updated_by: adminId },
+    });
 
     return {
       message: `Successfully updated ${ids.length} user(s)`,
@@ -4359,7 +2975,10 @@ export class AdminService {
       throw new BadRequestException('At least one post ID is required');
     }
 
-    await this.postRepository.update({ id: In(ids) }, { ...updates, updated_by: adminId });
+    await this.prisma.userPost.updateMany({
+      where: { id: { in: ids } },
+      data: { ...updates, updated_by: adminId },
+    });
 
     return {
       message: `Successfully updated ${ids.length} post(s)`,
@@ -4374,7 +2993,10 @@ export class AdminService {
       throw new BadRequestException('At least one comment ID is required');
     }
 
-    await this.commentRepository.update({ id: In(ids) }, { ...updates, updated_by: adminId });
+    await this.prisma.postComment.updateMany({
+      where: { id: { in: ids } },
+      data: { ...updates, updated_by: adminId },
+    });
 
     return {
       message: `Successfully updated ${ids.length} comment(s)`,
@@ -4389,7 +3011,10 @@ export class AdminService {
       throw new BadRequestException('At least one community ID is required');
     }
 
-    await this.communityRepository.update({ id: In(ids) }, { ...updates, updated_by: adminId });
+    await this.prisma.community.updateMany({
+      where: { id: { in: ids } },
+      data: { ...updates, updated_by: adminId },
+    });
 
     return {
       message: `Successfully updated ${ids.length} community(ies)`,
@@ -4404,7 +3029,10 @@ export class AdminService {
       throw new BadRequestException('At least one topic ID is required');
     }
 
-    await this.topicEntityRepository.update({ id: In(ids) }, { ...updates, updated_by: adminId });
+    await this.prisma.topic.updateMany({
+      where: { id: { in: ids } },
+      data: { ...updates, updated_by: adminId },
+    });
 
     return {
       message: `Successfully updated ${ids.length} topic(s)`,
@@ -4415,49 +3043,40 @@ export class AdminService {
   // ========== Export Functionality ==========
 
   async exportUsers(listQueryDto: ListUsersQueryDto) {
-    const queryBuilder = this.getUsersQueryBuilder(listQueryDto);
+    const { sort_by = 'created_at', sort_order = 'DESC' } = listQueryDto;
 
-    const sortBy = listQueryDto.sort_by || 'created_at';
-    const usersRaw = await queryBuilder
-      .orderBy(`user.${this.getUserSortField(sortBy)}`, listQueryDto.sort_order || 'DESC')
-      .select([
-        'user.id',
-        'user.username',
-        'user.email',
-        'user.role',
-        'user.auth_type',
-        'user.is_active',
-        'user.is_verified',
-        'user.created_at',
-        'user.updated_at',
-        'profile.full_name',
-        'profile.profile_picture',
-        'profile.tagline',
-        'profile.profile_bio',
-        'profile.profile_location',
-        'profile.profile_website',
-      ])
-      .getRawMany();
+    const where = this.buildUsersWhere(listQueryDto);
+    const sortField = this.getUserSortField(sort_by);
+
+    const users = await this.prisma.user.findMany({
+      where,
+      include: { profile: true },
+      orderBy: {
+        [sortField]: (sort_order ?? 'DESC').toLowerCase() as 'asc' | 'desc',
+      },
+    });
 
     return {
-      data: usersRaw.map((row: any) => ({
-        id: row.user_id,
-        username: row.user_username,
-        email: row.user_email,
-        role: row.user_role,
-        auth_type: row.user_auth_type,
-        is_active: Boolean(row.user_is_active),
-        is_verified: Boolean(row.user_is_verified),
-        created_at: row.user_created_at,
-        updated_at: row.user_updated_at,
-        profile: {
-          full_name: row.profile_full_name || null,
-          profile_picture: row.profile_profile_picture || null,
-          tagline: row.profile_tagline || null,
-          bio: row.profile_profile_bio || null,
-          location: row.profile_profile_location || null,
-          website: row.profile_profile_website || null,
-        },
+      data: users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        auth_type: user.auth_type,
+        is_active: user.is_active,
+        is_verified: user.is_verified,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        profile: user.profile
+          ? {
+              full_name: user.profile.full_name || null,
+              profile_picture: user.profile.profile_picture || null,
+              tagline: user.profile.tagline || null,
+              bio: user.profile.profile_bio || null,
+              location: user.profile.profile_location || null,
+              website: user.profile.profile_website || null,
+            }
+          : null,
       })),
     };
   }
@@ -4475,62 +3094,52 @@ export class AdminService {
       sort_order = 'DESC',
     } = listQueryDto;
 
-    const queryBuilder = this.postRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.user', 'user')
-      .leftJoinAndSelect('post.topic', 'topic');
+    const where: any = {};
 
     if (search) {
-      queryBuilder.andWhere(
-        '(post.post_title LIKE :search OR post.post_content LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { post_title: { contains: search } },
+        { post_content: { contains: search } },
+      ];
     }
-    if (post_status && post_status !== 'all') {
-      queryBuilder.andWhere('post.post_status = :post_status', { post_status });
-    }
-    if (is_featured !== undefined) {
-      queryBuilder.andWhere('post.is_featured = :is_featured', {
-        is_featured: is_featured === true ? 1 : 0
-      });
-    }
-    if (user_id) {
-      queryBuilder.andWhere('post.user_id = :user_id', { user_id });
-    }
-    if (topic_id) {
-      queryBuilder.andWhere('post.post_topic_id = :topic_id', { topic_id });
-    }
-    if (created_from) {
-      queryBuilder.andWhere('post.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-    if (created_to) {
-      queryBuilder.andWhere('post.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
+    if (post_status && post_status !== 'all') where.post_status = post_status;
+    if (is_featured !== undefined) where.is_featured = is_featured === true;
+    if (user_id) where.user_id = user_id;
+    if (topic_id) where.post_topic_id = topic_id;
+    if (created_from || created_to) {
+      where.created_at = {};
+      if (created_from) where.created_at.gte = new Date(created_from);
+      if (created_to) where.created_at.lte = new Date(created_to);
     }
 
-    const posts = await queryBuilder
-      .orderBy(`post.${sort_by}`, sort_order)
-      .getMany();
+    const posts = await this.prisma.userPost.findMany({
+      where,
+      include: { user: true, topic: true },
+      orderBy: {
+        [sort_by]: (sort_order ?? 'DESC').toLowerCase() as 'asc' | 'desc',
+      },
+    });
 
-    const sanitizedPosts = posts.map(post => ({
-      id: post.id,
-      title: post.post_title,
-      slug: post.post_slug,
-      content: post.post_content ? post.post_content.substring(0, 100) + '...' : '',
-      author: post.user ? (post.user.username || 'Unknown') : 'Unknown',
-      topic: post.topic ? (post.topic.topic_name || 'Uncategorized') : 'Uncategorized',
-      status: post.post_status,
-      views: post.view_count || 0,
-      likes: post.like_count || 0,
-      comments: post.comment_count || 0,
-      is_featured: post.is_featured ? 'Yes' : 'No',
-      created_at: post.created_at,
-    }));
-
-    return { data: sanitizedPosts };
+    return {
+      data: posts.map((post) => ({
+        id: post.id,
+        title: post.post_title,
+        slug: post.post_slug,
+        content: post.post_content
+          ? post.post_content.substring(0, 100) + '...'
+          : '',
+        author: post.user ? post.user.username || 'Unknown' : 'Unknown',
+        topic: post.topic
+          ? post.topic.topic_name || 'Uncategorized'
+          : 'Uncategorized',
+        status: post.post_status,
+        views: post.view_count || 0,
+        likes: post.like_count || 0,
+        comments: post.comment_count || 0,
+        is_featured: post.is_featured ? 'Yes' : 'No',
+        created_at: post.created_at,
+      })),
+    };
   }
 
   async exportComments(listQueryDto: ListCommentsQueryDto) {
@@ -4545,53 +3154,46 @@ export class AdminService {
       sort_order = 'DESC',
     } = listQueryDto;
 
-    const queryBuilder = this.commentRepository
-      .createQueryBuilder('comment')
-      .leftJoinAndSelect('comment.user', 'user')
-      .leftJoinAndSelect('comment.post', 'post');
+    const where: any = {};
 
-    if (search) {
-      queryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${search}%`,
-      });
-    }
+    if (search) where.comment_content = { contains: search };
     if (is_approved !== undefined) {
-      const approvedValue = is_approved === ApprovedStatus.APPROVED ? true : (is_approved === ApprovedStatus.NOT_APPROVED ? false : undefined);
-      if (approvedValue !== undefined) {
-        queryBuilder.andWhere('comment.is_approved = :is_approved', { is_approved: approvedValue });
-      }
+      const approvedValue =
+        is_approved === ApprovedStatus.APPROVED
+          ? true
+          : is_approved === ApprovedStatus.NOT_APPROVED
+            ? false
+            : undefined;
+      if (approvedValue !== undefined) where.is_approved = approvedValue;
     }
-    if (post_id) {
-      queryBuilder.andWhere('comment.post_id = :post_id', { post_id });
-    }
-    if (user_id) {
-      queryBuilder.andWhere('comment.user_id = :user_id', { user_id });
-    }
-    if (created_from) {
-      queryBuilder.andWhere('comment.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-    if (created_to) {
-      queryBuilder.andWhere('comment.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
+    if (post_id) where.post_id = post_id;
+    if (user_id) where.user_id = user_id;
+    if (created_from || created_to) {
+      where.created_at = {};
+      if (created_from) where.created_at.gte = new Date(created_from);
+      if (created_to) where.created_at.lte = new Date(created_to);
     }
 
-    const comments = await queryBuilder
-      .orderBy(`comment.${sort_by}`, sort_order)
-      .getMany();
+    const comments = await this.prisma.postComment.findMany({
+      where,
+      include: { user: true, post: true },
+      orderBy: {
+        [sort_by]: (sort_order ?? 'DESC').toLowerCase() as 'asc' | 'desc',
+      },
+    });
 
-    const sanitizedComments = comments.map(comment => ({
-      id: comment.id,
-      content: comment.comment_content,
-      author: comment.user ? (comment.user.username || 'Unknown') : 'Unknown',
-      post_title: comment.post ? (comment.post.post_title || 'Unknown Post') : 'Unknown Post',
-      status: comment.is_approved ? 'Approved' : 'Pending',
-      created_at: comment.created_at,
-    }));
-
-    return { data: sanitizedComments };
+    return {
+      data: comments.map((comment) => ({
+        id: comment.id,
+        content: comment.comment_content,
+        author: comment.user ? comment.user.username || 'Unknown' : 'Unknown',
+        post_title: comment.post
+          ? comment.post.post_title || 'Unknown Post'
+          : 'Unknown Post',
+        status: comment.is_approved ? 'Approved' : 'Pending',
+        created_at: comment.created_at,
+      })),
+    };
   }
 
   async exportCommunities(listQueryDto: ListCommunitiesQueryDto) {
@@ -4602,33 +3204,33 @@ export class AdminService {
       sort_order = 'DESC',
     } = listQueryDto;
 
-    const queryBuilder = this.communityRepository.createQueryBuilder('community');
+    const where: any = {};
 
     if (search) {
-      queryBuilder.andWhere(
-        '(community.community_name LIKE :search OR community.community_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { community_name: { contains: search } },
+        { community_description: { contains: search } },
+      ];
     }
+    if (is_active !== undefined) where.is_active = is_active;
 
-    if (is_active !== undefined) {
-      queryBuilder.andWhere('community.is_active = :is_active', { is_active });
-    }
+    const communities = await this.prisma.community.findMany({
+      where,
+      orderBy: {
+        [sort_by]: (sort_order ?? 'DESC').toLowerCase() as 'asc' | 'desc',
+      },
+    });
 
-    const communities = await queryBuilder
-      .orderBy(`community.${sort_by}`, sort_order)
-      .getMany();
-
-    const sanitizedCommunities = communities.map(community => ({
-      id: community.id,
-      name: community.community_name,
-      slug: community.community_slug,
-      description: community.community_description,
-      is_active: community.is_active ? 'Active' : 'Inactive',
-      created_at: community.created_at,
-    }));
-
-    return { data: sanitizedCommunities };
+    return {
+      data: communities.map((community) => ({
+        id: community.id,
+        name: community.community_name,
+        slug: community.community_slug,
+        description: community.community_description,
+        is_active: community.is_active ? 'Active' : 'Inactive',
+        created_at: community.created_at,
+      })),
+    };
   }
 
   async exportTopics(listQueryDto: ListTopicsQueryDto) {
@@ -4640,37 +3242,34 @@ export class AdminService {
       sort_order = 'DESC',
     } = listQueryDto;
 
-    const queryBuilder = this.topicEntityRepository.createQueryBuilder('topic');
+    const where: any = {};
 
     if (search) {
-      queryBuilder.andWhere(
-        '(topic.topic_name LIKE :search OR topic.topic_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { topic_name: { contains: search } },
+        { topic_description: { contains: search } },
+      ];
     }
+    if (is_active !== undefined) where.is_active = is_active;
+    if (parent_id !== undefined) where.parent_id = parent_id;
 
-    if (is_active !== undefined) {
-      queryBuilder.andWhere('topic.is_active = :is_active', { is_active });
-    }
+    const topics = await this.prisma.topic.findMany({
+      where,
+      orderBy: {
+        [sort_by]: (sort_order ?? 'DESC').toLowerCase() as 'asc' | 'desc',
+      },
+    });
 
-    if (parent_id !== undefined) {
-      queryBuilder.andWhere('topic.parent_id = :parent_id', { parent_id });
-    }
-
-    const topics = await queryBuilder
-      .orderBy(`topic.${sort_by}`, sort_order)
-      .getMany();
-
-    const sanitizedTopics = topics.map(topic => ({
-      id: topic.id,
-      name: topic.topic_name,
-      slug: topic.topic_slug,
-      description: topic.topic_description,
-      is_active: topic.is_active ? 'Active' : 'Inactive',
-      created_at: topic.created_at,
-    }));
-
-    return { data: sanitizedTopics };
+    return {
+      data: topics.map((topic) => ({
+        id: topic.id,
+        name: topic.topic_name,
+        slug: topic.topic_slug,
+        description: topic.topic_description,
+        is_active: topic.is_active ? 'Active' : 'Inactive',
+        created_at: topic.created_at,
+      })),
+    };
   }
 
   async exportPolls(listQueryDto: ListPollsQueryDto) {
@@ -4684,53 +3283,42 @@ export class AdminService {
       sort_order = 'DESC',
     } = listQueryDto;
 
-    const queryBuilder = this.pollRepository
-      .createQueryBuilder('poll')
-      .leftJoinAndSelect('poll.user', 'user');
+    const where: any = {};
 
     if (search) {
-      queryBuilder.andWhere(
-        '(poll.poll_title LIKE :search OR poll.poll_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { poll_title: { contains: search } },
+        { poll_description: { contains: search } },
+      ];
+    }
+    if (poll_status && poll_status !== 'all') where.poll_status = poll_status;
+    if (user_id) where.user_id = user_id;
+    if (created_from || created_to) {
+      where.created_at = {};
+      if (created_from) where.created_at.gte = new Date(created_from);
+      if (created_to) where.created_at.lte = new Date(created_to);
     }
 
-    if (poll_status && poll_status !== 'all') {
-      queryBuilder.andWhere('poll.poll_status = :poll_status', { poll_status });
-    }
+    const polls = await this.prisma.userPoll.findMany({
+      where,
+      include: { user: true },
+      orderBy: {
+        [sort_by]: (sort_order ?? 'DESC').toLowerCase() as 'asc' | 'desc',
+      },
+    });
 
-    if (user_id) {
-      queryBuilder.andWhere('poll.user_id = :user_id', { user_id });
-    }
-
-    if (created_from) {
-      queryBuilder.andWhere('poll.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-
-    if (created_to) {
-      queryBuilder.andWhere('poll.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
-    }
-
-    const polls = await queryBuilder
-      .orderBy(`poll.${sort_by}`, sort_order)
-      .getMany();
-
-    const sanitizedPolls = polls.map(poll => ({
-      id: poll.id,
-      question: poll.poll_title,
-      created_by: poll.user ? (poll.user.username || 'Unknown') : 'Unknown',
-      status: poll.poll_status,
-      vote_count: poll.vote_count || 0,
-      expires_at: poll.poll_expires_at,
-      is_featured: poll.is_featured ? 'Yes' : 'No',
-      created_at: poll.created_at,
-    }));
-
-    return { data: sanitizedPolls };
+    return {
+      data: polls.map((poll) => ({
+        id: poll.id,
+        question: poll.poll_title,
+        created_by: poll.user ? poll.user.username || 'Unknown' : 'Unknown',
+        status: poll.poll_status,
+        vote_count: poll.vote_count || 0,
+        expires_at: poll.poll_expires_at,
+        is_featured: poll.is_featured ? 'Yes' : 'No',
+        created_at: poll.created_at,
+      })),
+    };
   }
 
   async exportSubscriptions(listQueryDto: ListSubscriptionsQueryDto) {
@@ -4742,41 +3330,36 @@ export class AdminService {
       sort_order = 'DESC',
     } = listQueryDto;
 
-    const queryBuilder = this.subscriptionRepository.createQueryBuilder('subscription');
+    const where: any = {};
 
-    if (subscription_type) {
-      queryBuilder.andWhere('subscription.subscription_type = :subscription_type', {
-        subscription_type,
-      });
-    }
-
-    if (is_active !== undefined) {
-      const activeValue = is_active === ActiveStatus.ACTIVE;
-      queryBuilder.andWhere('subscription.is_active = :is_active', { is_active: activeValue });
-    }
-
+    if (subscription_type) where.subscription_type = subscription_type;
+    if (is_active !== undefined)
+      where.is_active = is_active === ActiveStatus.ACTIVE;
     if (search) {
-      queryBuilder.andWhere(
-        '(subscription.subscription_name LIKE :search OR subscription.subscription_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { subscription_name: { contains: search } },
+        { subscription_description: { contains: search } },
+      ];
     }
 
-    queryBuilder.orderBy(`subscription.${sort_by}`, sort_order);
+    const subscriptions = await this.prisma.subscription.findMany({
+      where,
+      orderBy: {
+        [sort_by]: (sort_order ?? 'DESC').toLowerCase() as 'asc' | 'desc',
+      },
+    });
 
-    const subscriptions = await queryBuilder.getMany();
-
-    const sanitizedSubscriptions = subscriptions.map(sub => ({
-      id: sub.id,
-      name: sub.subscription_name,
-      type: sub.subscription_type,
-      price: sub.subscription_price,
-      duration: `${sub.subscription_duration} ${sub.subscription_duration_type}`,
-      is_active: sub.is_active ? 'Active' : 'Inactive',
-      created_at: sub.created_at,
-    }));
-
-    return { data: sanitizedSubscriptions };
+    return {
+      data: subscriptions.map((sub) => ({
+        id: sub.id,
+        name: sub.subscription_name,
+        type: sub.subscription_type,
+        price: sub.subscription_price,
+        duration: `${sub.subscription_duration} ${sub.subscription_duration_type}`,
+        is_active: sub.is_active ? 'Active' : 'Inactive',
+        created_at: sub.created_at,
+      })),
+    };
   }
 
   async exportPayments(listQueryDto: ListPaymentsQueryDto) {
@@ -4790,90 +3373,86 @@ export class AdminService {
       sort_order = 'DESC',
     } = listQueryDto;
 
-    const queryBuilder = this.paymentRepository
-      .createQueryBuilder('payment')
-      .leftJoinAndSelect('payment.user', 'user')
-      .leftJoinAndSelect('payment.user_subscription', 'user_subscription')
-      .leftJoinAndSelect('user_subscription.subscription', 'subscription');
+    const where: any = {};
 
-    if (user_id) {
-      queryBuilder.andWhere('payment.user_id = :user_id', { user_id });
-    }
-
-    if (users_subscriptions_id) {
-      queryBuilder.andWhere('payment.users_subscriptions_id = :users_subscriptions_id', {
-        users_subscriptions_id,
-      });
-    }
-
-    if (payment_status) {
-      queryBuilder.andWhere('payment.payment_status = :payment_status', { payment_status });
-    }
-
-    if (payment_method) {
-      queryBuilder.andWhere('payment.payment_method = :payment_method', { payment_method });
-    }
-
+    if (user_id) where.user_id = user_id;
+    if (users_subscriptions_id)
+      where.users_subscriptions_id = users_subscriptions_id;
+    if (payment_status) where.payment_status = payment_status;
+    if (payment_method) where.payment_method = payment_method;
     if (search) {
-      queryBuilder.andWhere(
-        '(payment.payment_reference LIKE :search OR payment.payment_note LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { payment_reference: { contains: search } },
+        { payment_note: { contains: search } },
+      ];
     }
 
-    queryBuilder.orderBy(`payment.${sort_by}`, sort_order);
+    const payments = await this.prisma.payment.findMany({
+      where,
+      include: {
+        user: true,
+        user_subscription: { include: { subscription: true } },
+      },
+      orderBy: {
+        [sort_by]: (sort_order ?? 'DESC').toLowerCase() as 'asc' | 'desc',
+      },
+    });
 
-    const payments = await queryBuilder.getMany();
-
-    const sanitizedPayments = payments.map(payment => ({
-      id: payment.id,
-      transaction_id: payment.payment_transaction_id,
-      amount: payment.payment_amount,
-      currency: payment.payment_currency,
-      user_name: payment.user ? (payment.user.username || payment.user.email) : 'Unknown',
-      subscription_plan: payment.user_subscription?.subscription?.subscription_name || 'Unknown',
-      status: payment.payment_status,
-      method: payment.payment_method,
-      gateway: payment.payment_gateway,
-      created_at: payment.created_at,
-    }));
-
-    return { data: sanitizedPayments };
+    return {
+      data: payments.map((payment) => ({
+        id: payment.id,
+        transaction_id: payment.payment_transaction_id,
+        amount: payment.payment_amount,
+        currency: payment.payment_currency,
+        user_name: payment.user
+          ? payment.user.username || payment.user.email
+          : 'Unknown',
+        subscription_plan:
+          (payment.user_subscription as any)?.subscription?.subscription_name ||
+          'Unknown',
+        status: payment.payment_status,
+        method: payment.payment_method,
+        gateway: payment.payment_gateway,
+        created_at: payment.created_at,
+      })),
+    };
   }
 
   // ========== Enhanced Detail Endpoints ==========
 
   async getPostByIdEnhanced(postId: number) {
-    // Skip view count increment for admin views
     const post = await this.postService.getPostById(postId, undefined, true);
 
-    // Parse tags
-    const postTags = post.post_tags ? post.post_tags.split(',').filter(Boolean) : [];
+    const postTags = post.post_tags
+      ? post.post_tags.split(',').filter(Boolean)
+      : [];
 
-    // Parse community IDs
-    const communityIds = post.community_ids ? post.community_ids.split(',').filter(Boolean).map(Number) : [];
+    const communityIds = post.community_ids
+      ? post.community_ids.split(',').filter(Boolean).map(Number)
+      : [];
     const communities = await Promise.all(
-      communityIds.map(async (id) => {
-        const community = await this.communityRepository.findOne({
+      communityIds.map((id) =>
+        this.prisma.community.findUnique({
           where: { id },
-          select: ['id', 'community_name', 'community_slug'],
-        });
-        return community;
-      }),
+          select: { id: true, community_name: true, community_slug: true },
+        }),
+      ),
     );
 
-    // Calculate engagement metrics
     const totalInteractions = post.like_count + post.comment_count;
-    const engagementRate = post.view_count > 0 ? (totalInteractions / post.view_count) * 100 : 0;
+    const engagementRate =
+      post.view_count > 0 ? (totalInteractions / post.view_count) * 100 : 0;
 
-    // Calculate trending score
-    const recentComments = await this.commentRepository.count({
+    const recentComments = await this.prisma.postComment.count({
       where: {
         post_id: postId,
-        created_at: MoreThan(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
+        created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
       },
     });
-    const trendingScore = (post.like_count * 0.4 + recentComments * 0.6) / (post.view_count || 1) * 100;
+    const trendingScore =
+      ((post.like_count * 0.4 + recentComments * 0.6) /
+        (post.view_count || 1)) *
+      100;
 
     return {
       ...post,
@@ -4887,10 +3466,10 @@ export class AdminService {
   async getTopicByIdEnhanced(topicId: number) {
     const topic = await this.generalService.getTopicById(topicId);
 
-    const postsCount = await this.postRepository.count({
-      where: { post_topic_id: topicId, post_status: PostStatus.PUBLISHED },
+    const postsCount = await this.prisma.userPost.count({
+      where: { post_topic_id: topicId, post_status: 'published' },
     });
-    const communitiesCount = await this.communityTopicRepository.count({
+    const communitiesCount = await this.prisma.communityTopic.count({
       where: { topic_id: topicId, is_active: true },
     });
 
@@ -4902,15 +3481,13 @@ export class AdminService {
     };
   }
 
-
-
   async getCommentByIdEnhanced(commentId: number) {
     const comment = await this.commentService.getCommentById(commentId);
 
-    const replies = await this.commentRepository.find({
+    const replies = await this.prisma.postComment.findMany({
       where: { parent_comment_id: commentId },
-      relations: ['user', 'post'],
-      order: { created_at: 'ASC' },
+      include: { user: true, post: true },
+      orderBy: { created_at: 'asc' },
     });
 
     return {
@@ -4920,37 +3497,32 @@ export class AdminService {
     };
   }
 
-
-
   async getCommunityByIdEnhanced(communityId: number) {
     const community = await this.communityService.getCommunityById(communityId);
 
-    const postsCount = await this.postRepository
-      .createQueryBuilder('post')
-      .where('(FIND_IN_SET(:communityId, post.community_ids) > 0 OR post.community_ids = :communityIdStr)', {
-        communityId,
-        communityIdStr: communityId.toString()
-      })
-      .getCount();
+    // FIND_IN_SET is MySQL-specific; use $queryRawUnsafe to retain that logic
+    const postsCountResult = (await this.prisma.$queryRawUnsafe(
+      'SELECT COUNT(*) as cnt FROM user_posts WHERE FIND_IN_SET(?, community_ids) > 0 OR community_ids = ?',
+      communityId,
+      String(communityId),
+    )) as [{ cnt: bigint }];
+    const postsCount = Number(postsCountResult[0]?.cnt ?? 0);
 
-    // Calculate posts per day based on last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const last30DaysPosts = await this.postRepository
-      .createQueryBuilder('post')
-      .where('(FIND_IN_SET(:communityId, post.community_ids) > 0 OR post.community_ids = :communityIdStr)', {
-        communityId,
-        communityIdStr: communityId.toString()
-      })
-      .andWhere('post.created_at >= :thirtyDaysAgo', { thirtyDaysAgo })
-      .getCount();
-
+    const last30DaysResult = (await this.prisma.$queryRawUnsafe(
+      'SELECT COUNT(*) as cnt FROM user_posts WHERE (FIND_IN_SET(?, community_ids) > 0 OR community_ids = ?) AND created_at >= ?',
+      communityId,
+      String(communityId),
+      thirtyDaysAgo,
+    )) as [{ cnt: bigint }];
+    const last30DaysPosts = Number(last30DaysResult[0]?.cnt ?? 0);
     const postsPerDay = parseFloat((last30DaysPosts / 30).toFixed(2));
 
-    const topicsCount = await this.communityTopicRepository.count({
+    const topicsCount = await this.prisma.communityTopic.count({
       where: { community_id: communityId, is_active: true },
     });
-    const membersCount = await this.communityUserRepository.count({
+    const membersCount = await this.prisma.communityUser.count({
       where: { community_id: communityId, is_active: true },
     });
 
@@ -4964,11 +3536,9 @@ export class AdminService {
   }
 
   async getPollByIdEnhanced(pollId: number) {
-    // Skip view count increment for admin views
     const poll = await this.pollService.getPollById(pollId, undefined, true);
 
-    // Check and mark expired poll as ended
-    const pollEntity = await this.pollRepository.findOne({
+    const pollEntity = await this.prisma.userPoll.findUnique({
       where: { id: pollId },
     });
 
@@ -4977,17 +3547,19 @@ export class AdminService {
       if (
         pollEntity.poll_expires_at &&
         new Date(pollEntity.poll_expires_at) <= now &&
-        pollEntity.poll_status !== PollStatus.ENDED
+        pollEntity.poll_status !== 'ended'
       ) {
-        pollEntity.poll_status = PollStatus.ENDED;
-        await this.pollRepository.save(pollEntity);
-        // Update the response object
-        poll.poll_status = PollStatus.ENDED;
+        await this.prisma.userPoll.update({
+          where: { id: pollId },
+          data: { poll_status: 'ended' },
+        });
+        poll.poll_status = 'ended' as any;
       }
     }
 
     const totalVotes = poll.vote_count;
-    const engagementRate = poll.view_count > 0 ? (totalVotes / poll.view_count) * 100 : 0;
+    const engagementRate =
+      poll.view_count > 0 ? (totalVotes / poll.view_count) * 100 : 0;
 
     return {
       ...poll,
@@ -5016,170 +3588,152 @@ export class AdminService {
     }
 
     const effectiveLimit = Math.min(Math.max(limit || 5, 1), 20);
-    // Use LOWER for case-insensitive search (MySQL LIKE is case-insensitive by default, but this ensures it)
-    const searchLike = `%${term}%`;
 
-    // Enhanced search queries with more fields
-    // Note: MySQL LIKE is case-insensitive by default, but using LOWER ensures it works across all configurations
-    const userWhere =
-      '(LOWER(user.username) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(COALESCE(profile.full_name, "")) LIKE LOWER(:search))';
-    const postWhere =
-      '(LOWER(post.post_title) LIKE LOWER(:search) OR LOWER(post.post_content) LIKE LOWER(:search) OR LOWER(post.post_slug) LIKE LOWER(:search) OR LOWER(COALESCE(post.post_tags, "")) LIKE LOWER(:search))';
-    const communityWhere =
-      '(LOWER(community.community_name) LIKE LOWER(:search) OR LOWER(community.community_slug) LIKE LOWER(:search) OR LOWER(COALESCE(community.community_description, "")) LIKE LOWER(:search))';
-    const topicWhere =
-      '(LOWER(topic.topic_name) LIKE LOWER(:search) OR LOWER(topic.topic_slug) LIKE LOWER(:search) OR LOWER(COALESCE(topic.topic_description, "")) LIKE LOWER(:search))';
+    const [users, userCount] = await Promise.all([
+      this.prisma.user.findMany({
+        where: {
+          OR: [
+            { username: { contains: term } },
+            { email: { contains: term } },
+            { profile: { full_name: { contains: term } } },
+          ],
+        },
+        include: { profile: true },
+        orderBy: { username: 'asc' },
+        take: effectiveLimit,
+      }),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { username: { contains: term } },
+            { email: { contains: term } },
+            { profile: { full_name: { contains: term } } },
+          ],
+        },
+      }),
+    ]);
 
-    const userQuery = this.userRepository
-      .createQueryBuilder('user')
-      .leftJoin('user_profile', 'profile', 'profile.user_id = user.id')
-      .select([
-        'user.id AS id',
-        'COALESCE(profile.full_name, user.username) AS name',
-        "CONCAT('@', user.username) AS handle",
-        'profile.profile_picture AS avatar',
-        'user.role AS role',
-      ])
-      .where(userWhere, { search: searchLike })
-      .orderBy('user.username', 'ASC')
-      .limit(effectiveLimit);
+    const [posts, postCount] = await Promise.all([
+      this.prisma.userPost.findMany({
+        where: {
+          post_status: { in: ['published', 'draft'] },
+          OR: [
+            { post_title: { contains: term } },
+            { post_content: { contains: term } },
+            { post_slug: { contains: term } },
+            { post_tags: { contains: term } },
+          ],
+        },
+        include: { user: { include: { profile: true } } },
+        orderBy: { created_at: 'desc' },
+        take: effectiveLimit,
+      }),
+      this.prisma.userPost.count({
+        where: {
+          post_status: { in: ['published', 'draft'] },
+          OR: [
+            { post_title: { contains: term } },
+            { post_content: { contains: term } },
+            { post_slug: { contains: term } },
+            { post_tags: { contains: term } },
+          ],
+        },
+      }),
+    ]);
 
-    const postQuery = this.postRepository
-      .createQueryBuilder('post')
-      .leftJoin(User, 'user', 'user.id = post.user_id')
-      .leftJoin('user_profile', 'profile', 'profile.user_id = user.id')
-      .select([
-        'post.id AS id',
-        'post.post_title AS title',
-        'post.post_slug AS slug',
-        'post.post_status AS status',
-        'post.view_count AS view_count',
-        'post.like_count AS like_count',
-        'post.comment_count AS comment_count',
-        'post.created_at AS created_at',
-        'post.post_image AS post_image',
-        'post.post_video AS post_video',
-        'post.post_audio AS post_audio',
-        'user.id AS user_id',
-        'COALESCE(profile.full_name, user.username) AS user_name',
-        "CONCAT('@', user.username) AS user_handle",
-      ])
-      .where(postWhere, { search: searchLike })
-      .andWhere('post.post_status IN (:...statuses)', {
-        statuses: [PostStatus.PUBLISHED, PostStatus.DRAFT],
-      })
-      .orderBy('post.created_at', 'DESC')
-      .limit(effectiveLimit);
+    const [communities, communityCount] = await Promise.all([
+      this.prisma.community.findMany({
+        where: {
+          OR: [
+            { community_name: { contains: term } },
+            { community_slug: { contains: term } },
+            { community_description: { contains: term } },
+          ],
+        },
+        include: { members: { where: { is_active: true } } },
+        take: effectiveLimit,
+      }),
+      this.prisma.community.count({
+        where: {
+          OR: [
+            { community_name: { contains: term } },
+            { community_slug: { contains: term } },
+            { community_description: { contains: term } },
+          ],
+        },
+      }),
+    ]);
 
-    const communityQuery = this.communityRepository
-      .createQueryBuilder('community')
-      .leftJoin(
-        CommunityUser,
-        'cu',
-        'cu.community_id = community.id AND cu.is_active = :isActive',
-        { isActive: true },
-      )
-      .select([
-        'community.id AS id',
-        'community.community_name AS name',
-        'community.community_slug AS slug',
-        'community.community_image AS community_image',
-        'COUNT(cu.id) AS member_count',
-      ])
-      .where(communityWhere, { search: searchLike })
-      .groupBy('community.id')
-      .orderBy('member_count', 'DESC')
-      .limit(effectiveLimit);
+    const [topics, topicCount] = await Promise.all([
+      this.prisma.topic.findMany({
+        where: {
+          OR: [
+            { topic_name: { contains: term } },
+            { topic_slug: { contains: term } },
+            { topic_description: { contains: term } },
+          ],
+        },
+        include: { userPosts: { where: { post_status: 'published' } } },
+        take: effectiveLimit,
+      }),
+      this.prisma.topic.count({
+        where: {
+          OR: [
+            { topic_name: { contains: term } },
+            { topic_slug: { contains: term } },
+            { topic_description: { contains: term } },
+          ],
+        },
+      }),
+    ]);
 
-    const topicQuery = this.topicEntityRepository
-      .createQueryBuilder('topic')
-      .leftJoin(
-        UserPost,
-        'post',
-        'post.post_topic_id = topic.id AND post.post_status = :postStatus',
-        { postStatus: PostStatus.PUBLISHED },
-      )
-      .select([
-        'topic.id AS id',
-        'topic.topic_name AS name',
-        'topic.topic_slug AS slug',
-        'COUNT(post.id) AS posts_count',
-      ])
-      .where(topicWhere, { search: searchLike })
-      .groupBy('topic.id')
-      .orderBy('posts_count', 'DESC')
-      .limit(effectiveLimit);
-
-    const [users, posts, communities, topics, userCount, postCount, communityCount, topicCount] =
-      await Promise.all([
-        userQuery.getRawMany(),
-        postQuery.getRawMany(),
-        communityQuery.getRawMany(),
-        topicQuery.getRawMany(),
-        this.userRepository
-          .createQueryBuilder('user')
-          .leftJoin('user_profile', 'profile', 'profile.user_id = user.id')
-          .where(userWhere, { search: searchLike })
-          .getCount(),
-        this.postRepository
-          .createQueryBuilder('post')
-          .where(postWhere, { search: searchLike })
-          .andWhere('post.post_status IN (:...statuses)', {
-            statuses: [PostStatus.PUBLISHED, PostStatus.DRAFT],
-          })
-          .getCount(),
-        this.communityRepository
-          .createQueryBuilder('community')
-          .where(communityWhere, { search: searchLike })
-          .getCount(),
-        this.topicEntityRepository
-          .createQueryBuilder('topic')
-          .where(topicWhere, { search: searchLike })
-          .getCount(),
-      ]);
-
-    // Debug: Log raw query results to verify data structure
-    this.logger.debug(`Search results - Posts sample: ${JSON.stringify(posts.slice(0, 1))}`);
-    this.logger.debug(`Search results - Communities sample: ${JSON.stringify(communities.slice(0, 1))}`);
+    this.logger.debug(
+      `Search results - Posts sample: ${JSON.stringify(posts.slice(0, 1))}`,
+    );
+    this.logger.debug(
+      `Search results - Communities sample: ${JSON.stringify(communities.slice(0, 1))}`,
+    );
 
     return {
       users: users.map((u) => ({
-        id: Number(u.id),
-        name: u.name,
-        handle: u.handle,
-        avatar: u.avatar,
+        id: u.id,
+        name: u.profile?.full_name || u.username,
+        handle: `@${u.username}`,
+        avatar: u.profile?.profile_picture || null,
         role: u.role,
       })),
       posts: posts.map((p) => ({
-        id: Number(p.id),
-        title: p.title,
-        slug: p.slug,
-        status: p.status,
-        view_count: Number(p.view_count) || 0,
-        like_count: Number(p.like_count) || 0,
-        comment_count: Number(p.comment_count) || 0,
+        id: p.id,
+        title: p.post_title,
+        slug: p.post_slug,
+        status: p.post_status,
+        view_count: p.view_count || 0,
+        like_count: p.like_count || 0,
+        comment_count: p.comment_count || 0,
         created_at: p.created_at,
         post_image: p.post_image || null,
         post_video: p.post_video || null,
         post_audio: p.post_audio || null,
-        user: {
-          id: Number(p.user_id),
-          name: p.user_name,
-          handle: p.user_handle,
-        },
+        user: p.user
+          ? {
+              id: p.user.id,
+              name: (p.user as any).profile?.full_name || p.user.username,
+              handle: `@${p.user.username}`,
+            }
+          : null,
       })),
       communities: communities.map((c) => ({
-        id: Number(c.id),
-        name: c.name,
-        member_count: Number(c.member_count) || 0,
-        slug: c.slug,
+        id: c.id,
+        name: c.community_name,
+        slug: c.community_slug,
         community_image: c.community_image || null,
+        member_count: (c as any).members?.length || 0,
       })),
       topics: topics.map((t) => ({
-        id: Number(t.id),
-        name: t.name,
-        posts_count: Number(t.posts_count) || 0,
-        slug: t.slug,
+        id: t.id,
+        name: t.topic_name,
+        slug: t.topic_slug,
+        posts_count: (t as any).userPosts?.length || 0,
       })),
       meta: {
         users: { count: userCount },
@@ -5194,7 +3748,7 @@ export class AdminService {
   async getSubscriptionPaymentNotifications(
     queryDto: ListSubscriptionPaymentNotificationsDto,
   ): Promise<{
-    data: Notification[];
+    data: any[];
     meta: {
       total: number;
       page: number;
@@ -5212,16 +3766,17 @@ export class AdminService {
       sort_order = 'DESC',
     } = queryDto;
 
-    // Use NotificationService to execute the query (it has the properly configured repository)
-    const { data: notifications, total } = await this.notificationService.getSubscriptionPaymentNotifications({
-      page,
-      limit,
-      is_read: is_read === ReadStatus.READ,
-      user_id,
-      search,
-      sort_by,
-      sort_order,
-    });
+    // Delegate to NotificationService which owns the notification prisma access
+    const { data: notifications, total } =
+      await this.notificationService.getSubscriptionPaymentNotifications({
+        page,
+        limit,
+        is_read: is_read === ReadStatus.READ,
+        user_id,
+        search,
+        sort_by,
+        sort_order,
+      });
 
     return {
       data: notifications,
@@ -5243,17 +3798,18 @@ export class AdminService {
       const { time_range, start_date, end_date } = queryDto || {};
       const effectiveTimeRange = time_range || 'all';
 
-      // Validate: Cannot use time_range and custom dates together
       if (time_range && (start_date || end_date)) {
-        throw new BadRequestException('Cannot use time_range together with start_date/end_date. Use either time_range OR custom dates.');
+        throw new BadRequestException(
+          'Cannot use time_range together with start_date/end_date. Use either time_range OR custom dates.',
+        );
       }
 
-      // Validate custom date range
       if ((start_date && !end_date) || (!start_date && end_date)) {
-        throw new BadRequestException('Both start_date and end_date are required together');
+        throw new BadRequestException(
+          'Both start_date and end_date are required together',
+        );
       }
 
-      // Calculate date ranges
       let periodStart: Date;
       let periodEnd: Date;
       const now = new Date();
@@ -5278,38 +3834,40 @@ export class AdminService {
             periodStart.setDate(periodStart.getDate() - 364);
             periodEnd = this.normalizeEndDate(now);
             break;
-          default: // 'all'
-            // For all time, get from first user registration to now
-            // Use a safe query that handles empty database
-            const firstUserResult = await this.userRepository
-              .createQueryBuilder('user')
-              .select('user.created_at', 'created_at')
-              .orderBy('user.created_at', 'ASC')
-              .limit(1)
-              .getRawOne();
+          default: {
+            const firstUser = await this.prisma.user.findFirst({
+              orderBy: { created_at: 'asc' },
+              select: { created_at: true },
+            });
 
-            if (firstUserResult && firstUserResult.created_at) {
-              const firstUserDate = new Date(firstUserResult.created_at);
-              periodStart = this.normalizeStartDate(firstUserDate);
-              this.logger.debug(`User growth 'all' range: First user date: ${firstUserDate.toISOString()}, Period start: ${periodStart.toISOString()}`);
+            if (firstUser?.created_at) {
+              periodStart = this.normalizeStartDate(
+                new Date(firstUser.created_at),
+              );
+              this.logger.debug(
+                `User growth 'all' range: First user date: ${firstUser.created_at.toISOString()}, Period start: ${periodStart.toISOString()}`,
+              );
             } else {
-              // If no users exist, use last 12 months as default
               const defaultStart = new Date(now);
               defaultStart.setMonth(defaultStart.getMonth() - 12);
               periodStart = this.normalizeStartDate(defaultStart);
-              this.logger.debug(`User growth 'all' range: No users found, using default start: ${periodStart.toISOString()}`);
+              this.logger.debug(
+                `User growth 'all' range: No users found, using default start: ${periodStart.toISOString()}`,
+              );
             }
             periodEnd = this.normalizeEndDate(new Date(now));
-            this.logger.debug(`User growth 'all' range: Period end: ${periodEnd.toISOString()}`);
+            this.logger.debug(
+              `User growth 'all' range: Period end: ${periodEnd.toISOString()}`,
+            );
             break;
+          }
         }
       }
 
-      // Determine grouping based on time range
-      let dateFormat: 'daily' | 'weekly' | 'monthly';
       const diffTime = periodEnd.getTime() - periodStart.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+      let dateFormat: 'daily' | 'weekly' | 'monthly';
       if (diffDays <= 90) {
         dateFormat = 'daily';
       } else if (diffDays <= 365) {
@@ -5318,97 +3876,93 @@ export class AdminService {
         dateFormat = 'monthly';
       }
 
-      // Query user growth data using raw SQL for date formatting
-      let groupByClause: string;
-      let dateSelectClause: string;
-      if (dateFormat === 'daily') {
-        groupByClause = "DATE(users.created_at)";
-        dateSelectClause = "DATE(users.created_at)";
-      } else if (dateFormat === 'weekly') {
-        groupByClause = "YEARWEEK(users.created_at, 1)";
-        dateSelectClause = "YEARWEEK(users.created_at, 1)";
-      } else {
-        groupByClause = "DATE_FORMAT(users.created_at, '%Y-%m')";
-        dateSelectClause = "DATE_FORMAT(users.created_at, '%Y-%m')";
-      }
+      const totalUsersCount = await this.prisma.user.count();
+      this.logger.debug(
+        `User growth: Total users in database: ${totalUsersCount}`,
+      );
+      this.logger.debug(
+        `User growth: Querying users between ${periodStart.toISOString()} and ${periodEnd.toISOString()}`,
+      );
 
-      // Query user growth data - get all users in the date range first
-      // Also get total count for debugging
-      const totalUsersCount = await this.userRepository.count();
-      this.logger.debug(`User growth: Total users in database: ${totalUsersCount}`);
-      this.logger.debug(`User growth: Querying users between ${periodStart.toISOString()} and ${periodEnd.toISOString()}`);
+      let usersInRange = await this.prisma.user.findMany({
+        where: { created_at: { gte: periodStart, lte: periodEnd } },
+        select: { id: true, created_at: true },
+      });
 
-      // Query users in the date range
-      let usersInRange = await this.userRepository
-        .createQueryBuilder('user')
-        .select(['user.id', 'user.created_at'])
-        .where('user.created_at >= :start', { start: periodStart })
-        .andWhere('user.created_at <= :end', { end: periodEnd })
-        .getMany();
+      this.logger.debug(
+        `User growth query: Found ${usersInRange.length} users in date range (out of ${totalUsersCount} total)`,
+      );
 
-      this.logger.debug(`User growth query: Found ${usersInRange.length} users in date range (out of ${totalUsersCount} total)`);
-
-      // If no users found in range but total > 0, there might be a date range issue
-      // Let's get all users and filter them in memory to debug
       if (usersInRange.length === 0 && totalUsersCount > 0) {
-        const allUsers = await this.userRepository
-          .createQueryBuilder('user')
-          .select(['user.id', 'user.created_at'])
-          .orderBy('user.created_at', 'ASC')
-          .getMany();
+        const allUsers = await this.prisma.user.findMany({
+          select: { id: true, created_at: true },
+          orderBy: { created_at: 'asc' },
+        });
 
-        this.logger.warn(`User growth: No users in date range. Total users: ${allUsers.length}`);
+        this.logger.warn(
+          `User growth: No users in date range. Total users: ${allUsers.length}`,
+        );
         if (allUsers.length > 0) {
-          const firstUser = allUsers[0];
-          const lastUser = allUsers[allUsers.length - 1];
-          this.logger.warn(`User growth: First user date: ${firstUser.created_at?.toISOString()}, Last user date: ${lastUser.created_at?.toISOString()}`);
-          this.logger.warn(`User growth: Query range: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`);
+          const firstUserRec = allUsers[0];
+          const lastUserRec = allUsers[allUsers.length - 1];
+          this.logger.warn(
+            `User growth: First user date: ${firstUserRec.created_at?.toISOString()}, Last user date: ${lastUserRec.created_at?.toISOString()}`,
+          );
+          this.logger.warn(
+            `User growth: Query range: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`,
+          );
 
-          // If users exist outside the range, adjust the range to include them
-          const firstUserDate = firstUser.created_at instanceof Date ? firstUser.created_at : new Date(firstUser.created_at);
-          const lastUserDate = lastUser.created_at instanceof Date ? lastUser.created_at : new Date(lastUser.created_at);
+          const firstUserDate =
+            firstUserRec.created_at instanceof Date
+              ? firstUserRec.created_at
+              : new Date(firstUserRec.created_at);
+          const lastUserDate =
+            lastUserRec.created_at instanceof Date
+              ? lastUserRec.created_at
+              : new Date(lastUserRec.created_at);
 
           if (firstUserDate < periodStart) {
-            this.logger.warn(`User growth: Adjusting periodStart to include first user`);
+            this.logger.warn(
+              `User growth: Adjusting periodStart to include first user`,
+            );
             periodStart = this.normalizeStartDate(firstUserDate);
           }
           if (lastUserDate > periodEnd) {
-            this.logger.warn(`User growth: Adjusting periodEnd to include last user`);
+            this.logger.warn(
+              `User growth: Adjusting periodEnd to include last user`,
+            );
             periodEnd = this.normalizeEndDate(lastUserDate);
           }
 
-          // Re-query with adjusted dates
-          usersInRange = await this.userRepository
-            .createQueryBuilder('user')
-            .select(['user.id', 'user.created_at'])
-            .where('user.created_at >= :start', { start: periodStart })
-            .andWhere('user.created_at <= :end', { end: periodEnd })
-            .getMany();
+          usersInRange = await this.prisma.user.findMany({
+            where: { created_at: { gte: periodStart, lte: periodEnd } },
+            select: { id: true, created_at: true },
+          });
 
-          this.logger.debug(`User growth: After adjustment, found ${usersInRange.length} users`);
+          this.logger.debug(
+            `User growth: After adjustment, found ${usersInRange.length} users`,
+          );
         }
       }
 
-      // Group users by date
       const growthMap = new Map<string, number>();
-      usersInRange.forEach(user => {
+      usersInRange.forEach((user) => {
+        const userDate =
+          user.created_at instanceof Date
+            ? user.created_at
+            : new Date(user.created_at);
         let dateKey: string;
-        // Ensure we're working with a proper Date object
-        const userDate = user.created_at instanceof Date ? user.created_at : new Date(user.created_at);
 
         if (dateFormat === 'daily') {
-          // Use UTC date to avoid timezone issues
           const year = userDate.getUTCFullYear();
           const month = String(userDate.getUTCMonth() + 1).padStart(2, '0');
           const day = String(userDate.getUTCDate()).padStart(2, '0');
           dateKey = `${year}-${month}-${day}`;
         } else if (dateFormat === 'weekly') {
-          // Calculate week number
           const year = userDate.getFullYear();
           const week = this.getWeekNumber(userDate);
           dateKey = `${year}-W${week}`;
         } else {
-          // Monthly
           const year = userDate.getUTCFullYear();
           const month = String(userDate.getUTCMonth() + 1).padStart(2, '0');
           dateKey = `${year}-${month}`;
@@ -5417,72 +3971,76 @@ export class AdminService {
         growthMap.set(dateKey, (growthMap.get(dateKey) || 0) + 1);
       });
 
-      this.logger.debug(`User growth grouped into ${growthMap.size} date groups`);
+      this.logger.debug(
+        `User growth grouped into ${growthMap.size} date groups`,
+      );
 
-      // Convert map to array
       const growthData = Array.from(growthMap.entries())
-        .map(([date, count]) => ({
-          date,
-          count: count,
-        }))
+        .map(([date, count]) => ({ date, count }))
         .sort((a, b) => a.date.localeCompare(b.date));
 
-      // Get total users before period start for cumulative calculation
-      const totalBeforePeriod = await this.userRepository.count({
-        where: {
-          created_at: LessThan(periodStart),
-        },
+      const totalBeforePeriod = await this.prisma.user.count({
+        where: { created_at: { lt: periodStart } },
       });
 
-      // Process data and calculate cumulative counts
       let cumulative = totalBeforePeriod;
       const processedData = growthData.map((item) => {
-        const count = typeof item.count === 'number' ? item.count : parseInt(item.count || '0', 10);
+        const count =
+          typeof item.count === 'number'
+            ? item.count
+            : parseInt(item.count || '0', 10);
         cumulative += count;
-        return {
-          date: item.date, // Already formatted correctly
-          count: count,
-          cumulative: cumulative,
-        };
+        return { date: item.date, count, cumulative };
       });
 
-      // Fill in missing dates with zero counts
-      // Create a map of processed data for easier lookup
-      const processedDataMap = new Map<string, { date: string; count: number; cumulative: number }>();
-      processedData.forEach(item => {
+      const processedDataMap = new Map<
+        string,
+        { date: string; count: number; cumulative: number }
+      >();
+      processedData.forEach((item) => {
         processedDataMap.set(item.date, item);
       });
 
-      this.logger.debug(`User growth: Processed ${processedData.length} data points with dates: ${processedData.map(d => d.date).join(', ')}`);
+      this.logger.debug(
+        `User growth: Processed ${processedData.length} data points with dates: ${processedData.map((d) => d.date).join(', ')}`,
+      );
 
-      const filledData: Array<{ date: string; count: number; cumulative: number }> = [];
-      // Use UTC dates for iteration to avoid timezone issues
-      const currentDate = new Date(Date.UTC(
-        periodStart.getUTCFullYear(),
-        periodStart.getUTCMonth(),
-        periodStart.getUTCDate()
-      ));
-      const endDate = new Date(Date.UTC(
-        periodEnd.getUTCFullYear(),
-        periodEnd.getUTCMonth(),
-        periodEnd.getUTCDate()
-      ));
+      const filledData: Array<{
+        date: string;
+        count: number;
+        cumulative: number;
+      }> = [];
+      const currentDate = new Date(
+        Date.UTC(
+          periodStart.getUTCFullYear(),
+          periodStart.getUTCMonth(),
+          periodStart.getUTCDate(),
+        ),
+      );
+      const endDate = new Date(
+        Date.UTC(
+          periodEnd.getUTCFullYear(),
+          periodEnd.getUTCMonth(),
+          periodEnd.getUTCDate(),
+        ),
+      );
 
-      // Calculate max iterations based on actual date range
-      const maxIterations = Math.ceil(diffDays) + 10; // Add buffer
+      const maxIterations = Math.ceil(diffDays) + 10;
       let iterations = 0;
       let lastCumulative = totalBeforePeriod;
 
       while (currentDate <= endDate && iterations < maxIterations) {
         iterations++;
-        const dateStr = this.formatDateForGrouping(new Date(currentDate), dateFormat);
+        const dateStr = this.formatDateForGrouping(
+          new Date(currentDate),
+          dateFormat,
+        );
         const existingData = processedDataMap.get(dateStr);
 
         if (existingData) {
           filledData.push(existingData);
           lastCumulative = existingData.cumulative;
         } else {
-          // Fill with zero count, but maintain cumulative
           filledData.push({
             date: dateStr,
             count: 0,
@@ -5490,7 +4048,6 @@ export class AdminService {
           });
         }
 
-        // Move to next period using UTC
         if (dateFormat === 'daily') {
           currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         } else if (dateFormat === 'weekly') {
@@ -5502,26 +4059,28 @@ export class AdminService {
 
       this.logger.debug(`User growth: Filled ${filledData.length} data points`);
 
-      // Use the final cumulative value from processed data if available, otherwise from filled data
-      const finalTotal = processedData.length > 0
-        ? processedData[processedData.length - 1].cumulative
-        : (filledData.length > 0 ? filledData[filledData.length - 1].cumulative : totalBeforePeriod);
+      const finalTotal =
+        processedData.length > 0
+          ? processedData[processedData.length - 1].cumulative
+          : filledData.length > 0
+            ? filledData[filledData.length - 1].cumulative
+            : totalBeforePeriod;
 
-      return {
-        data: filledData,
-        total: finalTotal,
-      };
+      return { data: filledData, total: finalTotal };
     } catch (error) {
       console.error('Error in getUserGrowth:', error);
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException(`Failed to fetch user growth data: ${error.message || 'Unknown error'}`);
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      throw new BadRequestException(`Failed to fetch user growth data: ${msg}`);
     }
   }
 
-  private formatDateForGrouping(date: Date, format: 'daily' | 'weekly' | 'monthly'): string {
-    // Use UTC to avoid timezone issues
+  private formatDateForGrouping(
+    date: Date,
+    format: 'daily' | 'weekly' | 'monthly',
+  ): string {
     const year = date.getUTCFullYear();
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
     const day = String(date.getUTCDate()).padStart(2, '0');
@@ -5529,9 +4088,10 @@ export class AdminService {
     switch (format) {
       case 'daily':
         return `${year}-${month}-${day}`;
-      case 'weekly':
+      case 'weekly': {
         const week = this.getWeekNumber(date);
         return `${year}-W${week}`;
+      }
       case 'monthly':
         return `${year}-${month}`;
       default:
@@ -5540,95 +4100,1333 @@ export class AdminService {
   }
 
   private getWeekNumber(date: Date): string {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+    );
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return String(Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)).padStart(2, '0');
+    return String(
+      Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7),
+    ).padStart(2, '0');
   }
 
-  private getUsersQueryBuilder(
-    listQueryDto: ListUsersQueryDto,
-    options: { onlyDeleted?: boolean } = {},
+  async updateCommunityStatus(
+    communityId: number,
+    updateCommunityStatusDto: UpdateCommunityStatusDto,
+    adminId: number,
   ) {
-    const {
-      search,
-      role,
-      is_active,
-      is_verified,
-      created_from,
-      created_to,
-      user_id,
-    } = listQueryDto;
+    // Get the community first to check if it exists
+    const community = await this.prisma.community.findUnique({
+      where: { id: communityId },
+    });
 
-    const queryBuilder = this.userRepository.createQueryBuilder('user')
-      .leftJoin('user_profile', 'profile', 'profile.user_id = user.id');
-
-    // Default: exclude soft-deleted users.
-    // onlyDeleted: true → return only soft-deleted users (for admin deleted-users page)
-    if (options.onlyDeleted) {
-      queryBuilder.andWhere('user.is_deleted = :deletedFlag', { deletedFlag: true });
-    } else {
-      queryBuilder.andWhere('user.is_deleted = :deletedFlag', { deletedFlag: false });
+    if (!community) {
+      throw new NotFoundException('Community not found');
     }
 
-    if (search) {
-      queryBuilder.andWhere(
-        '(user.username LIKE :search OR user.email LIKE :search OR profile.full_name LIKE :search)',
-        { search: `%${search}%` },
+    // Admin can update any community status directly
+    await this.prisma.community.update({
+      where: { id: communityId },
+      data: {
+        is_active: updateCommunityStatusDto.is_active,
+        updated_by: adminId,
+      },
+    });
+
+    // Get updated community
+    const updatedCommunity =
+      await this.communityService.getCommunityById(communityId);
+
+    return {
+      message: 'Community status updated successfully',
+      community: updatedCommunity,
+    };
+  }
+
+  async deleteCommunity(communityId: number, adminId: number) {
+    // Get the community first to check if it exists
+    const community = await this.prisma.community.findUnique({
+      where: { id: communityId },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found');
+    }
+
+    // Admin can delete any community, bypassing community admin check
+    // Count active members
+    const memberCount = await this.prisma.communityUser.count({
+      where: { community_id: communityId, is_active: true },
+    });
+
+    // Delete all related community-topic associations
+    await this.prisma.communityTopic.deleteMany({
+      where: { community_id: communityId },
+    });
+
+    // If community has only one member, delete the record from database
+    if (memberCount === 1) {
+      await this.prisma.community.delete({ where: { id: community.id } });
+      return {
+        message:
+          'Community deleted successfully (hard delete - only one member)',
+      };
+    }
+
+    // If community has more than one member, soft delete (inactivate)
+    await this.prisma.community.update({
+      where: { id: community.id },
+      data: { is_active: false, updated_by: adminId },
+    });
+
+    return {
+      message:
+        'Community deleted successfully (soft delete - multiple members)',
+    };
+  }
+
+  async getCommunityMembers(communityId: number, listQueryDto: ListQueryDto) {
+    // Admin can view members of any community
+    const membersData = await this.communityService.getCommunityMembers(
+      communityId,
+      {
+        page: listQueryDto.page || 1,
+        limit: listQueryDto.limit || 10,
+        role: undefined, // Admin can see all roles
+        sort_by: listQueryDto.sort_by || 'created_at',
+        sort_order: listQueryDto.sort_order || 'DESC',
+      },
+    );
+
+    // Enrich with post count and profile info specifically for admin view
+    const enrichedData = await Promise.all(
+      membersData.data.map(async (member) => {
+        // Count posts by this user in this specific community
+        // Using FIND_IN_SET because community_ids is a comma-separated string
+        const postsCountRows: any[] = await this.prisma.$queryRawUnsafe(
+          `SELECT COUNT(*) AS cnt FROM user_posts WHERE user_id = ? AND (FIND_IN_SET(?, community_ids) > 0 OR community_ids = ?)`,
+          member.user_id,
+          communityId,
+          String(communityId),
+        );
+        const postsCount = Number(postsCountRows[0]?.cnt ?? 0);
+
+        // Fetch user profile for more details (avatar/full name)
+        const profile = await this.prisma.userProfile.findFirst({
+          where: { user_id: member.user_id },
+          select: { full_name: true, profile_picture: true },
+        });
+
+        return {
+          ...member,
+          posts_count: postsCount,
+          user: {
+            ...member.user,
+            full_name: profile?.full_name || null,
+            profile_picture: profile?.profile_picture || null,
+          },
+        };
+      }),
+    );
+
+    return {
+      ...membersData,
+      data: enrichedData,
+    };
+  }
+
+  async updateMemberRole(
+    communityId: number,
+    memberId: number,
+    updateMemberRoleDto: UpdateMemberRoleDto,
+    adminId: number,
+  ) {
+    // Admin can update member roles in any community, bypassing community admin check
+    // Get the member first
+    const targetMember = await this.prisma.communityUser.findFirst({
+      where: {
+        community_id: communityId,
+        user_id: memberId,
+        is_active: true,
+      },
+      include: { user: true },
+    });
+
+    if (!targetMember) {
+      throw new NotFoundException('Member not found');
+    }
+
+    // Prevent removing the last admin
+    if (targetMember.role === 'admin' && updateMemberRoleDto.role !== 'admin') {
+      const adminCount = await this.prisma.communityUser.count({
+        where: {
+          community_id: communityId,
+          role: 'admin',
+          is_active: true,
+        },
+      });
+
+      if (adminCount === 1) {
+        throw new BadRequestException(
+          'Cannot change role: this is the only admin. Please assign another admin first.',
+        );
+      }
+    }
+
+    await this.prisma.communityUser.update({
+      where: { id: targetMember.id },
+      data: { role: updateMemberRoleDto.role as any, updated_by: adminId },
+    });
+
+    // Return properly formatted member response
+    return {
+      id: targetMember.id,
+      community_id: targetMember.community_id,
+      user_id: targetMember.user_id,
+      role: updateMemberRoleDto.role,
+      is_active: targetMember.is_active,
+      created_at: targetMember.created_at,
+      updated_at: targetMember.updated_at,
+      user: targetMember.user
+        ? {
+            id: targetMember.user.id,
+            username: targetMember.user.username,
+            email: targetMember.user.email,
+          }
+        : null,
+    };
+  }
+
+  async getCommunityTopics(communityId: number) {
+    // Admin can view topics of any community
+    return this.communityService.getCommunityTopics(communityId);
+  }
+
+  async addTopicToCommunity(
+    communityId: number,
+    addTopicDto: AddTopicToCommunityDto,
+    adminId: number,
+  ) {
+    // Admin can add topics to any community, bypassing community admin/moderator check
+    // Check if community exists (admin can add to inactive communities too)
+    const community = await this.prisma.community.findUnique({
+      where: { id: communityId },
+      select: { id: true },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found');
+    }
+
+    // Check if topic exists
+    const topic = await this.prisma.topic.findUnique({
+      where: { id: addTopicDto.topic_id, is_active: true },
+      select: { id: true },
+    });
+
+    if (!topic) {
+      throw new NotFoundException('Topic not found or inactive');
+    }
+
+    // Check if topic is already associated
+    const existingAssociation = await this.prisma.communityTopic.findFirst({
+      where: {
+        community_id: communityId,
+        topic_id: addTopicDto.topic_id,
+      },
+      include: { topic: true },
+    });
+
+    if (existingAssociation) {
+      if (existingAssociation.is_active) {
+        throw new ConflictException(
+          'Topic is already associated with this community',
+        );
+      } else {
+        // Reactivate association
+        const updated = await this.prisma.communityTopic.update({
+          where: { id: existingAssociation.id },
+          data: { is_active: true, updated_by: adminId },
+          include: { topic: true },
+        });
+
+        return {
+          id: updated.id,
+          community_id: updated.community_id,
+          topic_id: updated.topic_id,
+          is_active: updated.is_active,
+          topic: updated.topic
+            ? {
+                id: updated.topic.id,
+                topic_name: updated.topic.topic_name,
+                topic_slug: updated.topic.topic_slug,
+              }
+            : null,
+        };
+      }
+    }
+
+    // Create new association
+    const savedAssociation = await this.prisma.communityTopic.create({
+      data: {
+        community_id: communityId,
+        topic_id: addTopicDto.topic_id,
+        is_active: true,
+        created_by: adminId,
+      },
+      include: { topic: true },
+    });
+
+    return {
+      id: savedAssociation.id,
+      community_id: savedAssociation.community_id,
+      topic_id: savedAssociation.topic_id,
+      is_active: savedAssociation.is_active,
+      topic: savedAssociation.topic
+        ? {
+            id: savedAssociation.topic.id,
+            topic_name: savedAssociation.topic.topic_name,
+            topic_slug: savedAssociation.topic.topic_slug,
+          }
+        : null,
+    };
+  }
+
+  async removeTopicFromCommunity(
+    communityId: number,
+    topicId: number,
+    adminId: number,
+  ) {
+    // Admin can remove topics from any community, bypassing community admin/moderator check
+    const association = await this.prisma.communityTopic.findFirst({
+      where: {
+        community_id: communityId,
+        topic_id: topicId,
+        is_active: true,
+      },
+    });
+
+    if (!association) {
+      throw new NotFoundException(
+        'Topic is not associated with this community',
       );
     }
 
-    if (role && role !== 'all') {
-      queryBuilder.andWhere('user.role = :role', { role });
-    }
+    // Soft delete
+    await this.prisma.communityTopic.update({
+      where: { id: association.id },
+      data: { is_active: false, updated_by: adminId },
+    });
 
-    if (is_active !== undefined) {
-      const activeValue = is_active === ActiveStatus.ACTIVE;
-      queryBuilder.andWhere('user.is_active = :is_active', { is_active: activeValue });
-    }
-
-    if (is_verified !== undefined) {
-      const verifiedValue = is_verified === VerifiedStatus.VERIFIED;
-      queryBuilder.andWhere('user.is_verified = :is_verified', { is_verified: verifiedValue });
-    }
-
-    if (user_id) {
-      queryBuilder.andWhere('user.id = :user_id', { user_id });
-    }
-
-    if (created_from) {
-      queryBuilder.andWhere('user.created_at >= :created_from', {
-        created_from: new Date(created_from),
-      });
-    }
-
-    if (created_to) {
-      queryBuilder.andWhere('user.created_at <= :created_to', {
-        created_to: new Date(created_to),
-      });
-    }
-
-    return queryBuilder;
+    return { message: 'Topic removed from community successfully' };
   }
 
-  private getUserSortField(sort_by: string): string {
+  // Poll Management - using PollService
+  async getPolls(listQueryDto: ListPollsQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+      poll_status,
+      is_featured,
+      is_expired,
+      user_id,
+      expires_from,
+      expires_to,
+      created_from,
+      created_to,
+    } = listQueryDto;
+
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { poll_title: { contains: search } },
+        { poll_description: { contains: search } },
+        { poll_slug: { contains: search } },
+      ];
+    }
+
+    if (poll_status && poll_status !== 'all') {
+      if (poll_status === 'active') {
+        where.poll_status = 'published';
+        where.poll_expires_at = { gt: new Date() };
+      } else {
+        where.poll_status = poll_status;
+      }
+    }
+
+    if (is_featured !== undefined) where.is_featured = is_featured;
+
+    if (is_expired !== undefined) {
+      if (is_expired) {
+        where.poll_expires_at = { ...where.poll_expires_at, lt: new Date() };
+      } else {
+        where.poll_expires_at = { ...where.poll_expires_at, gte: new Date() };
+      }
+    }
+
+    if (user_id) where.user_id = user_id;
+    if (expires_from)
+      where.poll_expires_at = {
+        ...where.poll_expires_at,
+        gte: new Date(expires_from),
+      };
+    if (expires_to)
+      where.poll_expires_at = {
+        ...where.poll_expires_at,
+        lte: new Date(expires_to),
+      };
+    if (created_from)
+      where.created_at = { ...where.created_at, gte: new Date(created_from) };
+    if (created_to)
+      where.created_at = { ...where.created_at, lte: new Date(created_to) };
+
     const allowedSortFields = [
       'id',
-      'username',
-      'email',
-      'role',
-      'is_active',
-      'is_verified',
+      'poll_title',
+      'vote_count',
+      'view_count',
+      'poll_expires_at',
       'created_at',
       'updated_at',
     ];
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
+    const skip = (page - 1) * limit;
 
-    if (allowedSortFields.includes(sort_by)) {
-      return sort_by;
+    const [polls, total] = await Promise.all([
+      this.prisma.userPoll.findMany({
+        where,
+        orderBy,
+        take: limit,
+        skip,
+        include: { user: true, options: true },
+      }),
+      this.prisma.userPoll.count({ where }),
+    ]);
+
+    const now = new Date();
+    const expiredPollIds = polls
+      .filter(
+        (p) =>
+          p.poll_expires_at &&
+          new Date(p.poll_expires_at) <= now &&
+          p.poll_status !== 'ended',
+      )
+      .map((p) => p.id);
+
+    if (expiredPollIds.length > 0) {
+      await this.prisma.userPoll.updateMany({
+        where: { id: { in: expiredPollIds } },
+        data: { poll_status: 'ended' },
+      });
+      polls.forEach((p) => {
+        if (expiredPollIds.includes(p.id)) p.poll_status = 'ended';
+      });
     }
 
-    return 'created_at';
+    return {
+      data: polls.map((poll) => ({
+        ...poll,
+        poll_expires_at: poll.poll_expires_at
+          ? this.pollService['convertUtcToLocalString'](
+              new Date(poll.poll_expires_at),
+            )
+          : null,
+      })),
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getPollById(pollId: number) {
+    // Skip view count increment for admin views
+    return this.pollService.getPollById(pollId, undefined, true);
+  }
+
+  async createPoll(createPollDto: CreatePollDto, adminId: number) {
+    // Admin can create polls using the PollService
+    return this.pollService.createPoll(createPollDto, adminId);
+  }
+
+  async updatePoll(
+    pollId: number,
+    updatePollDto: UpdatePollDto,
+    adminId: number,
+  ) {
+    // Get the poll first to check if it exists
+    const poll = await this.prisma.userPoll.findUnique({
+      where: { id: pollId },
+    });
+
+    if (!poll) {
+      throw new NotFoundException('Poll not found');
+    }
+
+    // Admin can update any poll, so we need to bypass ownership check
+    // We'll use the repository directly for admin updates
+
+    // Check if slug is being updated and if it already exists
+    if (updatePollDto.poll_slug && updatePollDto.poll_slug !== poll.poll_slug) {
+      const existingPoll = await this.prisma.userPoll.findFirst({
+        where: { poll_slug: updatePollDto.poll_slug },
+        select: { id: true },
+      });
+
+      if (existingPoll) {
+        throw new ConflictException('Poll with this slug already exists');
+      }
+    }
+
+    // Validate expiration date if being updated - must be at least tomorrow
+    if (updatePollDto.poll_expires_at) {
+      // Parse date string properly (handles datetime-local format from frontend)
+      let expiresAt: Date;
+      const dateString = updatePollDto.poll_expires_at;
+      if (
+        dateString.includes('T') &&
+        !dateString.includes('Z') &&
+        !dateString.includes('+') &&
+        !dateString.includes('-', 10)
+      ) {
+        // Format: YYYY-MM-DDTHH:mm (datetime-local format)
+        // Parse as UTC to match MySQL TIMESTAMP storage (which stores in UTC)
+        const [datePart, timePart] = dateString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const timeComponents = timePart.split(':');
+        const hours = Number(timeComponents[0]) || 0;
+        const minutes = Number(timeComponents[1]) || 0;
+        const seconds = Number(timeComponents[2]) || 0;
+        expiresAt = new Date(
+          Date.UTC(year, month - 1, day, hours, minutes, seconds, 0),
+        );
+      } else {
+        expiresAt = new Date(dateString);
+      }
+
+      // Get tomorrow at 00:00:00 UTC for consistent comparison
+      const now = new Date();
+      const tomorrow = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate() + 1,
+          0,
+          0,
+          0,
+          0,
+        ),
+      );
+
+      if (expiresAt < tomorrow) {
+        throw new BadRequestException(
+          'Poll expiration date must be at least tomorrow. Polls cannot expire on the same day they are created.',
+        );
+      }
+      poll.poll_expires_at = expiresAt;
+    }
+
+    // Convert community_ids array to comma-separated string if provided
+    if (updatePollDto.community_ids !== undefined) {
+      poll.community_ids =
+        updatePollDto.community_ids.length > 0
+          ? updatePollDto.community_ids.join(',')
+          : null;
+    }
+
+    // Update other fields
+    if (updatePollDto.poll_slug !== undefined) {
+      poll.poll_slug = updatePollDto.poll_slug;
+    }
+    if (updatePollDto.poll_title !== undefined) {
+      poll.poll_title = updatePollDto.poll_title;
+    }
+    if (updatePollDto.poll_description !== undefined) {
+      poll.poll_description = updatePollDto.poll_description;
+    }
+    if (updatePollDto.poll_status !== undefined) {
+      poll.poll_status = updatePollDto.poll_status;
+    }
+    if (updatePollDto.is_featured !== undefined) {
+      poll.is_featured = updatePollDto.is_featured === 'featured';
+    }
+    if (updatePollDto.poll_winner_option_id !== undefined) {
+      poll.poll_winner_option_id = updatePollDto.poll_winner_option_id;
+    }
+
+    // Handle options update if provided
+    if (updatePollDto.options) {
+      const existingOptions = await this.prisma.pollOption.findMany({
+        where: { poll_id: pollId },
+      });
+      const keepOptionIds: number[] = [];
+
+      for (const optionDto of updatePollDto.options) {
+        if (optionDto.id) {
+          const existingOption = existingOptions.find(
+            (o) => o.id == optionDto.id,
+          );
+          if (existingOption) {
+            await this.prisma.pollOption.update({
+              where: { id: existingOption.id },
+              data: {
+                option_text: optionDto.option_text,
+                display_order:
+                  optionDto.display_order ?? existingOption.display_order,
+              },
+            });
+            keepOptionIds.push(existingOption.id);
+          }
+        } else {
+          await this.prisma.pollOption.create({
+            data: {
+              poll_id: pollId,
+              option_text: optionDto.option_text,
+              display_order: optionDto.display_order ?? 0,
+              vote_count: 0,
+              is_active: true,
+              created_by: adminId,
+            },
+          });
+        }
+      }
+
+      const optionIdsToDelete = existingOptions
+        .filter((o) => !keepOptionIds.includes(o.id))
+        .map((o) => o.id);
+      if (optionIdsToDelete.length > 0) {
+        await this.prisma.pollOption.deleteMany({
+          where: { id: { in: optionIdsToDelete } },
+        });
+      }
+    }
+
+    // Build Prisma update data from the mutated poll object
+    const pollUpdateData: any = { updated_by: adminId };
+    if (updatePollDto.poll_expires_at)
+      pollUpdateData.poll_expires_at = poll.poll_expires_at;
+    if (updatePollDto.community_ids !== undefined)
+      pollUpdateData.community_ids = poll.community_ids;
+    if (updatePollDto.poll_slug !== undefined)
+      pollUpdateData.poll_slug = poll.poll_slug;
+    if (updatePollDto.poll_title !== undefined)
+      pollUpdateData.poll_title = poll.poll_title;
+    if (updatePollDto.poll_description !== undefined)
+      pollUpdateData.poll_description = poll.poll_description;
+    if (updatePollDto.poll_status !== undefined)
+      pollUpdateData.poll_status = poll.poll_status;
+    if (updatePollDto.is_featured !== undefined)
+      pollUpdateData.is_featured = poll.is_featured;
+    if (updatePollDto.poll_winner_option_id !== undefined)
+      pollUpdateData.poll_winner_option_id = poll.poll_winner_option_id;
+
+    await this.prisma.userPoll.update({
+      where: { id: pollId },
+      data: pollUpdateData,
+    });
+
+    // Get updated poll using service for proper formatting
+    // Skip view count increment for admin views
+    return this.pollService.getPollById(pollId, undefined, true);
+  }
+
+  async deletePoll(pollId: number, adminId: number) {
+    // Get the poll first to check if it exists
+    const poll = await this.prisma.userPoll.findUnique({
+      where: { id: pollId },
+    });
+
+    if (!poll) {
+      throw new NotFoundException('Poll not found');
+    }
+
+    // Admin can delete any poll - perform hard delete (remove from database)
+    // Delete related records first to avoid foreign key constraints
+
+    // Use transaction to ensure all deletions succeed or none
+    await this.prisma.$transaction(async (tx) => {
+      await tx.pollComment.deleteMany({ where: { poll_id: pollId } });
+      await tx.pollVote.deleteMany({ where: { poll_id: pollId } });
+      await tx.pollLike.deleteMany({ where: { poll_id: pollId } });
+      await tx.pollOption.deleteMany({ where: { poll_id: pollId } });
+      await tx.userPoll.delete({ where: { id: pollId } });
+    });
+
+    this.logger.log(`Poll ${pollId} deleted by admin ${adminId}`);
+    return { message: 'Poll deleted successfully' };
+  }
+
+  // ========== Subscription Management ==========
+
+  async getSubscriptions(listQueryDto: ListSubscriptionsQueryDto) {
+    return this.subscriptionService.getSubscriptions(listQueryDto);
+  }
+
+  async getSubscriptionById(id: number) {
+    return this.subscriptionService.getSubscriptionById(id);
+  }
+
+  async createSubscription(
+    createSubscriptionDto: CreateSubscriptionDto,
+    adminId: number,
+  ) {
+    return this.subscriptionService.createSubscription(
+      createSubscriptionDto,
+      adminId,
+    );
+  }
+
+  async updateSubscription(
+    id: number,
+    updateSubscriptionDto: UpdateSubscriptionDto,
+    adminId: number,
+  ) {
+    return this.subscriptionService.updateSubscription(
+      id,
+      updateSubscriptionDto,
+      adminId,
+    );
+  }
+
+  async deleteSubscription(id: number, adminId: number) {
+    return this.subscriptionService.deleteSubscription(id, adminId);
+  }
+
+  // ========== User Subscription Management ==========
+
+  async getUserSubscriptions(listQueryDto: ListUserSubscriptionsQueryDto) {
+    return this.subscriptionService.getUserSubscriptions(listQueryDto);
+  }
+
+  async getUserSubscriptionById(id: number) {
+    return this.subscriptionService.getUserSubscriptionById(id);
+  }
+
+  async updateUserSubscriptionStatus(
+    id: number,
+    status: SubscriptionStatus,
+    adminId: number,
+  ) {
+    return this.subscriptionService.updateUserSubscriptionStatus(
+      id,
+      status,
+      adminId,
+    );
+  }
+
+  // ========== Payment Management ==========
+
+  async getPayments(listQueryDto: ListPaymentsQueryDto) {
+    return this.subscriptionService.getPayments(listQueryDto);
+  }
+
+  async getPaymentById(id: number) {
+    return this.subscriptionService.getPaymentById(id);
+  }
+
+  async createPayment(createPaymentDto: CreatePaymentDto, adminId: number) {
+    return this.subscriptionService.createPayment(createPaymentDto, adminId);
+  }
+
+  async updatePaymentStatus(
+    id: number,
+    status: PaymentStatus,
+    adminId: number,
+  ) {
+    return this.subscriptionService.updatePaymentStatus(id, status, adminId);
+  }
+
+  // ========== Detail Modal Endpoints ==========
+
+  async getUserPosts(userId: number, listQueryDto: ListQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+    } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    const postWhere: any = { user_id: userId };
+    if (search)
+      postWhere.OR = [
+        { post_title: { contains: search } },
+        { post_content: { contains: search } },
+      ];
+
+    const allowedSortFields = [
+      'id',
+      'post_title',
+      'like_count',
+      'comment_count',
+      'view_count',
+      'created_at',
+      'updated_at',
+    ];
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const postOrderBy: any = { [sortField]: sort_order.toLowerCase() };
+
+    const [posts, total] = await Promise.all([
+      this.prisma.userPost.findMany({
+        where: postWhere,
+        orderBy: postOrderBy,
+        take: limit,
+        skip,
+        include: { topic: true },
+      }),
+      this.prisma.userPost.count({ where: postWhere }),
+    ]);
+
+    return {
+      data: posts,
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getUserCommunities(userId: number, listQueryDto: ListQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+    } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    const cuWhere: any = { user_id: userId, is_active: true };
+    if (search)
+      cuWhere.community = {
+        OR: [
+          { community_name: { contains: search } },
+          { community_slug: { contains: search } },
+        ],
+      };
+
+    const allowedSortFields = ['id', 'created_at', 'updated_at'];
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const cuOrderBy: any = { [sortField]: sort_order.toLowerCase() };
+
+    const [memberships, total] = await Promise.all([
+      this.prisma.communityUser.findMany({
+        where: cuWhere,
+        orderBy: cuOrderBy,
+        take: limit,
+        skip,
+        include: { community: true },
+      }),
+      this.prisma.communityUser.count({ where: cuWhere }),
+    ]);
+
+    return {
+      data: memberships.map((m) => ({
+        ...m.community,
+        role: m.role,
+        joined_at: m.created_at,
+      })),
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getUserComments(userId: number, listQueryDto: ListQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+    } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    const commentWhere: any = { user_id: userId };
+    if (search) commentWhere.comment_content = { contains: search };
+
+    const allowedSortFields = ['id', 'like_count', 'created_at', 'updated_at'];
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const commentOrderBy: any = { [sortField]: sort_order.toLowerCase() };
+
+    const [comments, total] = await Promise.all([
+      this.prisma.postComment.findMany({
+        where: commentWhere,
+        orderBy: commentOrderBy,
+        take: limit,
+        skip,
+        include: { post: true },
+      }),
+      this.prisma.postComment.count({ where: commentWhere }),
+    ]);
+
+    const mappedData = await Promise.all(
+      comments.map(async (comment) => {
+        const repliesCount = await this.prisma.postComment.count({
+          where: { parent_comment_id: comment.id },
+        });
+        const commentWithExtras = { ...comment, replies_count: repliesCount };
+        return this.commentService.mapPostCommentToResponseDto(
+          commentWithExtras,
+        );
+      }),
+    );
+
+    return {
+      data: mappedData,
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getUserStats(userId: number) {
+    const postsCount = await this.prisma.userPost.count({
+      where: { user_id: userId },
+    });
+    const commentsCount = await this.prisma.postComment.count({
+      where: { user_id: userId },
+    });
+    const communitiesCount = await this.prisma.communityUser.count({
+      where: { user_id: userId, is_active: true },
+    });
+    const pollsCount = await this.prisma.userPoll.count({
+      where: { user_id: userId },
+    });
+
+    return {
+      posts_count: postsCount,
+      comments_count: commentsCount,
+      communities_count: communitiesCount,
+      polls_count: pollsCount,
+    };
+  }
+
+  async getPostComments(postId: number, listQueryDto: ListQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+    } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    const pcWhere: any = { post_id: postId, parent_comment_id: null };
+    if (search) pcWhere.comment_content = { contains: search };
+
+    const allowedSortFields = ['id', 'like_count', 'created_at', 'updated_at'];
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const pcOrderBy: any = { [sortField]: sort_order.toLowerCase() };
+
+    const [comments, total] = await Promise.all([
+      this.prisma.postComment.findMany({
+        where: pcWhere,
+        orderBy: pcOrderBy,
+        take: limit,
+        skip,
+        include: { user: true },
+      }),
+      this.prisma.postComment.count({ where: pcWhere }),
+    ]);
+
+    // Load user profiles in batch
+    const userIds = new Set<number>();
+    comments.forEach((c) => {
+      if (c.user_id) userIds.add(c.user_id);
+    });
+    const userProfilesMap = new Map<number, any>();
+    if (userIds.size > 0) {
+      const profiles = await this.prisma.userProfile.findMany({
+        where: { user_id: { in: Array.from(userIds) } },
+        select: { user_id: true, full_name: true, profile_picture: true },
+      });
+      profiles.forEach((p) => userProfilesMap.set(p.user_id, p));
+    }
+
+    const mappedData = await Promise.all(
+      comments.map(async (comment) => {
+        const replies = await this.prisma.postComment.findMany({
+          where: { parent_comment_id: comment.id },
+          include: { user: true },
+          orderBy: { created_at: 'asc' },
+        });
+
+        // Load profiles for replies too
+        const replyUserIds = replies
+          .map((r) => r.user_id)
+          .filter((id) => !userProfilesMap.has(id));
+        if (replyUserIds.length > 0) {
+          const replyProfiles = await this.prisma.userProfile.findMany({
+            where: { user_id: { in: replyUserIds } },
+            select: { user_id: true, full_name: true, profile_picture: true },
+          });
+          replyProfiles.forEach((p) => userProfilesMap.set(p.user_id, p));
+        }
+
+        const commentWithReplies: any = {
+          ...comment,
+          replies,
+          replies_count: replies.length,
+        };
+
+        if (
+          commentWithReplies.user &&
+          userProfilesMap.has(commentWithReplies.user.id)
+        ) {
+          const p = userProfilesMap.get(commentWithReplies.user.id);
+          commentWithReplies.user.profile_picture = p.profile_picture || null;
+          commentWithReplies.user.full_name = p.full_name || null;
+        }
+
+        commentWithReplies.replies.forEach((r: any) => {
+          if (r.user && userProfilesMap.has(r.user.id)) {
+            const p = userProfilesMap.get(r.user.id);
+            r.user.profile_picture = p.profile_picture || null;
+            r.user.full_name = p.full_name || null;
+          }
+        });
+
+        return this.commentService.mapPostCommentToResponseDto(
+          commentWithReplies,
+        );
+      }),
+    );
+
+    return {
+      data: mappedData,
+      meta: {
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getPostAnalytics(postId: number, _timeRange?: string) {
+    const post = await this.prisma.userPost.findUnique({
+      where: { id: postId },
+    });
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    // Calculate engagement rate
+    const totalInteractions = post.like_count + post.comment_count;
+    const engagementRate =
+      post.view_count > 0 ? (totalInteractions / post.view_count) * 100 : 0;
+
+    // Calculate trending score (based on recent activity)
+    const recentComments = await this.prisma.postComment.count({
+      where: {
+        post_id: postId,
+        created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+    });
+    const trendingScore =
+      ((post.like_count * 0.4 + recentComments * 0.6) /
+        (post.view_count || 1)) *
+      100;
+
+    return {
+      engagement_rate: engagementRate,
+      trending_score: trendingScore,
+      total_interactions: totalInteractions,
+      recent_comments: recentComments,
+    };
+  }
+
+  async getCommunityPosts(communityId: number, listQueryDto: ListQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+    } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    const searchClause = search
+      ? `AND (post_title LIKE ? OR post_content LIKE ?)`
+      : '';
+    const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
+    const allowedSortFields = [
+      'id',
+      'post_title',
+      'like_count',
+      'comment_count',
+      'view_count',
+      'created_at',
+      'updated_at',
+    ];
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const sortDir = sort_order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+    const [postsRaw, countRaw] = (await Promise.all([
+      this.prisma.$queryRawUnsafe(
+        `SELECT * FROM user_posts WHERE community_ids LIKE ? ${searchClause} ORDER BY ${sortField} ${sortDir} LIMIT ? OFFSET ?`,
+        `%${communityId}%`,
+        ...searchParams,
+        limit,
+        skip,
+      ),
+      this.prisma.$queryRawUnsafe(
+        `SELECT COUNT(*) AS cnt FROM user_posts WHERE community_ids LIKE ? ${searchClause}`,
+        `%${communityId}%`,
+        ...searchParams,
+      ),
+    ])) as [any[], any[]];
+
+    const total = Number(countRaw[0]?.cnt ?? 0);
+    return {
+      data: postsRaw,
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getCommunityActivity(communityId: number, listQueryDto: ListQueryDto) {
+    const { page = 1, limit = 20 } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    // Get recent posts — community_ids is a comma-separated string, must use raw SQL
+    const recentPostsRaw: any[] = await this.prisma.$queryRawUnsafe(
+      `SELECT p.id, p.post_title, p.created_at, u.id AS u_id, u.username AS u_username FROM user_posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.community_ids LIKE ? ORDER BY p.created_at DESC LIMIT ?`,
+      `%${communityId}%`,
+      limit,
+    );
+
+    // Get recent comments on community posts
+    const recentCommentsRaw: any[] = await this.prisma.$queryRawUnsafe(
+      `SELECT c.id, c.comment_content, c.post_id, c.created_at, u.id AS u_id, u.username AS u_username FROM post_comments c LEFT JOIN user_posts p ON c.post_id = p.id LEFT JOIN users u ON c.user_id = u.id WHERE p.community_ids LIKE ? ORDER BY c.created_at DESC LIMIT ?`,
+      `%${communityId}%`,
+      limit,
+    );
+
+    const activities = [
+      ...recentPostsRaw.map((p) => ({
+        type: 'post',
+        id: Number(p.id),
+        title: p.post_title,
+        user: { id: Number(p.u_id), username: p.u_username },
+        created_at: new Date(p.created_at),
+      })),
+      ...recentCommentsRaw.map((c) => ({
+        type: 'comment',
+        id: Number(c.id),
+        content: String(c.comment_content).substring(0, 50),
+        user: { id: Number(c.u_id), username: c.u_username },
+        post_id: Number(c.post_id),
+        created_at: new Date(c.created_at),
+      })),
+    ]
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .slice(skip, skip + limit);
+
+    return {
+      data: activities,
+      meta: {
+        total: activities.length,
+        page,
+        limit,
+        total_pages: Math.ceil(activities.length / limit),
+      },
+    };
+  }
+
+  async getCommunityStats(communityId: number) {
+    const [postsCountRaw, topicsCount, membersCount] = await Promise.all([
+      this.prisma.$queryRawUnsafe(
+        `SELECT COUNT(*) AS cnt FROM user_posts WHERE community_ids LIKE ?`,
+        `%${communityId}%`,
+      ) as Promise<any[]>,
+      this.prisma.communityTopic.count({
+        where: { community_id: communityId, is_active: true },
+      }),
+      this.prisma.communityUser.count({
+        where: { community_id: communityId, is_active: true },
+      }),
+    ]);
+    const postsCount = Number(postsCountRaw[0]?.cnt ?? 0);
+
+    return {
+      posts_count: postsCount,
+      topics_count: topicsCount,
+      members_count: membersCount,
+    };
+  }
+
+  async getTopicPosts(topicId: number, listQueryDto: ListQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+    } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    const tpWhere: any = { post_topic_id: topicId };
+    if (search)
+      tpWhere.OR = [
+        { post_title: { contains: search } },
+        { post_content: { contains: search } },
+      ];
+
+    const allowedSortFields = [
+      'id',
+      'post_title',
+      'like_count',
+      'comment_count',
+      'view_count',
+      'created_at',
+      'updated_at',
+    ];
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const tpOrderBy: any = { [sortField]: sort_order.toLowerCase() };
+
+    const [posts, total] = await Promise.all([
+      this.prisma.userPost.findMany({
+        where: tpWhere,
+        orderBy: tpOrderBy,
+        take: limit,
+        skip,
+        include: { user: true },
+      }),
+      this.prisma.userPost.count({ where: tpWhere }),
+    ]);
+
+    return {
+      data: posts,
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getTopicCommunities(topicId: number, listQueryDto: ListQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+    } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    const tcWhere: any = { topic_id: topicId, is_active: true };
+    if (search)
+      tcWhere.community = {
+        OR: [
+          { community_name: { contains: search } },
+          { community_slug: { contains: search } },
+        ],
+      };
+
+    const allowedSortFields = ['id', 'created_at', 'updated_at'];
+    const sortField = allowedSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const tcOrderBy: any = { [sortField]: sort_order.toLowerCase() };
+
+    const [associations, total] = await Promise.all([
+      this.prisma.communityTopic.findMany({
+        where: tcWhere,
+        orderBy: tcOrderBy,
+        take: limit,
+        skip,
+        include: { community: true },
+      }),
+      this.prisma.communityTopic.count({ where: tcWhere }),
+    ]);
+
+    return {
+      data: associations.map((a) => a.community),
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getTopicStats(topicId: number) {
+    const postsCount = await this.prisma.userPost.count({
+      where: { post_topic_id: topicId, post_status: 'published' },
+    });
+    const communitiesCount = await this.prisma.communityTopic.count({
+      where: { topic_id: topicId, is_active: true },
+    });
+
+    return {
+      posts_count: postsCount,
+      communities_count: communitiesCount,
+      usage_count: postsCount + communitiesCount,
+    };
+  }
+
+  async getPollAnalytics(pollId: number) {
+    const poll = await this.prisma.userPoll.findUnique({
+      where: { id: pollId },
+      include: { options: true },
+    });
+
+    if (!poll) {
+      throw new NotFoundException('Poll not found');
+    }
+
+    const totalVotes = poll.vote_count;
+    const engagementRate =
+      poll.view_count > 0 ? (totalVotes / poll.view_count) * 100 : 0;
+
+    return {
+      total_votes: totalVotes,
+      engagement_rate: engagementRate,
+      options: poll.options.map((opt) => ({
+        id: opt.id,
+        option_text: opt.option_text,
+        vote_count: opt.vote_count,
+        percentage: totalVotes > 0 ? (opt.vote_count / totalVotes) * 100 : 0,
+      })),
+    };
+  }
+
+  async getPollVotes(pollId: number, listQueryDto: ListQueryDto) {
+    const { page = 1, limit = 50 } = listQueryDto;
+    const skip = (page - 1) * limit;
+
+    // Note: This requires poll_votes table which should exist
+    const [votes, totalRaw] = (await Promise.all([
+      this.prisma.$queryRawUnsafe(
+        `SELECT pv.id, pv.user_id, pv.vote_option_id, pv.created_at, u.username, u.email, po.option_text
+         FROM poll_votes pv
+         LEFT JOIN users u ON pv.user_id = u.id
+         LEFT JOIN poll_options po ON pv.vote_option_id = po.id
+         WHERE pv.poll_id = ? ORDER BY pv.created_at DESC LIMIT ? OFFSET ?`,
+        pollId,
+        limit,
+        skip,
+      ),
+      this.prisma.$queryRawUnsafe(
+        'SELECT COUNT(*) as count FROM poll_votes WHERE poll_id = ?',
+        pollId,
+      ),
+    ])) as [any[], any[]];
+
+    const totalCount = Number(totalRaw[0]?.count ?? 0);
+    return {
+      data: votes,
+      meta: {
+        total: totalCount,
+        page,
+        limit,
+        total_pages: Math.ceil(totalCount / limit),
+      },
+    };
   }
 }
-

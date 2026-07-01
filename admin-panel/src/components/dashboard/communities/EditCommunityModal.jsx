@@ -33,9 +33,7 @@ const EditCommunityModal = React.memo(({ isOpen, onClose, community, onSave }) =
     if (!community) return null;
 
     const isActive =
-      community.is_active === true ||
-      community.is_active === 'active' ||
-      community.is_active === 1;
+      community.is_active === true || community.is_active === 'active' || community.is_active === 1;
 
     const topicIds =
       Array.isArray(community.topics) && community.topics.length > 0
@@ -149,9 +147,7 @@ const EditCommunityModal = React.memo(({ isOpen, onClose, community, onSave }) =
         formDataToSend.append('community_image', formData.community_image);
       }
 
-      const selectedTopicIds = Array.isArray(formData.topic_ids)
-        ? formData.topic_ids
-        : [];
+      const selectedTopicIds = Array.isArray(formData.topic_ids) ? formData.topic_ids : [];
 
       await onSave(communityId, formDataToSend, selectedTopicIds);
     } catch (err) {
@@ -202,7 +198,11 @@ const EditCommunityModal = React.memo(({ isOpen, onClose, community, onSave }) =
         </div>
 
         {/* Body */}
-        <form id="edit-community-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form
+          id="edit-community-form"
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <div className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarGutter: 'stable' }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Community Name */}
@@ -269,9 +269,7 @@ const EditCommunityModal = React.memo(({ isOpen, onClose, community, onSave }) =
                     disabled={isSubmitting || loadingTopics}
                   >
                     <Tag size={12} />
-                    <span>
-                      {formData.topic_ids?.length ? 'Edit topics' : 'Select topics'}
-                    </span>
+                    <span>{formData.topic_ids?.length ? 'Edit topics' : 'Select topics'}</span>
                   </button>
                 </div>
 
@@ -379,5 +377,3 @@ const EditCommunityModal = React.memo(({ isOpen, onClose, community, onSave }) =
 
 EditCommunityModal.displayName = 'EditCommunityModal';
 export default EditCommunityModal;
-
-

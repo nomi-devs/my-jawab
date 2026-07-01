@@ -1,5 +1,5 @@
 // src/api/paymentsApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const paymentsApi = {
   /**
@@ -21,19 +21,21 @@ const paymentsApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
       ...(params.user_id && { user_id: params.user_id }),
-      ...(params.users_subscriptions_id && { users_subscriptions_id: params.users_subscriptions_id }),
+      ...(params.users_subscriptions_id && {
+        users_subscriptions_id: params.users_subscriptions_id,
+      }),
       ...(params.payment_status && { payment_status: params.payment_status }),
-      ...(params.payment_method && { payment_method: params.payment_method })
+      ...(params.payment_method && { payment_method: params.payment_method }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/payments", { params: cleanedParams });
+    return axiosClient.get('/admin/payments', { params: cleanedParams });
   },
 
   /**
@@ -58,7 +60,7 @@ const paymentsApi = {
    * @returns {Promise} Response with created payment data
    */
   createPayment(data) {
-    return axiosClient.post("/admin/payments", data);
+    return axiosClient.post('/admin/payments', data);
   },
 
   /**
@@ -80,19 +82,18 @@ const paymentsApi = {
   exportPayments(params = {}) {
     const queryParams = {
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
       ...(params.payment_status && { payment_status: params.payment_status }),
-      ...(params.payment_method && { payment_method: params.payment_method })
+      ...(params.payment_method && { payment_method: params.payment_method }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/payments/export", { params: cleanedParams });
-  }
+    return axiosClient.get('/admin/payments/export', { params: cleanedParams });
+  },
 };
 
 export default paymentsApi;
-

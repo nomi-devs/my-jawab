@@ -1,10 +1,39 @@
 // src/components/dashboard/posts/PostDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, FileText, MessageCircle, Heart, ThumbsDown, Eye, Calendar, User, Tag, Image as ImageIcon, Video, Music, Link as LinkIcon, CheckCircle, XCircle, Loader2, Edit, Trash2, Star, TrendingUp } from 'lucide-react';
+import {
+  X,
+  FileText,
+  MessageCircle,
+  Heart,
+  ThumbsDown,
+  Eye,
+  Calendar,
+  User,
+  Tag,
+  Image as ImageIcon,
+  Video,
+  Music,
+  Link as LinkIcon,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Edit,
+  Trash2,
+  Star,
+  TrendingUp,
+} from 'lucide-react';
 import postsApi from '../../../api/postsApi';
 import commentsApi from '../../../api/commentsApi';
 
-const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, onEdit, onDelete }) => {
+const PostDetailsModal = ({
+  isOpen,
+  onClose,
+  postId,
+  postData,
+  onUpdateStatus,
+  onEdit,
+  onDelete,
+}) => {
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(true);
   const [postDetails, setPostDetails] = useState(null);
@@ -38,7 +67,7 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
       const normalizedPost = {
         ...postData,
         post_status: normalizePostStatus(postData.post_status),
-        raw: postData
+        raw: postData,
       };
       setPostDetails(normalizedPost);
       setPendingStatus(normalizedPost.post_status);
@@ -58,7 +87,7 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
           is_featured: isFeatured,
           like_count: postData.stats?.likes || 0,
           comment_count: postData.stats?.comments || 0,
-          view_count: postData.stats?.views || 0
+          view_count: postData.stats?.views || 0,
         });
         setPendingStatus(normalizedStatus);
         setPendingIsFeatured(!!isFeatured);
@@ -75,13 +104,13 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
         page: 1,
         limit: 50,
         sort_by: 'created_at',
-        sort_order: 'DESC'
+        sort_order: 'DESC',
       });
 
       // Filter comments client-side by post_id if API doesn't support it
       const allComments = response.data.data || [];
-      const filteredComments = allComments.filter(comment =>
-        comment.post_id === postId || comment.post?.id === postId
+      const filteredComments = allComments.filter(
+        (comment) => comment.post_id === postId || comment.post?.id === postId,
       );
 
       setPostComments(filteredComments);
@@ -116,11 +145,13 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
       await postsApi.updatePostStatus(postId, updateData);
 
       // Update local state
-      setPostDetails(prev => ({
+      setPostDetails((prev) => ({
         ...prev,
         ...updateData,
-        post_status: updateData.post_status ? normalizePostStatus(updateData.post_status) : prev.post_status,
-        is_featured: updateData.is_featured || prev.is_featured
+        post_status: updateData.post_status
+          ? normalizePostStatus(updateData.post_status)
+          : prev.post_status,
+        is_featured: updateData.is_featured || prev.is_featured,
       }));
 
       // Call parent callback if provided
@@ -154,7 +185,7 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -179,38 +210,45 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
   // Normalize post_status for consistent comparison
   const postStatus = post ? normalizePostStatus(post.post_status || 'draft') : 'draft';
   const tags = post?.post_tags
-    ? (typeof post.post_tags === 'string' ? post.post_tags.split(',').map(t => t.trim()).filter(Boolean) : post.post_tags)
+    ? typeof post.post_tags === 'string'
+      ? post.post_tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : post.post_tags
     : [];
 
   const tabs = [
     { id: 'details', label: 'Details', icon: FileText },
     { id: 'comments', label: 'Comments', icon: MessageCircle, count: postComments.length },
-    { id: 'actions', label: 'Actions', icon: Edit }
+    { id: 'actions', label: 'Actions', icon: Edit },
   ];
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      'published': {
+      published: {
         label: 'Published',
         className: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30',
-        dot: 'bg-green-500 dark:bg-green-400'
+        dot: 'bg-green-500 dark:bg-green-400',
       },
-      'draft': {
+      draft: {
         label: 'Draft',
         className: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30',
-        dot: 'bg-yellow-500 dark:bg-yellow-400'
+        dot: 'bg-yellow-500 dark:bg-yellow-400',
       },
-      'archived': {
+      archived: {
         label: 'Archived',
         className: 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700',
-        dot: 'bg-gray-500 dark:bg-gray-400'
-      }
+        dot: 'bg-gray-500 dark:bg-gray-400',
+      },
     };
 
     const config = statusConfig[status] || statusConfig['draft'];
 
     return (
-      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${config.className}`}>
+      <span
+        className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${config.className}`}
+      >
         <span className={`w-1 h-1 rounded-full mr-1 ${config.dot}`}></span>
         {config.label}
       </span>
@@ -230,7 +268,7 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
-                    {loading ? 'Loading...' : (post.post_title || post.title || 'Post Details')}
+                    {loading ? 'Loading...' : post.post_title || post.title || 'Post Details'}
                   </h2>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     {getStatusBadge(postStatus || 'draft')}
@@ -261,10 +299,11 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors relative ${activeTab === tab.id
-                  ? 'text-purple-600 dark:text-purple-400 bg-white dark:bg-gray-800'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
-                  }`}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors relative ${
+                  activeTab === tab.id
+                    ? 'text-purple-600 dark:text-purple-400 bg-white dark:bg-gray-800'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+                }`}
               >
                 <Icon size={14} />
                 {tab.label}
@@ -304,7 +343,9 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                         <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                           <FileText size={16} className="text-purple-600 dark:text-purple-400" />
                         </div>
-                        <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Post Content</h3>
+                        <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                          Post Content
+                        </h3>
                       </div>
 
                       {post.post_title && (
@@ -324,7 +365,9 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                     {(post.post_image || post.post_video || post.post_audio) && (
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 px-1">
-                          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Attached Media</h3>
+                          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                            Attached Media
+                          </h3>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
@@ -369,9 +412,15 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                             <div className="rounded-xl p-4 border border-purple-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
                               <div className="flex items-center gap-2 mb-3">
                                 <Music size={14} className="text-green-600" />
-                                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Audio Preview</span>
+                                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                  Audio Preview
+                                </span>
                               </div>
-                              <audio src={post.post_audio} controls className="w-full custom-audio" />
+                              <audio
+                                src={post.post_audio}
+                                controls
+                                className="w-full custom-audio"
+                              />
                             </div>
                           )}
                         </div>
@@ -387,7 +436,11 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                       <div className="px-5 pb-5 -mt-6">
                         <div className="relative mb-3">
                           <img
-                            src={post.user?.profile_picture || post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user?.username || 'user'}`}
+                            src={
+                              post.user?.profile_picture ||
+                              post.author?.avatar ||
+                              `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user?.username || 'user'}`
+                            }
                             alt="Author"
                             className="w-16 h-16 rounded-2xl border-4 border-white dark:border-gray-800 shadow-md object-cover"
                           />
@@ -401,7 +454,9 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                         <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="text-gray-500 dark:text-gray-400">Post ID</span>
-                            <span className="font-mono text-gray-700 dark:text-gray-300">#{post.id}</span>
+                            <span className="font-mono text-gray-700 dark:text-gray-300">
+                              #{post.id}
+                            </span>
                           </div>
                           <div className="flex items-center justify-between text-[11px] mt-2">
                             <span className="text-gray-500 dark:text-gray-400">Created At</span>
@@ -416,7 +471,9 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
 
                     {/* Stats Dashboard */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 p-5 shadow-sm">
-                      <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Statistics</h4>
+                      <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+                        Statistics
+                      </h4>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -425,7 +482,9 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                             </div>
                             <span className="text-xs text-gray-600 dark:text-gray-300">Likes</span>
                           </div>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">{(post.like_count || post.stats?.likes || 0).toLocaleString()}</span>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            {(post.like_count || post.stats?.likes || 0).toLocaleString()}
+                          </span>
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -433,9 +492,13 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                             <div className="p-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                               <ThumbsDown size={14} className="text-amber-600 fill-amber-600" />
                             </div>
-                            <span className="text-xs text-gray-600 dark:text-gray-300">Dislikes</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-300">
+                              Dislikes
+                            </span>
                           </div>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">{(post.dislike_count || post.stats?.dislikes || 0).toLocaleString()}</span>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            {(post.dislike_count || post.stats?.dislikes || 0).toLocaleString()}
+                          </span>
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -443,9 +506,13 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                             <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                               <MessageCircle size={14} className="text-blue-500" />
                             </div>
-                            <span className="text-xs text-gray-600 dark:text-gray-300">Comments</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-300">
+                              Comments
+                            </span>
                           </div>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">{(post.comment_count || post.stats?.comments || 0).toLocaleString()}</span>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            {(post.comment_count || post.stats?.comments || 0).toLocaleString()}
+                          </span>
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -453,19 +520,31 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                             <div className="p-1.5 bg-green-50 dark:bg-green-900/20 rounded-lg">
                               <Eye size={14} className="text-green-500" />
                             </div>
-                            <span className="text-xs text-gray-600 dark:text-gray-300">Total Views</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-300">
+                              Total Views
+                            </span>
                           </div>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">{(post.view_count || post.stats?.views || 0).toLocaleString()}</span>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            {(post.view_count || post.stats?.views || 0).toLocaleString()}
+                          </span>
                         </div>
 
                         <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                           <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2">
                             <div className="flex items-center gap-2">
-                              <TrendingUp size={14} className="text-indigo-600 dark:text-indigo-400" />
-                              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">Engagement</span>
+                              <TrendingUp
+                                size={14}
+                                className="text-indigo-600 dark:text-indigo-400"
+                              />
+                              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                                Engagement
+                              </span>
                             </div>
                             <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
-                              {((post.like_count || post.stats?.likes || 0) + (post.comment_count || post.stats?.comments || 0)).toLocaleString()}
+                              {(
+                                (post.like_count || post.stats?.likes || 0) +
+                                (post.comment_count || post.stats?.comments || 0)
+                              ).toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -475,7 +554,9 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                     {/* Metadata & Tags */}
                     {tags.length > 0 && (
                       <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 p-5 shadow-sm">
-                        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Post Tags</h4>
+                        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+                          Post Tags
+                        </h4>
                         <div className="flex flex-wrap gap-2">
                           {tags.map((tag, index) => (
                             <span
@@ -498,11 +579,17 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                 <div className="px-6 py-5">
                   {commentsLoading ? (
                     <div className="flex items-center justify-center p-12">
-                      <Loader2 size={32} className="animate-spin text-purple-600 dark:text-purple-400" />
+                      <Loader2
+                        size={32}
+                        className="animate-spin text-purple-600 dark:text-purple-400"
+                      />
                     </div>
                   ) : postComments.length === 0 ? (
                     <div className="text-center py-12">
-                      <MessageCircle size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+                      <MessageCircle
+                        size={48}
+                        className="mx-auto text-gray-300 dark:text-gray-600 mb-4"
+                      />
                       <p className="text-gray-500 dark:text-gray-400">No comments yet</p>
                     </div>
                   ) : (
@@ -514,7 +601,11 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                         >
                           <div className="flex items-start gap-3">
                             <img
-                              src={comment.user?.profile_picture || comment.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user?.username || 'user'}`}
+                              src={
+                                comment.user?.profile_picture ||
+                                comment.user?.avatar ||
+                                `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user?.username || 'user'}`
+                              }
                               alt={comment.user?.username || comment.user?.name}
                               className="w-10 h-10 rounded-full border-2 border-purple-200 dark:border-purple-700 flex-shrink-0"
                             />
@@ -558,7 +649,9 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
               {activeTab === 'actions' && post && (
                 <div className="px-6 py-5 space-y-6">
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Status Management</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                      Status Management
+                    </h3>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
                       Current status:{' '}
                       <span className="font-semibold text-gray-700 dark:text-gray-200 capitalize">
@@ -569,10 +662,11 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                       <button
                         onClick={() => setPendingStatus('published')}
                         disabled={updatingStatus}
-                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${pendingStatus === 'published'
-                          ? 'border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-bold shadow-sm ring-1 ring-green-500/20'
-                          : 'border-2 border-gray-100 dark:border-gray-700 hover:border-green-200 dark:hover:border-green-800 hover:bg-green-50/30 dark:hover:bg-green-900/10 text-gray-600 dark:text-gray-400'
-                          } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${
+                          pendingStatus === 'published'
+                            ? 'border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-bold shadow-sm ring-1 ring-green-500/20'
+                            : 'border-2 border-gray-100 dark:border-gray-700 hover:border-green-200 dark:hover:border-green-800 hover:bg-green-50/30 dark:hover:bg-green-900/10 text-gray-600 dark:text-gray-400'
+                        } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <CheckCircle size={16} />
                         <span>Publish</span>
@@ -581,10 +675,11 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                       <button
                         onClick={() => setPendingStatus('draft')}
                         disabled={updatingStatus}
-                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${pendingStatus === 'draft'
-                          ? 'border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-bold shadow-sm ring-1 ring-yellow-500/20'
-                          : 'border-2 border-gray-100 dark:border-gray-700 hover:border-yellow-200 dark:hover:border-yellow-800 hover:bg-yellow-50/30 dark:hover:bg-yellow-900/10 text-gray-600 dark:text-gray-400'
-                          } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${
+                          pendingStatus === 'draft'
+                            ? 'border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-bold shadow-sm ring-1 ring-yellow-500/20'
+                            : 'border-2 border-gray-100 dark:border-gray-700 hover:border-yellow-200 dark:hover:border-yellow-800 hover:bg-yellow-50/30 dark:hover:bg-yellow-900/10 text-gray-600 dark:text-gray-400'
+                        } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <FileText size={16} />
                         <span>Draft</span>
@@ -593,10 +688,11 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                       <button
                         onClick={() => setPendingStatus('archived')}
                         disabled={updatingStatus}
-                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${pendingStatus === 'archived'
-                          ? 'border-2 border-gray-500 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold shadow-sm ring-1 ring-gray-500/20'
-                          : 'border-2 border-gray-100 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
-                          } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${
+                          pendingStatus === 'archived'
+                            ? 'border-2 border-gray-500 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold shadow-sm ring-1 ring-gray-500/20'
+                            : 'border-2 border-gray-100 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <XCircle size={16} />
                         <span>Archive</span>
@@ -605,14 +701,17 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
                   </div>
 
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">Featured Status</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
+                      Featured Status
+                    </h3>
                     <button
                       onClick={() => setPendingIsFeatured(!pendingIsFeatured)}
                       disabled={updatingStatus}
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all text-xs font-medium ${pendingIsFeatured
-                        ? 'border-2 border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-bold shadow-sm ring-1 ring-purple-500/20'
-                        : 'border-2 border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-800 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 text-gray-600 dark:text-gray-400'
-                        } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all text-xs font-medium ${
+                        pendingIsFeatured
+                          ? 'border-2 border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-bold shadow-sm ring-1 ring-purple-500/20'
+                          : 'border-2 border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-800 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 text-gray-600 dark:text-gray-400'
+                      } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Star size={16} className={pendingIsFeatured ? 'fill-purple-500' : ''} />
                       <span>{pendingIsFeatured ? 'Remove Featured' : 'Mark as Featured'}</span>
@@ -663,8 +762,9 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
             <button
               onClick={handleSaveChanges}
               disabled={updatingStatus || !hasChanges()}
-              className={`flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs font-semibold shadow-md active:scale-95 ${updatingStatus ? 'px-4' : ''
-                }`}
+              className={`flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs font-semibold shadow-md active:scale-95 ${
+                updatingStatus ? 'px-4' : ''
+              }`}
             >
               {updatingStatus ? (
                 <>
@@ -686,4 +786,3 @@ const PostDetailsModal = ({ isOpen, onClose, postId, postData, onUpdateStatus, o
 };
 
 export default PostDetailsModal;
-

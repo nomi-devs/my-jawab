@@ -23,4 +23,3 @@ export class UserSubscriptionResponseDto {
   updated_at: Date;
   subscription?: SubscriptionResponseDto;
 }
-

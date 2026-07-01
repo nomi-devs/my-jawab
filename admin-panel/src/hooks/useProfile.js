@@ -3,34 +3,34 @@ import userApi from '../api/userApi';
 import authApi from '../api/authApi';
 
 export const useProfile = () => {
-    return useQuery({
-        queryKey: ['profile', 'me'],
-        queryFn: async () => {
-            const response = await userApi.getOwnProfile();
-            return response.data || {};
-        },
-    });
+  return useQuery({
+    queryKey: ['profile', 'me'],
+    queryFn: async () => {
+      const response = await userApi.getOwnProfile();
+      return response.data || {};
+    },
+  });
 };
 
 export const useProfileActions = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    const updateProfileMutation = useMutation({
-        mutationFn: (data) => userApi.updateOwnProfile(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
-        },
-    });
+  const updateProfileMutation = useMutation({
+    mutationFn: (data) => userApi.updateOwnProfile(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+    },
+  });
 
-    const changePasswordMutation = useMutation({
-        mutationFn: (data) => authApi.changePassword(data),
-    });
+  const changePasswordMutation = useMutation({
+    mutationFn: (data) => authApi.changePassword(data),
+  });
 
-    return {
-        updateProfile: updateProfileMutation.mutateAsync,
-        isUpdatingProfile: updateProfileMutation.isPending,
+  return {
+    updateProfile: updateProfileMutation.mutateAsync,
+    isUpdatingProfile: updateProfileMutation.isPending,
 
-        changePassword: changePasswordMutation.mutateAsync,
-        isChangingPassword: changePasswordMutation.isPending,
-    };
+    changePassword: changePasswordMutation.mutateAsync,
+    isChangingPassword: changePasswordMutation.isPending,
+  };
 };

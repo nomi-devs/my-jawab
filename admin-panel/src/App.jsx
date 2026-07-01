@@ -1,31 +1,31 @@
 // src/App.jsx
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { DarkModeProvider } from "./contexts/DarkModeContext";
-import { BASE_PATH, BASE_URL } from "./config/app";
-import Login from "./components/auth/Login";
-import ResetPassword from "./components/auth/ResetPassword";
-import Sidebar from "./components/dashboard/layout/Sidebar";
-import Header from "./components/dashboard/layout/Header";
-import DashboardOverview from "./components/dashboard/overview/DashboardOverview";
-import UsersTable from "./components/dashboard/users/UsersTable";
-import PostsList from "./components/dashboard/posts/PostsList";
-import CommentsView from "./components/dashboard/comments/CommentsView";
-import TopicsPage from "./components/dashboard/topics/TopicsPage";
-import SubTopicsPage from "./components/dashboard/topics/SubTopicsPage";
-import ForgotPassword from "./components/auth/ForgotPassword";
-import CommunitiesPage from "./components/dashboard/communities/CommunitiesPage";
-import PollsPage from "./components/dashboard/polls/PollsPage";
-import SubscriptionsPage from "./components/dashboard/subscriptions/SubscriptionsPage";
-import PaymentsPage from "./components/dashboard/payments/PaymentsPage";
-import ProfileSettings from "./components/dashboard/profile/ProfileSettings";
-import NotificationsPage from "./components/dashboard/notifications/NotificationsPage";
-import CurrenciesPage from "./components/dashboard/settings/CurrenciesPage";
-import AppSettingsPage from "./components/dashboard/settings/AppSettingsPage";
-import PrivacyPolicyPage from "./components/dashboard/privacy-policy/PrivacyPolicyPage";
-import SupportPage from "./components/dashboard/support/SupportPage";
-import BannersPage from "./components/dashboard/banners/BannersPage";
-import DeletedUsersPage from "./components/dashboard/users-deleted/DeletedUsersPage";
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { DarkModeProvider } from './contexts/DarkModeContext';
+import { BASE_PATH, BASE_URL } from './config/app';
+import Login from './components/auth/Login';
+import ResetPassword from './components/auth/ResetPassword';
+import Sidebar from './components/dashboard/layout/Sidebar';
+import Header from './components/dashboard/layout/Header';
+import DashboardOverview from './components/dashboard/overview/DashboardOverview';
+import UsersTable from './components/dashboard/users/UsersTable';
+import PostsList from './components/dashboard/posts/PostsList';
+import CommentsView from './components/dashboard/comments/CommentsView';
+import TopicsPage from './components/dashboard/topics/TopicsPage';
+import SubTopicsPage from './components/dashboard/topics/SubTopicsPage';
+import ForgotPassword from './components/auth/ForgotPassword';
+import CommunitiesPage from './components/dashboard/communities/CommunitiesPage';
+import PollsPage from './components/dashboard/polls/PollsPage';
+import SubscriptionsPage from './components/dashboard/subscriptions/SubscriptionsPage';
+import PaymentsPage from './components/dashboard/payments/PaymentsPage';
+import ProfileSettings from './components/dashboard/profile/ProfileSettings';
+import NotificationsPage from './components/dashboard/notifications/NotificationsPage';
+import CurrenciesPage from './components/dashboard/settings/CurrenciesPage';
+import AppSettingsPage from './components/dashboard/settings/AppSettingsPage';
+import PrivacyPolicyPage from './components/dashboard/privacy-policy/PrivacyPolicyPage';
+import SupportPage from './components/dashboard/support/SupportPage';
+import BannersPage from './components/dashboard/banners/BannersPage';
+import DeletedUsersPage from './components/dashboard/users-deleted/DeletedUsersPage';
 
 // Dashboard Layout Component
 const DashboardLayout = ({ onLogout }) => {
@@ -66,7 +66,7 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     // Check authentication - check both localStorage and sessionStorage
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
     }
@@ -98,7 +98,7 @@ const PublicRoute = ({ children }) => {
 
   useEffect(() => {
     // Check authentication - check both localStorage and sessionStorage
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
     }
@@ -125,13 +125,13 @@ const PublicRoute = ({ children }) => {
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const basePath = BASE_PATH;
-    const baseUrl = BASE_URL;
+  const basePath = BASE_PATH;
+  const baseUrl = BASE_URL;
 
   // Check initial authentication state
   useEffect(() => {
     // Check both localStorage and sessionStorage for token
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     setIsAuthenticated(!!token);
   }, []);
 
@@ -142,19 +142,19 @@ const App = () => {
   const handleLogout = async () => {
     try {
       // Clear both localStorage and sessionStorage
-      localStorage.removeItem("token");
-      localStorage.removeItem("username");
-      localStorage.removeItem("email");
-      localStorage.removeItem("role");
-      localStorage.removeItem("is_active");
-      localStorage.removeItem("is_verified");
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      localStorage.removeItem('email');
+      localStorage.removeItem('role');
+      localStorage.removeItem('is_active');
+      localStorage.removeItem('is_verified');
 
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("username");
-      sessionStorage.removeItem("email");
-      sessionStorage.removeItem("role");
-      sessionStorage.removeItem("is_active");
-      sessionStorage.removeItem("is_verified");
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('username');
+      sessionStorage.removeItem('email');
+      sessionStorage.removeItem('role');
+      sessionStorage.removeItem('is_active');
+      sessionStorage.removeItem('is_verified');
 
       // Update state
       setIsAuthenticated(false);
@@ -162,7 +162,7 @@ const App = () => {
       // Redirect to login
       window.location.href = `${baseUrl}/login`;
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error('Logout error:', error);
     }
   };
 
@@ -195,7 +195,6 @@ const App = () => {
           />
           <Route path="/reset-password" element={<ResetPassword />} />
 
-
           {/* Protected Dashboard Routes */}
           <Route
             path="/"
@@ -225,7 +224,6 @@ const App = () => {
             <Route path="banners" element={<BannersPage />} />
             <Route path="profile" element={<ProfileSettings />} />
             <Route path="notifications" element={<NotificationsPage />} />
-
 
             {/* Catch all - redirect to dashboard */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

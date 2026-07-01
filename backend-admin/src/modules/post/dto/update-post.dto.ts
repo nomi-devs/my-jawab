@@ -11,29 +11,35 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PostStatus, PostType } from '../entities/user-post.entity';
 
 export class UpdatePostDto {
+  @ApiPropertyOptional({ type: [Number], example: [1, 2] })
   @IsOptional()
   @IsArray()
   @IsInt({ each: true })
   @Type(() => Number)
   community_ids?: number[];
 
+  @ApiPropertyOptional({ maxLength: 255, example: 'my-first-post' })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   post_slug?: string;
 
+  @ApiPropertyOptional({ maxLength: 255, example: 'My First Post' })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   post_title?: string;
 
+  @ApiPropertyOptional({ example: 'This is the post body content.' })
   @IsOptional()
   @IsString()
   post_content?: string;
 
+  @ApiPropertyOptional({ example: 'https://example.com/image.jpg' })
   @IsOptional()
   @IsUrl()
   @MaxLength(500)
@@ -42,28 +48,34 @@ export class UpdatePostDto {
   // Note: post_video is not updatable - videos can only be set during creation
   // Video updates are not allowed for security and data integrity reasons
   // This field is accepted in the request but ignored during processing
+  @ApiPropertyOptional({ example: 'https://example.com/video.mp4' })
   @IsOptional()
   @IsString()
   post_video?: string;
 
+  @ApiPropertyOptional({ example: 'https://example.com/audio.mp3' })
   @IsOptional()
   @IsUrl()
   @MaxLength(500)
   post_audio?: string;
 
+  @ApiPropertyOptional({ example: 'https://example.com/article' })
   @IsOptional()
   @IsUrl()
   @MaxLength(500)
   post_link?: string;
 
+  @ApiPropertyOptional({ enum: PostStatus, example: PostStatus.PUBLISHED })
   @IsOptional()
   @IsEnum(PostStatus)
   post_status?: PostStatus;
 
+  @ApiPropertyOptional({ enum: PostType, example: PostType.POST })
   @IsOptional()
   @IsEnum(PostType)
   post_type?: PostType;
 
+  @ApiPropertyOptional({ example: 5 })
   @IsOptional()
   @Transform(({ value }) => {
     // Handle empty strings, null, or undefined from FormData
@@ -79,11 +91,16 @@ export class UpdatePostDto {
   @Min(1)
   post_topic_id?: number | null;
 
+  @ApiPropertyOptional({ type: [String], example: ['news', 'tech'] })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   post_tags?: string[];
 
+  @ApiPropertyOptional({
+    enum: ['featured', 'not_featured'],
+    example: 'not_featured',
+  })
   @IsOptional()
   @Transform(({ value }) => {
     // Handle FormData: extract string from array if needed, or use string directly
@@ -95,4 +112,3 @@ export class UpdatePostDto {
   @IsEnum(['featured', 'not_featured'])
   is_featured?: 'featured' | 'not_featured';
 }
-

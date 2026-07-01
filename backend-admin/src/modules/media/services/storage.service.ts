@@ -1,6 +1,12 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -54,9 +60,15 @@ export class StorageService {
       await fs.mkdir(this.uploadDir, { recursive: true });
       await fs.mkdir(path.join(this.uploadDir, 'images'), { recursive: true });
       await fs.mkdir(path.join(this.uploadDir, 'videos'), { recursive: true });
-      await fs.mkdir(path.join(this.uploadDir, 'documents'), { recursive: true });
-      await fs.mkdir(path.join(this.uploadDir, 'thumbnails'), { recursive: true });
-      await fs.mkdir(path.join(this.uploadDir, 'optimized'), { recursive: true });
+      await fs.mkdir(path.join(this.uploadDir, 'documents'), {
+        recursive: true,
+      });
+      await fs.mkdir(path.join(this.uploadDir, 'thumbnails'), {
+        recursive: true,
+      });
+      await fs.mkdir(path.join(this.uploadDir, 'optimized'), {
+        recursive: true,
+      });
     } catch (error) {
       this.logger.error(`Failed to create upload directory: ${error.message}`);
     }
@@ -79,7 +91,9 @@ export class StorageService {
   ): Promise<UploadResult> {
     const fileHash = this.generateFileHash(file.buffer);
     const fileName = this.generateFileName(file.originalname, fileHash);
-    const folderPath = folder ? path.join(this.uploadDir, folder) : this.uploadDir;
+    const folderPath = folder
+      ? path.join(this.uploadDir, folder)
+      : this.uploadDir;
 
     await fs.mkdir(folderPath, { recursive: true });
 
@@ -129,14 +143,21 @@ export class StorageService {
     };
   }
 
-  async getFileUrl(filePath: string, storageType: StorageType, expiresIn: number = 3600): Promise<string> {
+  async getFileUrl(
+    filePath: string,
+    storageType: StorageType,
+    expiresIn: number = 3600,
+  ): Promise<string> {
     if (storageType === StorageType.S3 && this.s3Client && this.s3Bucket) {
       return this.getS3SignedUrl(filePath, expiresIn);
     }
     return this.getLocalFileUrl(filePath);
   }
 
-  private async getS3SignedUrl(key: string, expiresIn: number): Promise<string> {
+  private async getS3SignedUrl(
+    key: string,
+    expiresIn: number,
+  ): Promise<string> {
     if (!this.s3Client || !this.s3Bucket) {
       throw new BadRequestException('S3 is not configured');
     }
@@ -171,11 +192,17 @@ export class StorageService {
     if (!this.s3Client || !this.s3Bucket) {
       throw new BadRequestException('S3 is not configured');
     }
-    const command = new DeleteObjectCommand({ Bucket: this.s3Bucket, Key: key });
+    const command = new DeleteObjectCommand({
+      Bucket: this.s3Bucket,
+      Key: key,
+    });
     await this.s3Client.send(command);
   }
 
-  async fileExists(filePath: string, storageType: StorageType): Promise<boolean> {
+  async fileExists(
+    filePath: string,
+    storageType: StorageType,
+  ): Promise<boolean> {
     if (storageType === StorageType.S3 && this.s3Client && this.s3Bucket) {
       return this.s3FileExists(filePath);
     }
@@ -194,7 +221,9 @@ export class StorageService {
   private async s3FileExists(key: string): Promise<boolean> {
     if (!this.s3Client || !this.s3Bucket) return false;
     try {
-      await this.s3Client.send(new HeadObjectCommand({ Bucket: this.s3Bucket, Key: key }));
+      await this.s3Client.send(
+        new HeadObjectCommand({ Bucket: this.s3Bucket, Key: key }),
+      );
       return true;
     } catch {
       return false;

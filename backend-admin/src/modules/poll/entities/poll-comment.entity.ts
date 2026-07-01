@@ -42,7 +42,9 @@ export class PollComment {
   @Index()
   parent_comment_id: number | null;
 
-  @ManyToOne(() => PollComment, (comment) => comment.replies, { nullable: true })
+  @ManyToOne(() => PollComment, (comment) => comment.replies, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'parent_comment_id' })
   parent_comment: PollComment | null;
 
@@ -110,4 +112,3 @@ export class PollComment {
   })
   updated_at: Date;
 }
-

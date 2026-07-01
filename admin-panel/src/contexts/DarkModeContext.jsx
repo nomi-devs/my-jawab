@@ -24,7 +24,7 @@ export const DarkModeProvider = ({ children }) => {
   useEffect(() => {
     // Update localStorage
     localStorage.setItem('darkMode', isDarkMode.toString());
-    
+
     // Update document class
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -34,7 +34,7 @@ export const DarkModeProvider = ({ children }) => {
   }, [isDarkMode]);
 
   const toggleDarkMode = () => {
-    setIsDarkMode(prev => !prev);
+    setIsDarkMode((prev) => !prev);
   };
 
   return (
@@ -43,4 +43,3 @@ export const DarkModeProvider = ({ children }) => {
     </DarkModeContext.Provider>
   );
 };
-

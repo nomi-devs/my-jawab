@@ -12,7 +12,7 @@ const ConfirmationModal = ({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   isLoading = false,
-  icon: CustomIcon
+  icon: CustomIcon,
 }) => {
   if (!isOpen) return null;
 
@@ -20,7 +20,8 @@ const ConfirmationModal = ({
     warning: {
       headerBg: 'bg-amber-500 dark:bg-amber-600',
       icon: <AlertTriangle className="text-amber-900 dark:text-amber-100" size={18} />,
-      confirmBtn: 'bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700 text-white',
+      confirmBtn:
+        'bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700 text-white',
     },
     danger: {
       headerBg: 'bg-red-500 dark:bg-red-600',
@@ -30,12 +31,14 @@ const ConfirmationModal = ({
     success: {
       headerBg: 'bg-green-500 dark:bg-green-600',
       icon: <CheckCircle className="text-white" size={18} />,
-      confirmBtn: 'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white',
+      confirmBtn:
+        'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white',
     },
     info: {
       headerBg: 'bg-blue-500 dark:bg-blue-600',
       icon: <Info className="text-blue-900 dark:text-blue-100" size={18} />,
-      confirmBtn: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white',
+      confirmBtn:
+        'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white',
     },
   };
 
@@ -54,21 +57,36 @@ const ConfirmationModal = ({
         {/* Modal Header */}
         <div className="px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
           <div className="flex items-center space-x-2.5">
-            <div className={`p-1.5 rounded-lg ${type === 'danger' ? 'bg-red-100 dark:bg-red-900/30' :
-              type === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30' :
-                type === 'success' ? 'bg-green-100 dark:bg-green-900/30' :
-                  'bg-blue-100 dark:bg-blue-900/30'}`}>
+            <div
+              className={`p-1.5 rounded-lg ${
+                type === 'danger'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : type === 'warning'
+                    ? 'bg-amber-100 dark:bg-amber-900/30'
+                    : type === 'success'
+                      ? 'bg-green-100 dark:bg-green-900/30'
+                      : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
               {React.cloneElement(IconComponent, {
-                className: type === 'danger' ? 'text-red-600 dark:text-red-400' :
-                  type === 'warning' ? 'text-amber-600 dark:text-amber-400' :
-                    type === 'success' ? 'text-green-600 dark:text-green-400' :
-                      'text-blue-600 dark:text-blue-400',
-                size: 18
+                className:
+                  type === 'danger'
+                    ? 'text-red-600 dark:text-red-400'
+                    : type === 'warning'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : type === 'success'
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-blue-600 dark:text-blue-400',
+                size: 18,
               })}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">{title || 'Confirmation'}</h3>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">Please confirm your action</p>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                {title || 'Confirmation'}
+              </h3>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Please confirm your action
+              </p>
             </div>
           </div>
           <button
@@ -119,4 +137,3 @@ const ConfirmationModal = ({
 };
 
 export default React.memo(ConfirmationModal);
-

@@ -1,7 +1,18 @@
 // src/components/dashboard/layout/SearchBar.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Clock, Users, Hash, Globe, FileText, ImageIcon, Video, Music } from 'lucide-react';
+import {
+  Search,
+  X,
+  Clock,
+  Users,
+  Hash,
+  Globe,
+  FileText,
+  ImageIcon,
+  Video,
+  Music,
+} from 'lucide-react';
 import searchApi from '../../../api/searchApi';
 
 // Helper function to format numbers (e.g., 125000 -> "125k")
@@ -50,11 +61,11 @@ const SearchBar = React.memo(() => {
 
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await searchApi.globalSearch({
         q: query.trim(),
-        limit: 5
+        limit: 5,
       });
 
       // Debug: Log raw API response
@@ -62,15 +73,15 @@ const SearchBar = React.memo(() => {
 
       // Transform API response to match component's expected format
       const transformedResults = {
-        users: (response.data.users || []).map(user => ({
+        users: (response.data.users || []).map((user) => ({
           id: user.id,
           name: user.name || user.username || 'Unknown User',
           handle: user.handle || `@${user.username || 'user'}`,
           type: 'user',
           avatar: user.avatar,
-          role: user.role
+          role: user.role,
         })),
-        posts: (response.data.posts || []).map(post => ({
+        posts: (response.data.posts || []).map((post) => ({
           id: post.id,
           title: post.title || post.post_title || 'Untitled Post',
           slug: post.slug || post.post_slug,
@@ -83,21 +94,23 @@ const SearchBar = React.memo(() => {
           post_image: post.post_image || null,
           post_video: post.post_video || null,
           post_audio: post.post_audio || null,
-          author: post.user ? {
-            name: post.user.name || post.user.username,
-            handle: post.user.handle || `@${post.user.username || 'user'}`
-          } : null,
-          created_at: post.created_at
+          author: post.user
+            ? {
+                name: post.user.name || post.user.username,
+                handle: post.user.handle || `@${post.user.username || 'user'}`,
+              }
+            : null,
+          created_at: post.created_at,
         })),
-        communities: (response.data.communities || []).map(community => ({
+        communities: (response.data.communities || []).map((community) => ({
           id: community.id,
           name: community.name || community.community_name,
           members: formatNumber(community.member_count || 0),
           type: 'community',
           slug: community.slug || community.community_slug,
-          image: community.community_image || null
+          image: community.community_image || null,
         })),
-        topics: (response.data.topics || []).map(topic => {
+        topics: (response.data.topics || []).map((topic) => {
           const originalName = topic.name || topic.topic_name || 'topic';
           return {
             id: topic.id,
@@ -105,9 +118,9 @@ const SearchBar = React.memo(() => {
             originalName: originalName, // Store original name without hash for searching
             posts: formatNumber(topic.posts_count || 0),
             type: 'topic',
-            slug: topic.slug || topic.topic_slug
+            slug: topic.slug || topic.topic_slug,
           };
-        })
+        }),
       };
 
       // Debug: Log the transformed results to see what we're getting
@@ -120,7 +133,7 @@ const SearchBar = React.memo(() => {
         users: [],
         posts: [],
         communities: [],
-        topics: []
+        topics: [],
       });
     } finally {
       setLoading(false);
@@ -152,7 +165,7 @@ const SearchBar = React.memo(() => {
         setRecentSearches(updated);
         saveRecentSearches(updated);
       }
-      
+
       // Perform search action
       performSearch(searchQuery);
       setIsFocused(false);
@@ -167,13 +180,13 @@ const SearchBar = React.memo(() => {
   const handleRecentSearchClick = (term) => {
     // Remove hash (#) from topic searches
     const cleanedTerm = term.startsWith('#') ? term.substring(1).trim() : term.trim();
-    
+
     // Set the cleaned search query
     setSearchQuery(cleanedTerm);
-    
+
     // Keep dropdown open and perform search
     setIsFocused(true);
-    
+
     // Perform search with cleaned term
     if (cleanedTerm) {
       performSearch(cleanedTerm);
@@ -185,23 +198,23 @@ const SearchBar = React.memo(() => {
   const handleResultClick = (item) => {
     // Get search term and remove hash (#) if it's a topic
     let searchTerm = (item.name || item.title || '').toLowerCase().trim();
-    
+
     // Remove hash from topic names before saving to recent searches
     if (item.type === 'topic' && searchTerm.startsWith('#')) {
       searchTerm = searchTerm.substring(1).trim();
     }
-    
+
     setSearchQuery('');
     setSearchResults(null);
     setIsFocused(false);
-    
+
     // Add to recent searches (without hash for topics)
     if (searchTerm && !recentSearches.includes(searchTerm)) {
       const updated = [searchTerm, ...recentSearches.slice(0, 4)];
       setRecentSearches(updated);
       saveRecentSearches(updated);
     }
-    
+
     // Navigate to the appropriate page based on item type
     switch (item.type) {
       case 'user':
@@ -219,7 +232,9 @@ const SearchBar = React.memo(() => {
       case 'topic':
         // Navigate to topics page with search filter
         // Use originalName if available, otherwise remove hash from displayed name
-        const topicSearchQuery = item.originalName || (item.name.startsWith('#') ? item.name.substring(1).trim() : item.name);
+        const topicSearchQuery =
+          item.originalName ||
+          (item.name.startsWith('#') ? item.name.substring(1).trim() : item.name);
         navigate('/topics', { state: { searchTopicId: item.id, searchQuery: topicSearchQuery } });
         break;
       default:
@@ -242,19 +257,21 @@ const SearchBar = React.memo(() => {
     }
   };
 
-
-
-
   return (
     <div className="relative">
       {/* Search Form */}
       <form onSubmit={handleSearch} className="relative">
-        <div className={`hidden md:flex items-center bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border transition-all duration-200 ${
-          isFocused 
-            ? 'border-purple-500 dark:border-purple-400 shadow-purple-glow' 
-            : 'border-purple-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-gray-500'
-        }`}>
-          <Search size={18} className={`mr-2 ${isFocused ? 'text-purple-500 dark:text-purple-400' : 'text-purple-400 dark:text-gray-400'}`} />
+        <div
+          className={`hidden md:flex items-center bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border transition-all duration-200 ${
+            isFocused
+              ? 'border-purple-500 dark:border-purple-400 shadow-purple-glow'
+              : 'border-purple-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-gray-500'
+          }`}
+        >
+          <Search
+            size={18}
+            className={`mr-2 ${isFocused ? 'text-purple-500 dark:text-purple-400' : 'text-purple-400 dark:text-gray-400'}`}
+          />
           <input
             type="text"
             value={searchQuery}
@@ -278,18 +295,18 @@ const SearchBar = React.memo(() => {
 
       {/* Search Results Dropdown */}
       {(isFocused || searchQuery) && (
-        <div 
+        <div
           className="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-purple-100 dark:border-gray-700 z-50 animate-in slide-in-from-top-5 duration-200 transition-colors overflow-hidden flex flex-col"
-          style={{ 
+          style={{
             maxHeight: 'calc(100vh - 120px)',
-            maxWidth: 'calc(100vw - 32px)'
+            maxWidth: 'calc(100vw - 32px)',
           }}
         >
           {/* Search Results Content - Scrollable */}
-          <div 
-            className="p-3 overflow-y-auto flex-1 search-results-scroll" 
-            style={{ 
-              scrollbarGutter: 'stable'
+          <div
+            className="p-3 overflow-y-auto flex-1 search-results-scroll"
+            style={{
+              scrollbarGutter: 'stable',
             }}
           >
             {loading ? (
@@ -299,16 +316,20 @@ const SearchBar = React.memo(() => {
             ) : searchQuery ? (
               error ? (
                 <div className="py-10 text-center">
-                  <p className="text-sm text-red-500 dark:text-red-400 transition-colors">{error}</p>
+                  <p className="text-sm text-red-500 dark:text-red-400 transition-colors">
+                    {error}
+                  </p>
                 </div>
               ) : searchResults ? (
                 <>
                   {/* Users Results */}
                   {searchResults.users.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">Users</h4>
+                      <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">
+                        Users
+                      </h4>
                       <div className="space-y-1">
-                        {searchResults.users.map(user => (
+                        {searchResults.users.map((user) => (
                           <button
                             key={user.id}
                             onClick={() => handleResultClick(user)}
@@ -316,24 +337,29 @@ const SearchBar = React.memo(() => {
                           >
                             {user.avatar ? (
                               <div className="w-9 h-9 rounded-lg overflow-hidden mr-2.5 flex-shrink-0 border border-purple-200 dark:border-gray-600">
-                                <img 
-                                  src={user.avatar} 
+                                <img
+                                  src={user.avatar}
                                   alt={user.name}
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
                                     e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = '<div class="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center"><svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>';
+                                    e.target.parentElement.innerHTML =
+                                      '<div class="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center"><svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>';
                                   }}
                                 />
                               </div>
                             ) : (
-                            <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition-colors">
-                              {getResultIcon(user.type)}
-                            </div>
+                              <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition-colors">
+                                {getResultIcon(user.type)}
+                              </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 transition-colors truncate">{user.name}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">{user.handle}</div>
+                              <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 transition-colors truncate">
+                                {user.name}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">
+                                {user.handle}
+                              </div>
                             </div>
                           </button>
                         ))}
@@ -344,34 +370,44 @@ const SearchBar = React.memo(() => {
                   {/* Posts Results */}
                   {searchResults.posts && searchResults.posts.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">Posts</h4>
+                      <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">
+                        Posts
+                      </h4>
                       <div className="space-y-1">
-                        {searchResults.posts.map(post => {
+                        {searchResults.posts.map((post) => {
                           // Check for images - handle null, undefined, and empty strings
-                          const hasImage = (post.thumbnail && post.thumbnail.trim()) || (post.post_image && post.post_image.trim());
+                          const hasImage =
+                            (post.thumbnail && post.thumbnail.trim()) ||
+                            (post.post_image && post.post_image.trim());
                           const hasVideo = post.post_video && post.post_video.trim();
                           const hasAudio = post.post_audio && post.post_audio.trim();
-                          
+
                           // Debug: Log post data to see what we have
                           if (post.id) {
-                            console.log(`Post ${post.id} - thumbnail: ${post.thumbnail}, post_image: ${post.post_image}, hasImage: ${hasImage}`);
+                            console.log(
+                              `Post ${post.id} - thumbnail: ${post.thumbnail}, post_image: ${post.post_image}, hasImage: ${hasImage}`,
+                            );
                           }
-                          
+
                           return (
-                          <button
-                            key={post.id}
-                            onClick={() => handleResultClick(post)}
-                            className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
-                          >
+                            <button
+                              key={post.id}
+                              onClick={() => handleResultClick(post)}
+                              className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
+                            >
                               {hasImage ? (
                                 <div className="w-9 h-9 rounded-lg overflow-hidden mr-2.5 flex-shrink-0 border border-orange-200 dark:border-gray-600 relative">
-                                  <img 
-                                    src={(post.thumbnail && post.thumbnail.trim()) || (post.post_image && post.post_image.trim())} 
+                                  <img
+                                    src={
+                                      (post.thumbnail && post.thumbnail.trim()) ||
+                                      (post.post_image && post.post_image.trim())
+                                    }
                                     alt={post.title}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                       e.target.style.display = 'none';
-                                      e.target.parentElement.innerHTML = '<div class="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center"><svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
+                                      e.target.parentElement.innerHTML =
+                                        '<div class="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center"><svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
                                     }}
                                   />
                                   {hasVideo && (
@@ -389,18 +425,20 @@ const SearchBar = React.memo(() => {
                                   <Music size={16} className="text-orange-500" />
                                 </div>
                               ) : (
-                            <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors">
-                              {getResultIcon(post.type)}
-                            </div>
+                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors">
+                                  {getResultIcon(post.type)}
+                                </div>
                               )}
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 transition-colors truncate">{post.title}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">
-                                {post.author ? `${post.author.name} • ` : ''}
-                                {post.views} views • {post.likes} likes
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 transition-colors truncate">
+                                  {post.title}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">
+                                  {post.author ? `${post.author.name} • ` : ''}
+                                  {post.views} views • {post.likes} likes
+                                </div>
                               </div>
-                            </div>
-                          </button>
+                            </button>
                           );
                         })}
                       </div>
@@ -410,40 +448,47 @@ const SearchBar = React.memo(() => {
                   {/* Communities Results */}
                   {searchResults.communities.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">Communities</h4>
+                      <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">
+                        Communities
+                      </h4>
                       <div className="space-y-1">
-                        {searchResults.communities.map(community => {
+                        {searchResults.communities.map((community) => {
                           // Check for image - handle null, undefined, and empty strings
                           const hasImage = community.image && community.image.trim();
-                          
+
                           return (
-                          <button
-                            key={community.id}
-                            onClick={() => handleResultClick(community)}
-                            className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
-                          >
+                            <button
+                              key={community.id}
+                              onClick={() => handleResultClick(community)}
+                              className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
+                            >
                               {hasImage ? (
                                 <div className="w-9 h-9 rounded-lg overflow-hidden mr-2.5 flex-shrink-0 border border-blue-200 dark:border-gray-600">
-                                  <img 
-                                    src={community.image} 
+                                  <img
+                                    src={community.image}
                                     alt={community.name}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                       e.target.style.display = 'none';
-                                      e.target.parentElement.innerHTML = '<div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center"><svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>';
+                                      e.target.parentElement.innerHTML =
+                                        '<div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center"><svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>';
                                     }}
                                   />
                                 </div>
                               ) : (
-                            <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors">
-                              {getResultIcon(community.type)}
-                            </div>
+                                <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors">
+                                  {getResultIcon(community.type)}
+                                </div>
                               )}
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 transition-colors truncate">{community.name}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">{community.members} members</div>
-                            </div>
-                          </button>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 transition-colors truncate">
+                                  {community.name}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">
+                                  {community.members} members
+                                </div>
+                              </div>
+                            </button>
                           );
                         })}
                       </div>
@@ -453,9 +498,11 @@ const SearchBar = React.memo(() => {
                   {/* Topics Results */}
                   {searchResults.topics.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">Topics</h4>
+                      <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">
+                        Topics
+                      </h4>
                       <div className="space-y-1">
-                        {searchResults.topics.map(topic => (
+                        {searchResults.topics.map((topic) => (
                           <button
                             key={topic.id}
                             onClick={() => handleResultClick(topic)}
@@ -465,8 +512,12 @@ const SearchBar = React.memo(() => {
                               {getResultIcon(topic.type)}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 transition-colors truncate">{topic.name}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">{topic.posts} posts</div>
+                              <div className="font-semibold text-sm text-gray-800 dark:text-gray-200 transition-colors truncate">
+                                {topic.name}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">
+                                {topic.posts} posts
+                              </div>
                             </div>
                           </button>
                         ))}
@@ -475,23 +526,29 @@ const SearchBar = React.memo(() => {
                   )}
 
                   {/* No Results */}
-                  {(!searchResults.posts || searchResults.posts.length === 0) && 
-                   searchResults.users.length === 0 && 
-                   searchResults.communities.length === 0 && 
-                   searchResults.topics.length === 0 && (
-                    <div className="py-10 text-center">
-                      <Search className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2.5" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">No results found for</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold mt-1 transition-colors">"{searchQuery}"</p>
-                    </div>
-                  )}
+                  {(!searchResults.posts || searchResults.posts.length === 0) &&
+                    searchResults.users.length === 0 &&
+                    searchResults.communities.length === 0 &&
+                    searchResults.topics.length === 0 && (
+                      <div className="py-10 text-center">
+                        <Search className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2.5" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
+                          No results found for
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold mt-1 transition-colors">
+                          "{searchQuery}"
+                        </p>
+                      </div>
+                    )}
                 </>
               ) : null
             ) : (
               /* Recent Searches */
               <div>
                 <div className="flex items-center justify-between mb-2.5 px-1">
-                  <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider transition-colors">Recent Searches</h4>
+                  <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider transition-colors">
+                    Recent Searches
+                  </h4>
                   <button
                     onClick={() => {
                       setRecentSearches([]);
@@ -509,13 +566,20 @@ const SearchBar = React.memo(() => {
                       onClick={() => handleRecentSearchClick(term)}
                       className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                     >
-                      <Clock size={14} className="text-gray-400 dark:text-gray-500 mr-2.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300 transition-colors truncate">{term}</span>
+                      <Clock
+                        size={14}
+                        className="text-gray-400 dark:text-gray-500 mr-2.5 flex-shrink-0"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 transition-colors truncate">
+                        {term}
+                      </span>
                     </button>
                   ))}
                 </div>
                 <div className="pt-4 border-t border-purple-100 dark:border-gray-700">
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2 px-1 font-medium transition-colors">Try searching for:</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2 px-1 font-medium transition-colors">
+                    Try searching for:
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     {['users', 'communities', 'analytics', 'reports'].map((term) => (
                       <button

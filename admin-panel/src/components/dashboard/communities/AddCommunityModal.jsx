@@ -11,7 +11,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
     community_description: '',
     is_active: true,
     community_image: null,
-    topic_ids: []
+    topic_ids: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [topics, setTopics] = useState([]);
@@ -43,10 +43,10 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
 
-    setFormData(prev => {
+    setFormData((prev) => {
       const updated = {
         ...prev,
-        [name]: newValue
+        [name]: newValue,
       };
 
       // Auto-generate slug from community_name (always regenerate)
@@ -68,17 +68,17 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        community_image: file
+        community_image: file,
       }));
     }
   };
 
   const handleTopicsSelected = (selectedIds) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      topic_ids: Array.isArray(selectedIds) ? selectedIds : []
+      topic_ids: Array.isArray(selectedIds) ? selectedIds : [],
     }));
   };
 
@@ -99,7 +99,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
         formDataToSend.append('community_image', formData.community_image);
       }
       if (formData.topic_ids && formData.topic_ids.length > 0) {
-        formData.topic_ids.forEach(id => {
+        formData.topic_ids.forEach((id) => {
           formDataToSend.append('topic_ids[]', id);
         });
       }
@@ -121,7 +121,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
       community_description: '',
       is_active: true,
       community_image: null,
-      topic_ids: []
+      topic_ids: [],
     });
   };
 
@@ -142,8 +142,12 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
               <Globe className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">Add New Community</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Create a new community</p>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Add New Community
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                Create a new community
+              </p>
             </div>
           </div>
           <button
@@ -156,7 +160,11 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
         </div>
 
         {/* Scrollable Modal Body */}
-        <form id="add-community-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form
+          id="add-community-form"
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <div className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarGutter: 'stable' }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Community Name - Full width */}
@@ -224,9 +232,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                     disabled={isSubmitting || loadingTopics}
                   >
                     <Tag size={12} />
-                    <span>
-                      {formData.topic_ids?.length ? 'Edit topics' : 'Select topics'}
-                    </span>
+                    <span>{formData.topic_ids?.length ? 'Edit topics' : 'Select topics'}</span>
                   </button>
                 </div>
                 {formData.topic_ids && formData.topic_ids.length > 0 && (
@@ -240,7 +246,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                           break;
                         }
                         if (parent.children) {
-                          const child = parent.children.find(c => c.id === topicId);
+                          const child = parent.children.find((c) => c.id === topicId);
                           if (child) {
                             topicName = child.name;
                             break;
@@ -256,9 +262,9 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                           <button
                             type="button"
                             onClick={() => {
-                              setFormData(prev => ({
+                              setFormData((prev) => ({
                                 ...prev,
-                                topic_ids: prev.topic_ids.filter(id => id !== topicId)
+                                topic_ids: prev.topic_ids.filter((id) => id !== topicId),
                               }));
                             }}
                             className="hover:text-purple-800 dark:hover:text-purple-300"
@@ -286,7 +292,9 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
                   disabled={isSubmitting}
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Maximum file size: 10MB</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Maximum file size: 10MB
+                </p>
               </div>
 
               {/* Is Active - Full width */}
@@ -296,7 +304,9 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
                       Active
                     </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Community will be visible to users</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                      Community will be visible to users
+                    </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -311,7 +321,6 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                   </label>
                 </div>
               </div>
-
             </div>
           </div>
         </form>
@@ -360,7 +369,3 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
 
 AddCommunityModal.displayName = 'AddCommunityModal';
 export default AddCommunityModal;
-
-
-
-

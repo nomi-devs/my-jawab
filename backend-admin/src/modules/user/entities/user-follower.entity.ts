@@ -63,4 +63,3 @@ export class UserFollower {
   })
   updated_at: Date;
 }
-

@@ -1,11 +1,32 @@
 // src/components/dashboard/topics/TopicsDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, Hash, Calendar, FileText, Edit, Trash2, CheckCircle, XCircle, Loader2, Settings, FolderTree, List } from 'lucide-react';
+import {
+  X,
+  Hash,
+  Calendar,
+  FileText,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Settings,
+  FolderTree,
+  List,
+} from 'lucide-react';
 import topicsApi from '../../../api/topicsApi';
 import { normalizeMediaUrl } from '../../../utils/mediaUtils';
 import ConfirmationModal from '../../common/ConfirmationModal';
 
-const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatus, onEdit, onDelete }) => {
+const TopicsDetailsModal = ({
+  isOpen,
+  onClose,
+  topicId,
+  topicData,
+  onUpdateStatus,
+  onEdit,
+  onDelete,
+}) => {
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(true);
   const [topicDetails, setTopicDetails] = useState(null);
@@ -54,12 +75,15 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
       // Normalize is_active to boolean
       const normalizedTopic = {
         ...topicData,
-        is_active: normalizeIsActive(topicData.is_active)
+        is_active: normalizeIsActive(topicData.is_active),
       };
       setTopicDetails(normalizedTopic);
 
       // If this is a parent topic (parent_id === 0), fetch or use children
-      if ((normalizedTopic.parent_id === 0 || !normalizedTopic.parent_id) && normalizedTopic.children) {
+      if (
+        (normalizedTopic.parent_id === 0 || !normalizedTopic.parent_id) &&
+        normalizedTopic.children
+      ) {
         setSubTopics(normalizedTopic.children || []);
       } else {
         setSubTopics([]);
@@ -75,10 +99,13 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
           topic_description: topicData.topic_description || topicData.description,
           topic_slug: topicData.topic_slug || topicData.slug,
           is_active: normalizeIsActive(topicData.is_active),
-          parent_id: topicData.parent_id || 0
+          parent_id: topicData.parent_id || 0,
         };
         setTopicDetails(normalizedTopic);
-        if ((normalizedTopic.parent_id === 0 || !normalizedTopic.parent_id) && normalizedTopic.children) {
+        if (
+          (normalizedTopic.parent_id === 0 || !normalizedTopic.parent_id) &&
+          normalizedTopic.children
+        ) {
           setSubTopics(normalizedTopic.children || []);
         } else {
           setSubTopics([]);
@@ -99,7 +126,7 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
         parent_id: topicId,
         limit: 100,
         sort_by: 'created_at',
-        sort_order: 'ASC'
+        sort_order: 'ASC',
       });
 
       if (response && response.data && response.data.data) {
@@ -127,7 +154,7 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
       await topicsApi.deleteTopic(subTopicToDelete.id);
 
       // Remove the sub-topic from the local state
-      setSubTopics(prev => prev.filter(st => st.id !== subTopicToDelete.id));
+      setSubTopics((prev) => prev.filter((st) => st.id !== subTopicToDelete.id));
 
       // Refresh the sub-topics list to ensure consistency
       await fetchSubTopics();
@@ -142,7 +169,8 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
       setSubTopicToDelete(null);
     } catch (err) {
       console.error('Error deleting sub-topic:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to delete sub-topic. Please try again.';
+      const errorMsg =
+        err.response?.data?.message || 'Failed to delete sub-topic. Please try again.';
       setError(errorMsg);
       // Don't close the modal on error - let user see the error message
       // The error will be displayed in the confirmation modal message
@@ -159,11 +187,9 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
       await topicsApi.updateTopicStatus(subTopicId, { is_active: status });
 
       // Update the specific sub-topic in the local state
-      setSubTopics(prev => prev.map(st =>
-        st.id === subTopicId
-          ? { ...st, is_active: newStatus }
-          : st
-      ));
+      setSubTopics((prev) =>
+        prev.map((st) => (st.id === subTopicId ? { ...st, is_active: newStatus } : st)),
+      );
 
       // Refresh the sub-topics list to ensure consistency
       await fetchSubTopics();
@@ -231,9 +257,9 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
       const response = await topicsApi.updateTopicStatus(topicId, updateData);
 
       // Update local state immediately
-      setTopicDetails(prev => ({
+      setTopicDetails((prev) => ({
         ...prev,
-        is_active: newStatus // Store as boolean for consistency
+        is_active: newStatus, // Store as boolean for consistency
       }));
 
       // Call parent callback if provided to update parent component
@@ -262,7 +288,7 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -275,7 +301,7 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
 
   const tabs = [
     { id: 'details', label: 'Details', icon: Hash },
-    ...(isParentTopic ? [{ id: 'subtopics', label: 'Sub-topics', icon: List }] : [])
+    ...(isParentTopic ? [{ id: 'subtopics', label: 'Sub-topics', icon: List }] : []),
   ];
 
   return (
@@ -297,20 +323,30 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                     }}
                   />
                 ) : null}
-                <div className={`w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0 ${(topic.topic_image && topic.parent_id === 0) ? 'hidden' : ''}`}>
+                <div
+                  className={`w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0 ${topic.topic_image && topic.parent_id === 0 ? 'hidden' : ''}`}
+                >
                   <Hash size={18} className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
-                    {loading ? 'Loading...' : (topic.topic_name || topic.name || 'Topic Details')}
+                    {loading ? 'Loading...' : topic.topic_name || topic.name || 'Topic Details'}
                   </h2>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${isActive
-                        ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
-                        : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'
-                      }`}>
-                      <span className={`w-1 h-1 rounded-full mr-1 ${isActive ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-500 dark:bg-gray-400'
-                        }`}></span>
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                        isActive
+                          ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
+                          : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`w-1 h-1 rounded-full mr-1 ${
+                          isActive
+                            ? 'bg-green-500 dark:bg-green-400'
+                            : 'bg-gray-500 dark:bg-gray-400'
+                        }`}
+                      ></span>
                       {isActive ? 'Active' : 'Inactive'}
                     </span>
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30">
@@ -343,10 +379,11 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                     fetchSubTopics();
                   }
                 }}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors relative ${activeTab === tab.id
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors relative ${
+                  activeTab === tab.id
                     ? 'text-purple-600 dark:text-purple-400 bg-white dark:bg-gray-800'
                     : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
-                  }`}
+                }`}
               >
                 <Icon size={14} />
                 {tab.label}
@@ -376,7 +413,9 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                   {/* Topic Image - Only for parent topics */}
                   {topic.topic_image && (!topic.parent_id || topic.parent_id === 0) && (
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Topic Image</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Topic Image
+                      </h3>
                       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                         <img
                           src={normalizeMediaUrl(topic.topic_image)}
@@ -392,7 +431,9 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
 
                   {/* Description */}
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Description</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                      Description
+                    </h3>
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                       <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                         {topic.topic_description || topic.description || 'No description'}
@@ -403,7 +444,9 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                   {/* Topic Info Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Slug</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Slug
+                      </h3>
                       <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
                         <p className="text-gray-700 dark:text-gray-300 font-mono text-sm">
                           {topic.topic_slug || topic.slug || 'No slug'}
@@ -411,7 +454,9 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Type</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Type
+                      </h3>
                       <div className="flex items-center gap-2">
                         <FolderTree size={14} className="text-purple-500" />
                         <span className="text-xs text-gray-700 dark:text-gray-300">
@@ -420,26 +465,33 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Parent Topic</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Parent Topic
+                      </h3>
                       <div className="text-gray-700 dark:text-gray-300">
                         {topic.parent_name ? (
-                          <span className="font-medium text-purple-600 dark:text-purple-400">{topic.parent_name}</span>
+                          <span className="font-medium text-purple-600 dark:text-purple-400">
+                            {topic.parent_name}
+                          </span>
                         ) : topic.parent_id && topic.parent_id > 0 ? (
                           <span className="text-gray-500 dark:text-gray-400">Has Parent Topic</span>
                         ) : (
-                          <span className="text-purple-600 dark:text-purple-400 font-medium">Root Category</span>
+                          <span className="text-purple-600 dark:text-purple-400 font-medium">
+                            Root Category
+                          </span>
                         )}
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Created</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Created
+                      </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Calendar size={18} />
                         <span>{formatDate(topic.created_at)}</span>
                       </div>
                     </div>
                   </div>
-
                 </div>
               )}
 
@@ -459,7 +511,10 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
 
                   {loadingSubTopics ? (
                     <div className="flex items-center justify-center p-8">
-                      <Loader2 size={24} className="animate-spin text-purple-600 dark:text-purple-400" />
+                      <Loader2
+                        size={24}
+                        className="animate-spin text-purple-600 dark:text-purple-400"
+                      />
                     </div>
                   ) : subTopics.length > 0 ? (
                     <div className="bg-white dark:bg-gray-800 rounded-lg border border-purple-100 dark:border-gray-700 overflow-hidden">
@@ -467,12 +522,24 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                         <table className="w-full">
                           <thead className="bg-purple-50 dark:bg-gray-700/50 border-b border-purple-100 dark:border-gray-700">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Name</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Slug</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Description</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Status</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Created</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Actions</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                Name
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                Slug
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                Description
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                Status
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                Created
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                Actions
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-purple-100 dark:divide-gray-700">
@@ -498,18 +565,26 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                                   </td>
                                   <td className="px-4 py-3">
                                     <span className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 max-w-xs">
-                                      {subTopic.topic_description || subTopic.description || 'No description'}
+                                      {subTopic.topic_description ||
+                                        subTopic.description ||
+                                        'No description'}
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${isActiveRow
-                                        ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                                        : 'bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                                      }`}>
-                                      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isActiveRow
-                                          ? 'bg-green-500 dark:bg-green-400'
-                                          : 'bg-gray-500 dark:bg-gray-400'
-                                        }`}></span>
+                                    <span
+                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                        isActiveRow
+                                          ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                                          : 'bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                          isActiveRow
+                                            ? 'bg-green-500 dark:bg-green-400'
+                                            : 'bg-gray-500 dark:bg-gray-400'
+                                        }`}
+                                      ></span>
                                       {isActiveRow ? 'Active' : 'Inactive'}
                                     </span>
                                   </td>
@@ -519,7 +594,10 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                    <div
+                                      className="flex items-center gap-2"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                       {/* Edit Button */}
                                       <button
                                         onClick={(e) => {
@@ -536,7 +614,11 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                                       <label
                                         className="relative inline-flex items-center cursor-pointer"
                                         onClick={(e) => e.stopPropagation()}
-                                        title={isActiveRow ? 'Deactivate sub-topic' : 'Activate sub-topic'}
+                                        title={
+                                          isActiveRow
+                                            ? 'Deactivate sub-topic'
+                                            : 'Activate sub-topic'
+                                        }
                                       >
                                         <input
                                           type="checkbox"
@@ -573,8 +655,13 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                     </div>
                   ) : (
                     <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-                      <FolderTree size={48} className="mx-auto text-gray-400 dark:text-gray-500 mb-3" />
-                      <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">No sub-topics found</p>
+                      <FolderTree
+                        size={48}
+                        className="mx-auto text-gray-400 dark:text-gray-500 mb-3"
+                      />
+                      <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                        No sub-topics found
+                      </p>
                       <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                         This parent topic doesn't have any child topics yet.
                       </p>
@@ -627,12 +714,16 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
                   disabled={updatingStatus}
                   className="sr-only peer"
                 />
-                <div className={`w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                <div
+                  className={`w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                ></div>
               </label>
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                 {isActive ? 'Active' : 'Inactive'}
               </span>
-              {updatingStatus && <Loader2 size={14} className="animate-spin text-purple-600 ml-1" />}
+              {updatingStatus && (
+                <Loader2 size={14} className="animate-spin text-purple-600 ml-1" />
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -673,4 +764,3 @@ const TopicsDetailsModal = ({ isOpen, onClose, topicId, topicData, onUpdateStatu
 };
 
 export default TopicsDetailsModal;
-

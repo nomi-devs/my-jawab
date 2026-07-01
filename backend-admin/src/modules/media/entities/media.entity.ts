@@ -83,16 +83,36 @@ export class Media {
   @Column({ type: 'int', nullable: true, comment: 'Video duration (seconds)' })
   duration: number | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'Thumbnail path' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'Thumbnail path',
+  })
   thumbnail_path: string | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'Optimized version path' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'Optimized version path',
+  })
   optimized_path: string | null;
 
-  @Column({ type: 'varchar', length: 36, unique: true, comment: 'Unique identifier' })
+  @Column({
+    type: 'varchar',
+    length: 36,
+    unique: true,
+    comment: 'Unique identifier',
+  })
   uuid: string;
 
-  @Column({ type: 'varchar', length: 64, nullable: true, comment: 'File hash (MD5/SHA256)' })
+  @Column({
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+    comment: 'File hash (MD5/SHA256)',
+  })
   @Index()
   file_hash: string | null;
 
@@ -100,11 +120,20 @@ export class Media {
   @Index()
   uploaded_by: number | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'Folder/category' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'Folder/category',
+  })
   @Index()
   folder: string | null;
 
-  @Column({ type: 'text', nullable: true, comment: 'Additional metadata (JSON)' })
+  @Column({
+    type: 'text',
+    nullable: true,
+    comment: 'Additional metadata (JSON)',
+  })
   metadata: string | null;
 
   @Column({ type: 'int', default: 0, comment: 'Download count' })

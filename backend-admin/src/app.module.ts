@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -18,7 +18,6 @@ import { PollModule } from './modules/poll/poll.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { SharedModule } from './modules/shared/shared.module';
-import { getDatabaseConfig } from './database/config/database.config';
 import { NotificationModule } from './modules/notification/notification.module';
 import { EmailModule } from './modules/email/email.module';
 import { JobModule } from './modules/job/job.module';
@@ -38,27 +37,21 @@ import { MediaModule } from './modules/media/media.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      cache: true, // Cache environment variables
+      cache: true,
       load: [
         () => require('./config/app.config').default,
         () => require('./config/services.config').default,
       ],
     }),
-    // Main Database Configuration
-    TypeOrmModule.forRootAsync({
-      name: 'default',
-      imports: [ConfigModule],
-      useFactory: getDatabaseConfig,
-      inject: [ConfigService],
-    }),
+    PrismaModule,
     // Rate Limiting Configuration
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => [
         {
-          ttl: configService.get<number>('THROTTLE_TTL', 60000), // 1 minute
-          limit: configService.get<number>('THROTTLE_LIMIT', 100), // 100 requests per minute
+          ttl: configService.get<number>('THROTTLE_TTL', 60000),
+          limit: configService.get<number>('THROTTLE_LIMIT', 100),
         },
       ],
     }),
@@ -70,34 +63,33 @@ import { MediaModule } from './modules/media/media.module';
         const redisConfig = getRedisConfig(configService);
 
         if (redisConfig) {
-          // Use Redis for distributed caching
           try {
             const redisStore = require('cache-manager-redis-store');
-            console.log(`CacheModule: Using Redis at ${redisConfig.host}:${redisConfig.port}`);
+            console.log(
+              `CacheModule: Using Redis at ${redisConfig.host}:${redisConfig.port}`,
+            );
             return {
               store: redisStore.default || redisStore,
               host: redisConfig.host,
               port: redisConfig.port,
               password: redisConfig.password,
               db: redisConfig.db,
-              ttl: configService.get<number>('CACHE_TTL', 300), // 5 minutes default
-              max: configService.get<number>('CACHE_MAX', 1000), // Max items in cache
+              ttl: configService.get<number>('CACHE_TTL', 300),
+              max: configService.get<number>('CACHE_MAX', 1000),
             };
           } catch (error) {
-            // If Redis store is not available, fall back to in-memory
             console.warn('Redis store not available, using in-memory cache');
           }
         }
 
-        // Use in-memory cache (default or fallback)
         return {
-          ttl: configService.get<number>('CACHE_TTL', 300), // 5 minutes
-          max: configService.get<number>('CACHE_MAX', 1000), // Max items in cache
+          ttl: configService.get<number>('CACHE_TTL', 300),
+          max: configService.get<number>('CACHE_MAX', 1000),
         };
       },
       isGlobal: true,
     }),
-    ScheduleModule.forRoot(), // Enable cron jobs for subscription reminders
+    ScheduleModule.forRoot(),
     AuthModule,
     UserModule,
     AdminModule,
@@ -125,11 +117,10 @@ import { MediaModule } from './modules/media/media.module';
   controllers: [AppController],
   providers: [
     AppService,
-    // Global Rate Limiting Guard
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

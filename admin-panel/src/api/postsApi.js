@@ -1,5 +1,5 @@
 // src/api/postsApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const postsApi = {
   /**
@@ -18,13 +18,13 @@ const postsApi = {
    */
   /**
    * Get paginated list of all posts with optional search and sorting
-   * 
+   *
    * According to API_ADMIN_MODULE.md, the API only supports:
    * - page, limit, search, sort_by, sort_order
-   * 
+   *
    * Status, featured, and media filters are NOT supported server-side
    * and must be handled client-side.
-   * 
+   *
    * @param {Object} [params={}] - Query parameters
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Items per page (max 100)
@@ -39,24 +39,27 @@ const postsApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
-      ...(params.post_status && params.post_status !== 'all' && { post_status: params.post_status }),
-      ...(params.is_featured !== undefined && params.is_featured !== null && { is_featured: params.is_featured }),
-      ...(params.has_media !== undefined && params.has_media !== null && { has_media: params.has_media }),
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
+      ...(params.post_status &&
+        params.post_status !== 'all' && { post_status: params.post_status }),
+      ...(params.is_featured !== undefined &&
+        params.is_featured !== null && { is_featured: params.is_featured }),
+      ...(params.has_media !== undefined &&
+        params.has_media !== null && { has_media: params.has_media }),
       ...(params.media_type && { media_type: params.media_type }),
       ...(params.user_id && { user_id: params.user_id }),
       ...(params.topic_id && { topic_id: params.topic_id }),
       ...(params.created_from && { created_from: params.created_from }),
-      ...(params.created_to && { created_to: params.created_to })
+      ...(params.created_to && { created_to: params.created_to }),
     };
 
     // Remove undefined/null values
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/posts", { params: cleanedParams });
+    return axiosClient.get('/admin/posts', { params: cleanedParams });
   },
 
   /**
@@ -104,10 +107,10 @@ const postsApi = {
 
     if (isFormData) {
       // Don't set Content-Type header manually - let browser set it with boundary
-      return axiosClient.post("/admin/posts", data, {
+      return axiosClient.post('/admin/posts', data, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
     }
 
@@ -120,7 +123,7 @@ const postsApi = {
       postData.community_ids = postData.community_ids.join(',');
     }
 
-    return axiosClient.post("/admin/posts", postData);
+    return axiosClient.post('/admin/posts', postData);
   },
 
   /**
@@ -150,8 +153,8 @@ const postsApi = {
       // Don't set Content-Type header manually - let browser set it with boundary
       return axiosClient.put(`/admin/posts/${id}`, data, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
     }
 
@@ -187,11 +190,11 @@ const postsApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/posts/${postId}/comments`, { params: cleanedParams });
   },
@@ -204,10 +207,10 @@ const postsApi = {
    */
   getPostAnalytics(postId, params = {}) {
     const queryParams = {
-      ...(params.time_range && { time_range: params.time_range })
+      ...(params.time_range && { time_range: params.time_range }),
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/posts/${postId}/analytics`, { params: cleanedParams });
   },
@@ -220,22 +223,24 @@ const postsApi = {
   exportPosts(params = {}) {
     const queryParams = {
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
-      ...(params.post_status && params.post_status !== 'all' && { post_status: params.post_status }),
-      ...(params.is_featured !== undefined && params.is_featured !== null && { is_featured: params.is_featured }),
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
+      ...(params.post_status &&
+        params.post_status !== 'all' && { post_status: params.post_status }),
+      ...(params.is_featured !== undefined &&
+        params.is_featured !== null && { is_featured: params.is_featured }),
       ...(params.user_id && { user_id: params.user_id }),
       ...(params.topic_id && { topic_id: params.topic_id }),
       ...(params.created_from && { created_from: params.created_from }),
-      ...(params.created_to && { created_to: params.created_to })
+      ...(params.created_to && { created_to: params.created_to }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/posts/export", { params: cleanedParams });
-  }
+    return axiosClient.get('/admin/posts/export', { params: cleanedParams });
+  },
 };
 
 export default postsApi;

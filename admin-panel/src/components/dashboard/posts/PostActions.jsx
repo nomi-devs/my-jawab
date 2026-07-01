@@ -2,13 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MoreHorizontal, Edit, Trash2, BarChart } from 'lucide-react';
 
-const PostActions = React.memo(({
-  post,
-  onEdit,
-  onDelete,
-  onAnalytics,
-  onUpdateStatus
-}) => {
+const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateStatus }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState('bottom');
   const dropdownRef = useRef(null);
@@ -71,10 +65,13 @@ const PostActions = React.memo(({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className={`absolute right-0 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-purple-100 dark:border-gray-700 z-[9999] animate-in fade-in duration-150 transition-colors ${dropdownPosition === 'top'
-            ? 'bottom-full mb-1 slide-in-from-bottom-2'
-            : 'top-full mt-1 slide-in-from-top-2'
-          }`}>
+        <div
+          className={`absolute right-0 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-purple-100 dark:border-gray-700 z-[9999] animate-in fade-in duration-150 transition-colors ${
+            dropdownPosition === 'top'
+              ? 'bottom-full mb-1 slide-in-from-bottom-2'
+              : 'top-full mt-1 slide-in-from-top-2'
+          }`}
+        >
           <div className="py-1">
             {/* Edit */}
             <button

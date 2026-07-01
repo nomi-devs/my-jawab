@@ -37,7 +37,10 @@ export class Payment {
   @Index()
   users_subscriptions_id: number;
 
-  @ManyToOne(() => UserSubscription, (userSubscription) => userSubscription.payments)
+  @ManyToOne(
+    () => UserSubscription,
+    (userSubscription) => userSubscription.payments,
+  )
   @JoinColumn({ name: 'users_subscriptions_id' })
   user_subscription: UserSubscription;
 
@@ -131,4 +134,3 @@ export class Payment {
   @Index()
   updated_at: Date;
 }
-

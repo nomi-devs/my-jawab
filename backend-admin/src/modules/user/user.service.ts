@@ -5,24 +5,14 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { UserProfile, ProfileGender } from './entities/user-profile.entity';
-import { UserFollower } from './entities/user-follower.entity';
-import { UserTopic } from './entities/user-topic.entity';
-import { Topic } from '../general/entities/topic.entity';
+import { PrismaService } from '../../prisma/prisma.service';
+import { ProfileGender } from './entities/user-profile.entity';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { FollowUserDto } from './dto/follow-user.dto';
 import { SubscribeTopicDto } from './dto/subscribe-topic.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 import { MediaClientService } from '../shared/services/media-client.service';
-import { User, UserRole } from '../auth/entities/user.entity';
-import { UserPost } from '../post/entities/user-post.entity';
-import { UserPoll } from '../poll/entities/user-poll.entity';
-import { PostComment } from '../comment/entities/post-comment.entity';
-import { PollComment } from '../poll/entities/poll-comment.entity';
-import { CommunityUser } from '../community/entities/community-user.entity';
 import { PostService } from '../post/post.service';
 import { PollService } from '../poll/poll.service';
 import { CommentService } from '../comment/comment.service';
@@ -37,26 +27,7 @@ export class UserService {
   private readonly logger = new Logger(UserService.name);
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(UserProfile)
-    private readonly profileRepository: Repository<UserProfile>,
-    @InjectRepository(UserFollower)
-    private readonly followerRepository: Repository<UserFollower>,
-    @InjectRepository(UserTopic)
-    private readonly topicRepository: Repository<UserTopic>,
-    @InjectRepository(Topic)
-    private readonly topicEntityRepository: Repository<Topic>,
-    @InjectRepository(CommunityUser)
-    private readonly communityUserRepository: Repository<CommunityUser>,
-    @InjectRepository(UserPost)
-    private readonly postRepository: Repository<UserPost>,
-    @InjectRepository(UserPoll)
-    private readonly pollRepository: Repository<UserPoll>,
-    @InjectRepository(PostComment)
-    private readonly postCommentRepository: Repository<PostComment>,
-    @InjectRepository(PollComment)
-    private readonly pollCommentRepository: Repository<PollComment>,
+    private readonly prisma: PrismaService,
     private readonly mediaClientService: MediaClientService,
     private readonly postService: PostService,
     private readonly pollService: PollService,
@@ -105,9 +76,9 @@ export class UserService {
     profileBackgroundFile?: Express.Multer.File,
   ): Promise<ProfileResponseDto> {
     // Check if profile already exists
-    const existingProfile = await this.profileRepository.findOne({
+    const existingProfile = await this.prisma.userProfile.findUnique({
       where: { user_id: userId },
-      select: ['id'],
+      select: { id: true },
     });
 
     if (existingProfile) {
@@ -133,9 +104,7 @@ export class UserService {
           mediaResponse.file_path,
         );
       } catch (error) {
-        this.logger.error(
-          `Failed to upload profile picture: ${error.message}`,
-        );
+        this.logger.error(`Failed to upload profile picture: ${error.message}`);
         throw new BadRequestException('Failed to upload profile picture');
       }
     }
@@ -163,28 +132,29 @@ export class UserService {
       }
     }
 
-    const profile = this.profileRepository.create({
-      user_id: userId,
-      full_name: createProfileDto.full_name,
-      profile_picture: profilePicture,
-      profile_background: profileBackground,
-      tagline: createProfileDto.tagline,
-      profile_bio: createProfileDto.profile_bio,
-      profile_gender: createProfileDto.profile_gender,
-      profile_birthday: createProfileDto.profile_birthday
-        ? new Date(createProfileDto.profile_birthday)
-        : null,
-      profile_website: createProfileDto.profile_website,
-      profile_location: createProfileDto.profile_location,
-      created_by: userId,
+    const savedProfile = await this.prisma.userProfile.create({
+      data: {
+        user_id: userId,
+        full_name: createProfileDto.full_name,
+        profile_picture: profilePicture,
+        profile_background: profileBackground,
+        tagline: createProfileDto.tagline,
+        profile_bio: createProfileDto.profile_bio,
+        profile_gender: createProfileDto.profile_gender,
+        profile_birthday: createProfileDto.profile_birthday
+          ? new Date(createProfileDto.profile_birthday)
+          : null,
+        profile_website: createProfileDto.profile_website,
+        profile_location: createProfileDto.profile_location,
+        created_by: userId,
+      },
     });
 
-    const savedProfile = await this.profileRepository.save(profile);
     return this.mapToProfileResponse(savedProfile);
   }
 
   async getProfile(userId: number): Promise<ProfileResponseDto> {
-    const profile = await this.profileRepository.findOne({
+    const profile = await this.prisma.userProfile.findUnique({
       where: { user_id: userId },
     });
 
@@ -196,7 +166,7 @@ export class UserService {
   }
 
   async getProfileByUserId(userId: number): Promise<ProfileResponseDto> {
-    const profile = await this.profileRepository.findOne({
+    const profile = await this.prisma.userProfile.findUnique({
       where: { user_id: userId },
     });
 
@@ -213,18 +183,6 @@ export class UserService {
     profilePictureFile?: Express.Multer.File,
     profileBackgroundFile?: Express.Multer.File,
   ): Promise<ProfileResponseDto> {
-    let profile = await this.profileRepository.findOne({
-      where: { user_id: userId },
-    });
-
-    // Create profile if it doesn't exist
-    if (!profile) {
-      profile = this.profileRepository.create({
-        user_id: userId,
-        created_by: userId,
-      });
-    }
-
     // Upload profile picture if provided
     if (profilePictureFile) {
       try {
@@ -241,9 +199,7 @@ export class UserService {
           mediaResponse.file_path,
         );
       } catch (error) {
-        this.logger.error(
-          `Failed to upload profile picture: ${error.message}`,
-        );
+        this.logger.error(`Failed to upload profile picture: ${error.message}`);
         throw new BadRequestException('Failed to upload profile picture');
       }
     }
@@ -260,9 +216,8 @@ export class UserService {
             is_public: true,
           },
         );
-        updateProfileDto.profile_background = this.mediaClientService.buildFileUrl(
-          mediaResponse.file_path,
-        );
+        updateProfileDto.profile_background =
+          this.mediaClientService.buildFileUrl(mediaResponse.file_path);
       } catch (error) {
         this.logger.error(
           `Failed to upload profile background: ${error.message}`,
@@ -271,39 +226,49 @@ export class UserService {
       }
     }
 
-    // Update fields
+    // Build update data from only defined fields
+    const updateData: any = { updated_by: userId };
     if (updateProfileDto.full_name !== undefined) {
-      profile.full_name = updateProfileDto.full_name;
+      updateData.full_name = updateProfileDto.full_name;
     }
     if (updateProfileDto.profile_picture !== undefined) {
-      profile.profile_picture = updateProfileDto.profile_picture;
+      updateData.profile_picture = updateProfileDto.profile_picture;
     }
     if (updateProfileDto.profile_background !== undefined) {
-      profile.profile_background = updateProfileDto.profile_background;
+      updateData.profile_background = updateProfileDto.profile_background;
     }
     if (updateProfileDto.tagline !== undefined) {
-      profile.tagline = updateProfileDto.tagline;
+      updateData.tagline = updateProfileDto.tagline;
     }
     if (updateProfileDto.profile_bio !== undefined) {
-      profile.profile_bio = updateProfileDto.profile_bio;
+      updateData.profile_bio = updateProfileDto.profile_bio;
     }
     if (updateProfileDto.profile_gender !== undefined) {
-      profile.profile_gender = updateProfileDto.profile_gender;
+      updateData.profile_gender = updateProfileDto.profile_gender;
     }
     if (updateProfileDto.profile_birthday !== undefined) {
-      profile.profile_birthday = updateProfileDto.profile_birthday
+      updateData.profile_birthday = updateProfileDto.profile_birthday
         ? new Date(updateProfileDto.profile_birthday)
         : null;
     }
     if (updateProfileDto.profile_website !== undefined) {
-      profile.profile_website = updateProfileDto.profile_website;
+      updateData.profile_website = updateProfileDto.profile_website;
     }
     if (updateProfileDto.profile_location !== undefined) {
-      profile.profile_location = updateProfileDto.profile_location;
+      updateData.profile_location = updateProfileDto.profile_location;
     }
 
-    profile.updated_by = userId;
-    const updatedProfile = await this.profileRepository.save(profile);
+    // Upsert: update if exists, create if not
+    const updatedProfile = await this.prisma.userProfile.upsert({
+      where: { user_id: userId },
+      create: {
+        user_id: userId,
+        created_by: userId,
+        ...updateData,
+      },
+      update: updateData,
+    });
+
     return this.mapToProfileResponse(updatedProfile);
   }
 
@@ -320,10 +285,12 @@ export class UserService {
     }
 
     // Check if already following
-    const existingFollow = await this.followerRepository.findOne({
+    const existingFollow = await this.prisma.userFollower.findUnique({
       where: {
-        user_id: user_id,
-        follower_id: followerId,
+        user_id_follower_id: {
+          user_id: user_id,
+          follower_id: followerId,
+        },
       },
     });
 
@@ -332,23 +299,30 @@ export class UserService {
         throw new ConflictException('Already following this user');
       } else {
         // Reactivate follow
-        existingFollow.is_active = true;
-        existingFollow.updated_by = followerId;
-        await this.followerRepository.save(existingFollow);
+        await this.prisma.userFollower.update({
+          where: {
+            user_id_follower_id: {
+              user_id: user_id,
+              follower_id: followerId,
+            },
+          },
+          data: { is_active: true, updated_by: followerId },
+        });
         await this.notifyFollow(user_id, followerId);
         return { message: 'Successfully followed user' };
       }
     }
 
     // Create new follow relationship
-    const follow = this.followerRepository.create({
-      user_id: user_id,
-      follower_id: followerId,
-      is_active: true,
-      created_by: followerId,
+    await this.prisma.userFollower.create({
+      data: {
+        user_id: user_id,
+        follower_id: followerId,
+        is_active: true,
+        created_by: followerId,
+      },
     });
 
-    await this.followerRepository.save(follow);
     await this.notifyFollow(user_id, followerId);
     return { message: 'Successfully followed user' };
   }
@@ -356,10 +330,13 @@ export class UserService {
   /**
    * Helper: notify the user that someone followed them.
    */
-  private async notifyFollow(followedUserId: number, followerId: number): Promise<void> {
-    const follower = await this.userRepository.findOne({
+  private async notifyFollow(
+    followedUserId: number,
+    followerId: number,
+  ): Promise<void> {
+    const follower = await this.prisma.user.findUnique({
       where: { id: followerId },
-      select: ['id', 'username'],
+      select: { id: true, username: true },
     });
     const followerName = follower?.username || 'Someone';
     await this.safeNotify({
@@ -378,10 +355,12 @@ export class UserService {
     followerId: number,
     userId: number,
   ): Promise<{ message: string }> {
-    const follow = await this.followerRepository.findOne({
+    const follow = await this.prisma.userFollower.findUnique({
       where: {
-        user_id: userId,
-        follower_id: followerId,
+        user_id_follower_id: {
+          user_id: userId,
+          follower_id: followerId,
+        },
       },
     });
 
@@ -389,37 +368,43 @@ export class UserService {
       throw new NotFoundException('Not following this user');
     }
 
-    follow.is_active = false;
-    follow.updated_by = followerId;
-    await this.followerRepository.save(follow);
+    await this.prisma.userFollower.update({
+      where: {
+        user_id_follower_id: {
+          user_id: userId,
+          follower_id: followerId,
+        },
+      },
+      data: { is_active: false, updated_by: followerId },
+    });
 
     return { message: 'Successfully unfollowed user' };
   }
 
-  async getFollowers(userId: number): Promise<UserFollower[]> {
-    return await this.followerRepository.find({
+  async getFollowers(userId: number): Promise<any[]> {
+    return await this.prisma.userFollower.findMany({
       where: {
         user_id: userId,
         is_active: true,
       },
-      relations: ['follower'],
-      order: { created_at: 'DESC' },
+      include: { follower: true },
+      orderBy: { created_at: 'desc' },
     });
   }
 
-  async getFollowing(userId: number): Promise<UserFollower[]> {
-    return await this.followerRepository.find({
+  async getFollowing(userId: number): Promise<any[]> {
+    return await this.prisma.userFollower.findMany({
       where: {
         follower_id: userId,
         is_active: true,
       },
-      relations: ['user'],
-      order: { created_at: 'DESC' },
+      include: { user: true },
+      orderBy: { created_at: 'desc' },
     });
   }
 
   async getFollowerCount(userId: number): Promise<number> {
-    return await this.followerRepository.count({
+    return await this.prisma.userFollower.count({
       where: {
         user_id: userId,
         is_active: true,
@@ -428,7 +413,7 @@ export class UserService {
   }
 
   async getFollowingCount(userId: number): Promise<number> {
-    return await this.followerRepository.count({
+    return await this.prisma.userFollower.count({
       where: {
         follower_id: userId,
         is_active: true,
@@ -440,8 +425,8 @@ export class UserService {
   async subscribeTopic(
     userId: number,
     subscribeTopicDto: SubscribeTopicDto,
-  ): Promise<{ 
-    message: string; 
+  ): Promise<{
+    message: string;
     subscribed: number[];
     already_subscribed: number[];
     not_found: number[];
@@ -449,13 +434,15 @@ export class UserService {
   }> {
     // Normalize topic IDs: support both single topic_id and array of topic_ids
     let topicIds: number[] = [];
-    
+
     if (subscribeTopicDto.topic_ids && subscribeTopicDto.topic_ids.length > 0) {
       topicIds = subscribeTopicDto.topic_ids;
     } else if (subscribeTopicDto.topic_id) {
       topicIds = [subscribeTopicDto.topic_id];
     } else {
-      throw new BadRequestException('Either topic_id or topic_ids must be provided');
+      throw new BadRequestException(
+        'Either topic_id or topic_ids must be provided',
+      );
     }
 
     // Remove duplicates
@@ -466,31 +453,33 @@ export class UserService {
     }
 
     // Validate that all topics exist and are active
-    const topics = await this.topicEntityRepository.find({
+    const topics = await this.prisma.topic.findMany({
       where: {
-        id: In(topicIds),
+        id: { in: topicIds },
         is_active: true,
       },
-      select: ['id'],
+      select: { id: true },
     });
 
-    const existingTopicIds = new Set(topics.map(t => t.id));
-    const notFoundTopicIds = topicIds.filter(id => !existingTopicIds.has(id));
+    const existingTopicIds = new Set(topics.map((t) => t.id));
+    const notFoundTopicIds = topicIds.filter((id) => !existingTopicIds.has(id));
 
     if (notFoundTopicIds.length > 0 && topicIds.length === 1) {
-      throw new NotFoundException(`Topic with ID ${notFoundTopicIds[0]} not found or inactive`);
+      throw new NotFoundException(
+        `Topic with ID ${notFoundTopicIds[0]} not found or inactive`,
+      );
     }
 
     // Get existing subscriptions for the user
-    const existingSubscriptions = await this.topicRepository.find({
+    const existingSubscriptions = await this.prisma.userTopic.findMany({
       where: {
         user_id: userId,
-        topic_id: In(topicIds),
+        topic_id: { in: topicIds },
       },
     });
 
     const existingSubscriptionsMap = new Map(
-      existingSubscriptions.map(sub => [sub.topic_id, sub])
+      existingSubscriptions.map((sub) => [sub.topic_id, sub]),
     );
 
     const subscribed: number[] = [];
@@ -513,28 +502,39 @@ export class UserService {
         } else {
           // Reactivate subscription
           try {
-            existingSubscription.is_active = true;
-            existingSubscription.updated_by = userId;
-            await this.topicRepository.save(existingSubscription);
+            await this.prisma.userTopic.update({
+              where: {
+                user_id_topic_id: {
+                  user_id: userId,
+                  topic_id: topicId,
+                },
+              },
+              data: { is_active: true, updated_by: userId },
+            });
             subscribed.push(topicId);
           } catch (error) {
-            this.logger.error(`Failed to reactivate subscription for topic ${topicId}: ${error.message}`);
+            this.logger.error(
+              `Failed to reactivate subscription for topic ${topicId}: ${error.message}`,
+            );
             failed.push(topicId);
           }
         }
       } else {
         // Create new subscription
         try {
-          const subscription = this.topicRepository.create({
-            user_id: userId,
-            topic_id: topicId,
-            is_active: true,
-            created_by: userId,
+          await this.prisma.userTopic.create({
+            data: {
+              user_id: userId,
+              topic_id: topicId,
+              is_active: true,
+              created_by: userId,
+            },
           });
-          await this.topicRepository.save(subscription);
           subscribed.push(topicId);
         } catch (error) {
-          this.logger.error(`Failed to create subscription for topic ${topicId}: ${error.message}`);
+          this.logger.error(
+            `Failed to create subscription for topic ${topicId}: ${error.message}`,
+          );
           failed.push(topicId);
         }
       }
@@ -559,15 +559,19 @@ export class UserService {
     // For backward compatibility: if single topic and error, throw exception
     if (topicIds.length === 1) {
       if (notFound.length > 0) {
-        throw new NotFoundException(`Topic with ID ${topicIds[0]} not found or inactive`);
+        throw new NotFoundException(
+          `Topic with ID ${topicIds[0]} not found or inactive`,
+        );
       }
       if (alreadySubscribed.length > 0) {
         throw new ConflictException('Already subscribed to this topic');
       }
       if (failed.length > 0) {
-        throw new BadRequestException(`Failed to subscribe to topic: ${topicIds[0]}`);
+        throw new BadRequestException(
+          `Failed to subscribe to topic: ${topicIds[0]}`,
+        );
       }
-      return { 
+      return {
         message: 'Successfully subscribed to topic',
         subscribed,
         already_subscribed: alreadySubscribed,
@@ -589,10 +593,12 @@ export class UserService {
     userId: number,
     topicId: number,
   ): Promise<{ message: string }> {
-    const subscription = await this.topicRepository.findOne({
+    const subscription = await this.prisma.userTopic.findUnique({
       where: {
-        user_id: userId,
-        topic_id: topicId,
+        user_id_topic_id: {
+          user_id: userId,
+          topic_id: topicId,
+        },
       },
     });
 
@@ -600,25 +606,31 @@ export class UserService {
       throw new NotFoundException('Not subscribed to this topic');
     }
 
-    subscription.is_active = false;
-    subscription.updated_by = userId;
-    await this.topicRepository.save(subscription);
+    await this.prisma.userTopic.update({
+      where: {
+        user_id_topic_id: {
+          user_id: userId,
+          topic_id: topicId,
+        },
+      },
+      data: { is_active: false, updated_by: userId },
+    });
 
     return { message: 'Successfully unsubscribed from topic' };
   }
 
-  async getUserTopics(userId: number): Promise<UserTopic[]> {
-    return await this.topicRepository.find({
+  async getUserTopics(userId: number): Promise<any[]> {
+    return await this.prisma.userTopic.findMany({
       where: {
         user_id: userId,
         is_active: true,
       },
-      order: { created_at: 'DESC' },
+      orderBy: { created_at: 'desc' },
     });
   }
 
   async getTopicSubscriberCount(topicId: number): Promise<number> {
-    return await this.topicRepository.count({
+    return await this.prisma.userTopic.count({
       where: {
         topic_id: topicId,
         is_active: true,
@@ -636,30 +648,29 @@ export class UserService {
     user_topics: 'yes' | 'no';
     user_communities: 'yes' | 'no';
   }> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     const [profileCount, topicsCount, communitiesCount] = await Promise.all([
-      this.profileRepository.count({ where: { user_id: userId } }),
-      this.topicRepository.count({
+      this.prisma.userProfile.count({ where: { user_id: userId } }),
+      this.prisma.userTopic.count({
         where: { user_id: userId, is_active: true },
       }),
-      this.communityUserRepository.count({
+      this.prisma.communityUser.count({
         where: { user_id: userId, is_active: true },
       }),
     ]);
 
-    const toYesNo = (value: boolean): 'yes' | 'no' =>
-      value ? 'yes' : 'no';
+    const toYesNo = (value: boolean): 'yes' | 'no' => (value ? 'yes' : 'no');
 
     return {
       user_id: user.id,
       is_active: toYesNo(!!user.is_active),
       is_verified: toYesNo(!!user.is_verified),
-      is_pro_user: toYesNo(user.role === UserRole.PRO_USER),
+      is_pro_user: toYesNo(user.role === 'pro_user'),
       user_profile: toYesNo(profileCount > 0),
       user_topics: toYesNo(topicsCount > 0),
       user_communities: toYesNo(communitiesCount > 0),
@@ -667,8 +678,10 @@ export class UserService {
   }
 
   // Delete My Account (Soft Delete)
-  async deleteMyAccount(userId: number): Promise<{ message: string; hardDeleted: boolean }> {
-    const user = await this.userRepository.findOne({
+  async deleteMyAccount(
+    userId: number,
+  ): Promise<{ message: string; hardDeleted: boolean }> {
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
 
@@ -689,11 +702,17 @@ export class UserService {
     if (!hasContent) {
       // No content → hard delete: remove the row entirely + profile
       // Related rows without FK cascade are cleaned up explicitly below.
-      await this.profileRepository.delete({ user_id: userId });
-      await this.followerRepository.delete([{ user_id: userId }, { follower_id: userId }]);
-      await this.topicRepository.delete({ user_id: userId });
-      await this.communityUserRepository.delete({ user_id: userId });
-      await this.userRepository.delete(userId);
+      await this.prisma.userProfile.deleteMany({ where: { user_id: userId } });
+      await this.prisma.userFollower.deleteMany({
+        where: {
+          OR: [{ user_id: userId }, { follower_id: userId }],
+        },
+      });
+      await this.prisma.userTopic.deleteMany({ where: { user_id: userId } });
+      await this.prisma.communityUser.deleteMany({
+        where: { user_id: userId },
+      });
+      await this.prisma.user.delete({ where: { id: userId } });
 
       this.logger.log(`User hard-deleted (no content): User ID ${userId}`);
 
@@ -704,18 +723,23 @@ export class UserService {
     }
 
     // Has content → soft delete
-    user.is_deleted = true;
-    user.is_active = false;
-    user.deleted_at = new Date();
-    user.access_token = null;
-    user.refresh_token = null;
-    user.updated_by = userId;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        is_deleted: true,
+        is_active: false,
+        deleted_at: new Date(),
+        access_token: null,
+        refresh_token: null,
+        updated_by: userId,
+      },
+    });
 
     this.logger.log(`User soft-deleted (has content): User ID ${userId}`);
 
     return {
-      message: 'Your account has been deleted. Your content remains on the platform. Contact support if you need to reactivate.',
+      message:
+        'Your account has been deleted. Your content remains on the platform. Contact support if you need to reactivate.',
       hardDeleted: false,
     };
   }
@@ -726,10 +750,10 @@ export class UserService {
    */
   private async userHasContent(userId: number): Promise<boolean> {
     const [posts, polls, postComments, pollComments] = await Promise.all([
-      this.postRepository.count({ where: { user_id: userId } }),
-      this.pollRepository.count({ where: { user_id: userId } }),
-      this.postCommentRepository.count({ where: { user_id: userId } }),
-      this.pollCommentRepository.count({ where: { user_id: userId } }),
+      this.prisma.userPost.count({ where: { user_id: userId } }),
+      this.prisma.userPoll.count({ where: { user_id: userId } }),
+      this.prisma.postComment.count({ where: { user_id: userId } }),
+      this.prisma.pollComment.count({ where: { user_id: userId } }),
     ]);
     return posts > 0 || polls > 0 || postComments > 0 || pollComments > 0;
   }
@@ -785,7 +809,7 @@ export class UserService {
   }
 
   // Helper method to map entity to response DTO
-  private mapToProfileResponse(profile: UserProfile): ProfileResponseDto {
+  private mapToProfileResponse(profile: any): ProfileResponseDto {
     return {
       id: profile.id,
       user_id: profile.user_id,
@@ -794,7 +818,7 @@ export class UserService {
       profile_background: profile.profile_background,
       tagline: profile.tagline,
       profile_bio: profile.profile_bio,
-      profile_gender: profile.profile_gender,
+      profile_gender: profile.profile_gender as ProfileGender | null,
       profile_birthday: profile.profile_birthday,
       profile_website: profile.profile_website,
       profile_location: profile.profile_location,
@@ -803,4 +827,3 @@ export class UserService {
     };
   }
 }
-

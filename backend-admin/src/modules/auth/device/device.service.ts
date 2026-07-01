@@ -1,51 +1,46 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserDevice, DeviceType } from '../entities/user-device.entity';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { DeviceType as PrismaDeviceType } from '@prisma/client';
 import { RegisterDeviceDto, UpdateDeviceDto } from '../dto/device.dto';
 
 @Injectable()
 export class DeviceService {
-  constructor(
-    @InjectRepository(UserDevice)
-    private deviceRepository: Repository<UserDevice>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async registerDevice(
     userId: number,
     registerDeviceDto: RegisterDeviceDto,
-  ): Promise<UserDevice> {
-    let device = await this.deviceRepository.findOne({
+  ): Promise<any> {
+    const deviceType =
+      registerDeviceDto.device_type as unknown as PrismaDeviceType;
+    return await this.prisma.userDevice.upsert({
       where: {
+        user_id_device_id: {
+          user_id: userId,
+          device_id: registerDeviceDto.device_id,
+        },
+      },
+      create: {
         user_id: userId,
         device_id: registerDeviceDto.device_id,
+        device_type: deviceType,
+        device_token: registerDeviceDto.device_token ?? null,
+        is_active: true,
+        last_active_at: new Date(),
+      },
+      update: {
+        device_token: registerDeviceDto.device_token ?? undefined,
+        device_type: deviceType,
+        is_active: true,
+        last_active_at: new Date(),
       },
     });
-
-    if (device) {
-      device.device_token = registerDeviceDto.device_token || device.device_token;
-      device.device_type = registerDeviceDto.device_type;
-      device.is_active = true;
-      device.last_active_at = new Date();
-      return await this.deviceRepository.save(device);
-    }
-
-    device = this.deviceRepository.create({
-      user_id: userId,
-      device_id: registerDeviceDto.device_id,
-      device_type: registerDeviceDto.device_type,
-      device_token: registerDeviceDto.device_token,
-      is_active: true,
-      last_active_at: new Date(),
-    });
-
-    return await this.deviceRepository.save(device);
   }
 
-  async getUserDevices(userId: number): Promise<UserDevice[]> {
-    return await this.deviceRepository.find({
+  async getUserDevices(userId: number): Promise<any[]> {
+    return await this.prisma.userDevice.findMany({
       where: { user_id: userId, is_active: true },
-      order: { last_active_at: 'DESC' },
+      orderBy: { last_active_at: 'desc' },
     });
   }
 
@@ -53,11 +48,13 @@ export class DeviceService {
     userId: number,
     deviceId: string,
     updateDeviceDto: UpdateDeviceDto,
-  ): Promise<UserDevice> {
-    const device = await this.deviceRepository.findOne({
+  ): Promise<any> {
+    const device = await this.prisma.userDevice.findUnique({
       where: {
-        user_id: userId,
-        device_id: deviceId,
+        user_id_device_id: {
+          user_id: userId,
+          device_id: deviceId,
+        },
       },
     });
 
@@ -65,22 +62,36 @@ export class DeviceService {
       throw new NotFoundException('Device not found');
     }
 
+    const updateData: any = { last_active_at: new Date() };
     if (updateDeviceDto.device_token !== undefined) {
-      device.device_token = updateDeviceDto.device_token;
+      updateData.device_token = updateDeviceDto.device_token;
     }
     if (updateDeviceDto.device_type !== undefined) {
-      device.device_type = updateDeviceDto.device_type;
+      updateData.device_type =
+        updateDeviceDto.device_type as unknown as PrismaDeviceType;
     }
-    device.last_active_at = new Date();
 
-    return await this.deviceRepository.save(device);
+    return await this.prisma.userDevice.update({
+      where: {
+        user_id_device_id: {
+          user_id: userId,
+          device_id: deviceId,
+        },
+      },
+      data: updateData,
+    });
   }
 
-  async deactivateDevice(userId: number, deviceId: string): Promise<{ message: string }> {
-    const device = await this.deviceRepository.findOne({
+  async deactivateDevice(
+    userId: number,
+    deviceId: string,
+  ): Promise<{ message: string }> {
+    const device = await this.prisma.userDevice.findUnique({
       where: {
-        user_id: userId,
-        device_id: deviceId,
+        user_id_device_id: {
+          user_id: userId,
+          device_id: deviceId,
+        },
       },
     });
 
@@ -88,10 +99,16 @@ export class DeviceService {
       throw new NotFoundException('Device not found');
     }
 
-    device.is_active = false;
-    await this.deviceRepository.save(device);
+    await this.prisma.userDevice.update({
+      where: {
+        user_id_device_id: {
+          user_id: userId,
+          device_id: deviceId,
+        },
+      },
+      data: { is_active: false },
+    });
 
     return { message: 'Device deactivated successfully' };
   }
 }
-

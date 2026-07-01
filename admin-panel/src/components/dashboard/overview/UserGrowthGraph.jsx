@@ -24,20 +24,20 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
   const getResponsiveDimensions = useMemo(() => {
     const isMobile = containerWidth < 640; // sm breakpoint
     const isTablet = containerWidth >= 640 && containerWidth < 1024; // lg breakpoint
-    
+
     return {
       padding: {
         top: isMobile ? 16 : 20,
         right: isMobile ? 4 : 8,
         bottom: isMobile ? 28 : 32,
-        left: isMobile ? 32 : 40
+        left: isMobile ? 32 : 40,
       },
       chartHeight: isMobile ? 150 : isTablet ? 180 : 200,
       fontSize: {
         xAxis: isMobile ? '8px' : '9px',
         yAxis: isMobile ? '8px' : '9px',
-        tooltip: isMobile ? '10px' : '12px'
-      }
+        tooltip: isMobile ? '10px' : '12px',
+      },
     };
   }, [containerWidth]);
 
@@ -48,24 +48,24 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
   // Calculate evenly spaced Y-axis values using "nice numbers"
   const calculateYAxisValues = (maxValue) => {
     if (maxValue <= 0) return [0, 1, 2, 3, 4];
-    
+
     // Add 10% padding to max value for better visualization
     const paddedMax = maxValue * 1.1;
-    
+
     // Calculate magnitude (power of 10)
     const magnitude = paddedMax > 0 ? Math.pow(10, Math.floor(Math.log10(paddedMax))) : 1;
     const normalized = paddedMax / magnitude;
-    
+
     // Choose nice step value
     let niceStep;
     if (normalized <= 1) niceStep = 1;
     else if (normalized <= 2) niceStep = 2;
     else if (normalized <= 5) niceStep = 5;
     else niceStep = 10;
-    
+
     const step = niceStep * magnitude;
     const maxNiceValue = Math.ceil(paddedMax / step) * step;
-    
+
     // Generate 5 evenly spaced values (0 to maxNiceValue)
     const numSteps = 4; // 4 intervals = 5 labels
     const values = [];
@@ -74,14 +74,20 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
       // Round to avoid floating point issues
       values.push(Math.round(value * 100) / 100);
     }
-    
+
     return values;
   };
 
   // Process data for the graph - cumulative line + optional new users line
   const graphData = useMemo(() => {
     if (!data || data.length === 0) {
-      return { points: [], maxCumulative: 0, maxValue: 0, chartWidth: 0, yAxisValues: [0, 1, 2, 3, 4] };
+      return {
+        points: [],
+        maxCumulative: 0,
+        maxValue: 0,
+        chartWidth: 0,
+        yAxisValues: [0, 1, 2, 3, 4],
+      };
     }
 
     // Use container width or fallback to a reasonable default
@@ -98,8 +104,8 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
         d.value !== undefined && d.value !== null
           ? d.value
           : d.count !== undefined && d.count !== null
-          ? d.count
-          : 0;
+            ? d.count
+            : 0;
 
       if (index === 0) return baseValue;
 
@@ -110,10 +116,12 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
 
       return prev + baseValue;
     });
-    const newSeries = data.map(d =>
+    const newSeries = data.map((d) =>
       d.value !== undefined && d.value !== null
         ? d.value
-        : (d.count !== undefined && d.count !== null ? d.count : 0),
+        : d.count !== undefined && d.count !== null
+          ? d.count
+          : 0,
     );
 
     const maxCumulative = Math.max(...cumulativeSeries, 1);
@@ -129,24 +137,20 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
 
       // Cumulative series (total users)
       const cumulative = cumulativeSeries[index] || 0;
-      const y = maxValue > 0
-        ? chartHeight - (cumulative / maxValue) * chartHeight
-        : chartHeight;
+      const y = maxValue > 0 ? chartHeight - (cumulative / maxValue) * chartHeight : chartHeight;
 
       // New users series (per period)
       const newValue = newSeries[index] || 0;
-      const yNew = maxValue > 0
-        ? chartHeight - (newValue / maxValue) * chartHeight
-        : chartHeight;
+      const yNew = maxValue > 0 ? chartHeight - (newValue / maxValue) * chartHeight : chartHeight;
 
       // Store both the processed values and original item data
-      return { 
-        x, 
-        y, 
-        cumulative, 
+      return {
+        x,
+        y,
+        cumulative,
         yNew,
         value: newValue,
-        ...item 
+        ...item,
       };
     });
 
@@ -156,14 +160,14 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
   // Generate path for the line
   const linePath = useMemo(() => {
     if (graphData.points.length === 0) return '';
-    
+
     let path = `M ${graphData.points[0].x + padding.left} ${graphData.points[0].y + padding.top}`;
-    
+
     for (let i = 1; i < graphData.points.length; i++) {
       const point = graphData.points[i];
       path += ` L ${point.x + padding.left} ${point.y + padding.top}`;
     }
-    
+
     return path;
   }, [graphData.points, padding.left, padding.top]);
 
@@ -184,19 +188,19 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
   // Generate area path (for gradient fill under the line)
   const areaPath = useMemo(() => {
     if (graphData.points.length === 0) return '';
-    
+
     let path = `M ${graphData.points[0].x + padding.left} ${chartHeight + padding.top}`;
     path += ` L ${graphData.points[0].x + padding.left} ${graphData.points[0].y + padding.top}`;
-    
+
     for (let i = 1; i < graphData.points.length; i++) {
       const point = graphData.points[i];
       path += ` L ${point.x + padding.left} ${point.y + padding.top}`;
     }
-    
+
     const lastPoint = graphData.points[graphData.points.length - 1];
     path += ` L ${lastPoint.x + padding.left} ${chartHeight + padding.top}`;
     path += ' Z';
-    
+
     return path;
   }, [graphData.points, chartHeight, padding.left, padding.top]);
 
@@ -211,13 +215,13 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
   }
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="relative w-full overflow-hidden"
-      style={{ 
+      style={{
         minHeight: `${svgHeight}px`,
         height: 'auto',
-        width: '100%'
+        width: '100%',
       }}
     >
       {/* Info icon explaining how to read the graph */}
@@ -236,13 +240,16 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
           <p className="font-semibold mb-1">User growth graph</p>
           <ul className="space-y-0.5 list-disc list-inside">
             <li>
-              <span className="font-semibold">Purple area &amp; line</span>: total users over time (cumulative).
+              <span className="font-semibold">Purple area &amp; line</span>: total users over time
+              (cumulative).
             </li>
             <li>
-              <span className="font-semibold">Blue dashed line</span>: new users added in each period.
+              <span className="font-semibold">Blue dashed line</span>: new users added in each
+              period.
             </li>
             <li>
-              <span className="font-semibold">X‑axis</span>: time (days/weeks/months depending on filter).
+              <span className="font-semibold">X‑axis</span>: time (days/weeks/months depending on
+              filter).
             </li>
             <li>
               <span className="font-semibold">Y‑axis</span>: number of users.
@@ -252,14 +259,14 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
       )}
 
       {/* SVG Chart - Fully responsive */}
-      <svg 
+      <svg
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto block"
-        style={{ 
+        style={{
           minHeight: `${svgHeight}px`,
           maxHeight: '100%',
-          display: 'block'
+          display: 'block',
         }}
       >
         {/* Grid lines */}
@@ -278,9 +285,10 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
         {graphData.yAxisValues.map((value, i) => {
           // Calculate Y position: 0 is at bottom, maxValue is at top
           // Ensure we don't divide by zero
-          const y = graphData.maxValue > 0 
-            ? padding.top + chartHeight - (value / graphData.maxValue) * chartHeight
-            : padding.top + chartHeight;
+          const y =
+            graphData.maxValue > 0
+              ? padding.top + chartHeight - (value / graphData.maxValue) * chartHeight
+              : padding.top + chartHeight;
           return (
             <line
               key={`grid-${i}`}
@@ -311,11 +319,7 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
         )}
 
         {/* Area under the line */}
-        <path
-          d={areaPath}
-          fill="url(#areaGradient)"
-          opacity="0.6"
-        />
+        <path d={areaPath} fill="url(#areaGradient)" opacity="0.6" />
 
         {/* Cumulative growth line (total users over time) */}
         <path
@@ -343,11 +347,9 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
         {/* Data points - interactive hover areas */}
         {graphData.points.map((point, index) => {
           const isMobile = containerWidth < 640;
-          const pointRadius = hoveredIndex === index 
-            ? (isMobile ? 3.5 : 4) 
-            : (isMobile ? 2 : 2.5);
-          const strokeWidth = hoveredIndex === index ? (isMobile ? 1.5 : 2) : (isMobile ? 1 : 1.5);
-          
+          const pointRadius = hoveredIndex === index ? (isMobile ? 3.5 : 4) : isMobile ? 2 : 2.5;
+          const strokeWidth = hoveredIndex === index ? (isMobile ? 1.5 : 2) : isMobile ? 1 : 1.5;
+
           return (
             <g key={`point-${index}`}>
               {/* Invisible larger hit area for easier hovering */}
@@ -377,13 +379,13 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
       </svg>
 
       {/* X-axis labels - responsive and properly positioned */}
-      <div 
-        className="absolute bottom-0 left-0 right-0" 
-        style={{ 
-          height: `${padding.bottom}px`, 
-          paddingLeft: `${padding.left}px`, 
+      <div
+        className="absolute bottom-0 left-0 right-0"
+        style={{
+          height: `${padding.bottom}px`,
+          paddingLeft: `${padding.left}px`,
           paddingRight: `${padding.right}px`,
-          pointerEvents: 'none'
+          pointerEvents: 'none',
         }}
       >
         <div className="relative w-full h-full">
@@ -391,27 +393,21 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
             if (!item.label) return null;
 
             // If caller didn't specify showLabel, automatically pick a reasonable density
-            const autoStep =
-              data.length <= 6
-                ? 1
-                : Math.ceil(data.length / 6); // target ~6 labels max
-            const autoShow =
-              index === 0 ||
-              index === data.length - 1 ||
-              index % autoStep === 0;
+            const autoStep = data.length <= 6 ? 1 : Math.ceil(data.length / 6); // target ~6 labels max
+            const autoShow = index === 0 || index === data.length - 1 || index % autoStep === 0;
 
-            const shouldShowLabel =
-              item.showLabel !== undefined ? item.showLabel : autoShow;
+            const shouldShowLabel = item.showLabel !== undefined ? item.showLabel : autoShow;
 
             if (!shouldShowLabel) return null;
-            
+
             // Calculate position based on actual data point position in SVG coordinates
             const dataPointX = graphData.points[index]?.x || 0;
             // Convert SVG x position to percentage of chart width (excluding padding)
-            const percentagePosition = data.length > 1 && graphData.chartWidth > 0
-              ? ((dataPointX / graphData.chartWidth) * 100) 
-              : 50;
-            
+            const percentagePosition =
+              data.length > 1 && graphData.chartWidth > 0
+                ? (dataPointX / graphData.chartWidth) * 100
+                : 50;
+
             return (
               <span
                 key={`label-${index}`}
@@ -425,7 +421,7 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
                   maxWidth: containerWidth < 640 ? '45px' : '70px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  textAlign: 'center'
+                  textAlign: 'center',
                 }}
                 title={item.label} // Show full label on hover
               >
@@ -437,39 +433,43 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
       </div>
 
       {/* Y-axis labels (left side) - evenly spaced and aligned with grid lines */}
-      <div 
-        className="absolute left-0 top-0 bottom-0" 
-        style={{ 
-          width: `${padding.left}px`, 
-          paddingTop: `${padding.top}px`, 
-          paddingBottom: `${padding.bottom}px`, 
+      <div
+        className="absolute left-0 top-0 bottom-0"
+        style={{
+          width: `${padding.left}px`,
+          paddingTop: `${padding.top}px`,
+          paddingBottom: `${padding.bottom}px`,
           paddingLeft: containerWidth < 640 ? '2px' : '4px',
-          pointerEvents: 'none'
+          pointerEvents: 'none',
         }}
       >
-        {graphData.yAxisValues.slice().reverse().map((value, i) => {
-          // Calculate Y position to match grid line position exactly
-          // Ensure we don't divide by zero
-          const yGridPosition = graphData.maxValue > 0
-            ? padding.top + chartHeight - (value / graphData.maxValue) * chartHeight
-            : padding.top + chartHeight;
-          
-          return (
-            <span
-              key={`y-label-${i}`}
-              className="absolute text-gray-400 dark:text-gray-500 transition-colors font-medium text-right"
-              style={{ 
-                fontSize: getResponsiveDimensions.fontSize.yAxis,
-                top: `${yGridPosition}px`,
-                transform: 'translateY(-50%)',
-                width: '100%',
-                lineHeight: '1'
-              }}
-            >
-              {formatNumber(Math.round(value))}
-            </span>
-          );
-        })}
+        {graphData.yAxisValues
+          .slice()
+          .reverse()
+          .map((value, i) => {
+            // Calculate Y position to match grid line position exactly
+            // Ensure we don't divide by zero
+            const yGridPosition =
+              graphData.maxValue > 0
+                ? padding.top + chartHeight - (value / graphData.maxValue) * chartHeight
+                : padding.top + chartHeight;
+
+            return (
+              <span
+                key={`y-label-${i}`}
+                className="absolute text-gray-400 dark:text-gray-500 transition-colors font-medium text-right"
+                style={{
+                  fontSize: getResponsiveDimensions.fontSize.yAxis,
+                  top: `${yGridPosition}px`,
+                  transform: 'translateY(-50%)',
+                  width: '100%',
+                  lineHeight: '1',
+                }}
+              >
+                {formatNumber(Math.round(value))}
+              </span>
+            );
+          })}
       </div>
 
       {/* Legend */}
@@ -485,71 +485,81 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
       </div>
 
       {/* Tooltip - Responsive positioning with proper data binding */}
-      {hoveredIndex !== null && data[hoveredIndex] && graphData.points[hoveredIndex] && (() => {
-        const point = graphData.points[hoveredIndex];
-        const item = data[hoveredIndex];
-        
-        // Get actual values - prioritize point data (which has the correct values), then item data
-        // The point object contains the processed cumulative and value from the original data
-        const cumulativeValue = point.cumulative !== undefined && point.cumulative !== null 
-          ? point.cumulative 
-          : (item.cumulative !== undefined && item.cumulative !== null ? item.cumulative : 0);
-        const newValue = point.value !== undefined && point.value !== null
-          ? point.value 
-          : (item.value !== undefined && item.value !== null ? item.value : 0);
-        
-        // Calculate tooltip position relative to the data point in SVG coordinates
-        const pointXInSvg = point.x + padding.left;
-        const pointYInSvg = point.y + padding.top;
-        
-        // Convert SVG coordinates to container percentage
-        const containerWidthValue = containerWidth || svgWidth;
-        const tooltipLeftPercent = (pointXInSvg / svgWidth) * 100;
-        
-        // Position tooltip above the point, with smart boundary detection
-        let tooltipTopPercent = ((pointYInSvg - 70) / svgHeight) * 100;
-        if (tooltipTopPercent < 5) {
-          // If too close to top, position below
-          tooltipTopPercent = ((pointYInSvg + 20) / svgHeight) * 100;
-        }
-        
-        // Ensure tooltip doesn't go off screen horizontally
-        const tooltipWidth = containerWidth < 640 ? 140 : 180;
-        const tooltipLeftPercentAdjusted = Math.max(
-          5,
-          Math.min(
-            tooltipLeftPercent,
-            95 - (tooltipWidth / containerWidthValue) * 100
-          )
-        );
-        
-        return (
-          <div
-            className="absolute bg-gray-900 dark:bg-gray-700 text-white rounded-lg shadow-xl z-20 pointer-events-none"
-            style={{
-              fontSize: getResponsiveDimensions.fontSize.tooltip,
-              padding: containerWidth < 640 ? '8px 12px' : '12px 16px',
-              left: `${tooltipLeftPercentAdjusted}%`,
-              top: `${Math.max(5, Math.min(tooltipTopPercent, 90))}%`,
-              transform: 'translateX(-50%)',
-              maxWidth: `${tooltipWidth}px`,
-            }}
-          >
-            <div className="font-semibold mb-1 truncate">{item.label || item.date}</div>
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0"></div>
-                <span className="truncate">Cumulative: <strong>{formatNumber(cumulativeValue)}</strong></span>
+      {hoveredIndex !== null &&
+        data[hoveredIndex] &&
+        graphData.points[hoveredIndex] &&
+        (() => {
+          const point = graphData.points[hoveredIndex];
+          const item = data[hoveredIndex];
+
+          // Get actual values - prioritize point data (which has the correct values), then item data
+          // The point object contains the processed cumulative and value from the original data
+          const cumulativeValue =
+            point.cumulative !== undefined && point.cumulative !== null
+              ? point.cumulative
+              : item.cumulative !== undefined && item.cumulative !== null
+                ? item.cumulative
+                : 0;
+          const newValue =
+            point.value !== undefined && point.value !== null
+              ? point.value
+              : item.value !== undefined && item.value !== null
+                ? item.value
+                : 0;
+
+          // Calculate tooltip position relative to the data point in SVG coordinates
+          const pointXInSvg = point.x + padding.left;
+          const pointYInSvg = point.y + padding.top;
+
+          // Convert SVG coordinates to container percentage
+          const containerWidthValue = containerWidth || svgWidth;
+          const tooltipLeftPercent = (pointXInSvg / svgWidth) * 100;
+
+          // Position tooltip above the point, with smart boundary detection
+          let tooltipTopPercent = ((pointYInSvg - 70) / svgHeight) * 100;
+          if (tooltipTopPercent < 5) {
+            // If too close to top, position below
+            tooltipTopPercent = ((pointYInSvg + 20) / svgHeight) * 100;
+          }
+
+          // Ensure tooltip doesn't go off screen horizontally
+          const tooltipWidth = containerWidth < 640 ? 140 : 180;
+          const tooltipLeftPercentAdjusted = Math.max(
+            5,
+            Math.min(tooltipLeftPercent, 95 - (tooltipWidth / containerWidthValue) * 100),
+          );
+
+          return (
+            <div
+              className="absolute bg-gray-900 dark:bg-gray-700 text-white rounded-lg shadow-xl z-20 pointer-events-none"
+              style={{
+                fontSize: getResponsiveDimensions.fontSize.tooltip,
+                padding: containerWidth < 640 ? '8px 12px' : '12px 16px',
+                left: `${tooltipLeftPercentAdjusted}%`,
+                top: `${Math.max(5, Math.min(tooltipTopPercent, 90))}%`,
+                transform: 'translateX(-50%)',
+                maxWidth: `${tooltipWidth}px`,
+              }}
+            >
+              <div className="font-semibold mb-1 truncate">{item.label || item.date}</div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0"></div>
+                  <span className="truncate">
+                    Cumulative: <strong>{formatNumber(cumulativeValue)}</strong>
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-300 flex-shrink-0"></div>
+                  <span className="truncate">
+                    New: <strong>{formatNumber(newValue)}</strong>
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-purple-300 flex-shrink-0"></div>
-                <span className="truncate">New: <strong>{formatNumber(newValue)}</strong></span>
-              </div>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
             </div>
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 };

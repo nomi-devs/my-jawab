@@ -21,10 +21,19 @@ export class Banner {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'Banner title (optional)' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'Banner title (optional)',
+  })
   banner_title: string | null;
 
-  @Column({ type: 'text', nullable: true, comment: 'Banner text/description (optional)' })
+  @Column({
+    type: 'text',
+    nullable: true,
+    comment: 'Banner text/description (optional)',
+  })
   banner_description: string | null;
 
   @Column({
@@ -35,7 +44,12 @@ export class Banner {
   })
   banner_image: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'Optional URL/deep-link opened when banner tapped' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'Optional URL/deep-link opened when banner tapped',
+  })
   banner_link: string | null;
 
   @Column({
@@ -48,38 +62,85 @@ export class Banner {
   banner_type: BannerType;
 
   // ─── Targeting Conditions (CSV, NULL = all) ───────────────────
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'CSV ISO country codes to show banner' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'CSV ISO country codes to show banner',
+  })
   target_countries: string | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'CSV topic IDs (user interests) to show banner' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'CSV topic IDs (user interests) to show banner',
+  })
   target_topic_ids: string | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'CSV subscription IDs to show banner' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'CSV subscription IDs to show banner',
+  })
   target_subscription_ids: string | null;
 
   // ─── Exclusion Conditions (CSV, NULL = no exclusions) ─────────
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'CSV ISO country codes where banner is HIDDEN' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'CSV ISO country codes where banner is HIDDEN',
+  })
   excluded_countries: string | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'CSV topic IDs where banner is HIDDEN' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'CSV topic IDs where banner is HIDDEN',
+  })
   excluded_topic_ids: string | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'CSV subscription IDs where banner is HIDDEN' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'CSV subscription IDs where banner is HIDDEN',
+  })
   excluded_subscription_ids: string | null;
 
   // ─── Scheduling ───────────────────────────────────────────────
-  @Column({ type: 'timestamp', nullable: true, comment: 'Banner becomes visible from this date' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'Banner becomes visible from this date',
+  })
   valid_from: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'Banner stops showing after this date' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'Banner stops showing after this date',
+  })
   valid_until: Date | null;
 
   // ─── Display ──────────────────────────────────────────────────
-  @Column({ type: 'int', default: 0, comment: 'Order for showing multiple banners (higher = shown first)' })
+  @Column({
+    type: 'int',
+    default: 0,
+    comment: 'Order for showing multiple banners (higher = shown first)',
+  })
   @Index()
   display_order: number;
 
-  @Column({ type: 'tinyint', width: 1, default: 1, comment: 'Active status (0 = inactive, 1 = active)' })
+  @Column({
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+    comment: 'Active status (0 = inactive, 1 = active)',
+  })
   @Index()
   is_active: boolean;
 

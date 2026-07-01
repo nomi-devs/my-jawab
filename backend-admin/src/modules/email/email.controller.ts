@@ -1,4 +1,21 @@
-import { Controller, Get, Param, Query, UseGuards, Request, Post, Body, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  Post,
+  Body,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { EmailService } from './email.service';
 import { EmailTemplatesService } from './services/email-templates.service';
 import { EmailSenderService } from './services/email-sender.service';
@@ -7,11 +24,18 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmailType, EmailStatus } from './entities/email.entity';
 import { ConfigService } from '@nestjs/config';
 
+@ApiTags('Email')
+@ApiBearerAuth('JWT-auth')
 @Controller('emails')
 @UseGuards(JwtAuthGuard)
 export class EmailController {
   constructor(private readonly emailService: EmailService) {}
 
+  @ApiOperation({ summary: 'Get user emails' })
+  @ApiQuery({ name: 'status', required: false, enum: EmailStatus })
+  @ApiQuery({ name: 'type', required: false, enum: EmailType })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number })
   @Get()
   async getEmails(
     @Request() req: any,
@@ -34,6 +58,8 @@ export class EmailController {
     };
   }
 
+  @ApiOperation({ summary: 'Get email by ID' })
+  @ApiParam({ name: 'id', type: String })
   @Get(':id')
   async getEmail(@Param('id') id: string, @Request() req: any) {
     const user_id = req.user.userId;
@@ -53,6 +79,7 @@ export class EmailController {
   }
 }
 
+@ApiTags('Email')
 @Controller('mail')
 export class MailTestController {
   constructor(
@@ -63,11 +90,20 @@ export class MailTestController {
     private readonly configService: ConfigService,
   ) {}
 
+  @ApiOperation({ summary: 'Send a test email' })
+  @ApiQuery({ name: 'test', required: false, type: String })
+  @ApiQuery({ name: 'email', required: false, type: String })
   @Get('test')
-  async testEmail(@Query('test') testParam?: string, @Query('email') email?: string) {
+  async testEmail(
+    @Query('test') testParam?: string,
+    @Query('email') email?: string,
+  ) {
     try {
       // Check if email service is enabled
-      const emailEnabled = this.configService.get<boolean>('email.enabled', true);
+      const emailEnabled = this.configService.get<boolean>(
+        'email.enabled',
+        true,
+      );
       if (!emailEnabled) {
         return {
           success: false,
@@ -79,33 +115,47 @@ export class MailTestController {
       }
 
       // Get test email from query param or use default
-      const testEmail = email || this.configService.get<string>('email.from', 'contact@bablojs.com');
-      
+      const testEmail =
+        email ||
+        this.configService.get<string>('email.from', 'contact@bablojs.com');
+
       // Get email configuration
       // Debug: Check raw environment variables
       const rawSmtpUser = process.env.SMTP_USER || 'NOT_SET';
       const rawSmtpPass = process.env.SMTP_PASSWORD ? 'SET' : 'NOT_SET';
-      
+
       const emailConfig = {
         enabled: this.configService.get<boolean>('email.enabled', true),
         provider: this.configService.get<string>('email.provider', 'smtp'),
         smtp: {
           enabled: this.configService.get<boolean>('email.smtp.enabled', true),
-          host: this.configService.get<string>('email.smtp.host', 'smtp.hostinger.com'),
+          host: this.configService.get<string>(
+            'email.smtp.host',
+            'smtp.hostinger.com',
+          ),
           port: this.configService.get<number>('email.smtp.port', 465),
           secure: this.configService.get<boolean>('email.smtp.secure', true),
           user: this.configService.get<string>('email.smtp.auth.user', ''),
         },
-        from: this.configService.get<string>('email.from', 'contact@bablojs.com'),
+        from: this.configService.get<string>(
+          'email.from',
+          'contact@bablojs.com',
+        ),
         fromName: this.configService.get<string>('email.fromName', 'Jawab'),
         features: {
-          notifications: this.configService.get<boolean>('email.features.notifications', true),
+          notifications: this.configService.get<boolean>(
+            'email.features.notifications',
+            true,
+          ),
         },
         // Debug info
         _debug: {
           rawEnvUser: rawSmtpUser,
           rawEnvPass: rawSmtpPass,
-          configUser: this.configService.get<string>('email.smtp.auth.user', ''),
+          configUser: this.configService.get<string>(
+            'email.smtp.auth.user',
+            '',
+          ),
         },
       };
 
@@ -115,21 +165,24 @@ export class MailTestController {
         recipientName: 'Test User',
         title: 'Email Test - Jawab',
         body: `This is a test email from Jawab API.${testParam ? ` Test parameter: ${testParam}` : ''}\n\nIf you received this email, your email configuration is working correctly!`,
-        actionUrl: this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab'),
+        actionUrl: this.configService.get<string>(
+          'app.url',
+          'https://demo.jantrah.com/jawaab',
+        ),
         actionText: 'Visit Jawab',
       });
 
       return {
         success: emailSent,
-        message: emailSent 
-          ? 'Test email sent successfully' 
+        message: emailSent
+          ? 'Test email sent successfully'
           : 'Failed to send test email. Check logs for details.',
         config: {
           ...emailConfig,
           smtp: {
             ...emailConfig.smtp,
-            pass: this.configService.get<string>('email.smtp.auth.pass', '') 
-              ? '***configured***' 
+            pass: this.configService.get<string>('email.smtp.auth.pass', '')
+              ? '***configured***'
               : 'not configured',
           },
         },
@@ -149,6 +202,7 @@ export class MailTestController {
     }
   }
 
+  @ApiOperation({ summary: 'Send a test email via POST' })
   @Post('test')
   async testEmailPost(@Body() body?: { email?: string; test?: string }) {
     return this.testEmail(body?.test, body?.email);
@@ -158,6 +212,7 @@ export class MailTestController {
    * Get email queue statistics
    * GET /api/mail/queue/stats
    */
+  @ApiOperation({ summary: 'Get email queue statistics' })
   @Get('queue/stats')
   async getQueueStats() {
     const stats = await this.emailQueueService.getQueueStats();
@@ -172,6 +227,8 @@ export class MailTestController {
    * Get failed jobs from queue
    * GET /api/mail/queue/failed
    */
+  @ApiOperation({ summary: 'Get failed email queue jobs' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @Get('queue/failed')
   async getFailedJobs(@Query('limit') limit?: string) {
     const failedJobs = await this.emailQueueService.getFailedJobs(
@@ -189,6 +246,8 @@ export class MailTestController {
    * Retry a failed job
    * POST /api/mail/queue/retry/:jobId
    */
+  @ApiOperation({ summary: 'Retry a failed email queue job' })
+  @ApiParam({ name: 'jobId', type: String })
   @Post('queue/retry/:jobId')
   async retryJob(@Param('jobId') jobId: string) {
     try {
@@ -210,6 +269,7 @@ export class MailTestController {
    * Clear all jobs from queue (use with caution!)
    * DELETE /api/mail/queue/clear
    */
+  @ApiOperation({ summary: 'Clear all jobs from email queue' })
   @Delete('queue/clear')
   @UseGuards(JwtAuthGuard) // Protect this endpoint
   async clearQueue() {
@@ -229,6 +289,7 @@ export class MailTestController {
   }
 }
 
+@ApiTags('Email')
 @Controller('test-mail')
 export class TestMailController {
   constructor(
@@ -240,6 +301,12 @@ export class TestMailController {
    * Send a dynamic test email with customizable parameters
    * GET /api/test-mail/dynamicmail?email=...&subject=...&body=...&actionUrl=...&actionText=...
    */
+  @ApiOperation({ summary: 'Send a dynamic test email' })
+  @ApiQuery({ name: 'email', required: false, type: String })
+  @ApiQuery({ name: 'subject', required: false, type: String })
+  @ApiQuery({ name: 'body', required: false, type: String })
+  @ApiQuery({ name: 'actionUrl', required: false, type: String })
+  @ApiQuery({ name: 'actionText', required: false, type: String })
   @Get('dynamicmail')
   async sendDynamicMail(
     @Query('email') email?: string,
@@ -249,7 +316,10 @@ export class TestMailController {
     @Query('actionText') actionText?: string,
   ) {
     try {
-      const emailEnabled = this.configService.get<boolean>('email.enabled', true);
+      const emailEnabled = this.configService.get<boolean>(
+        'email.enabled',
+        true,
+      );
       if (!emailEnabled) {
         return {
           success: false,
@@ -257,10 +327,19 @@ export class TestMailController {
         };
       }
 
-      const recipientEmail = email || this.configService.get<string>('email.from', 'contact@bablojs.com');
+      const recipientEmail =
+        email ||
+        this.configService.get<string>('email.from', 'contact@bablojs.com');
       const emailSubject = subject || 'Dynamic Test Email - Jawab';
-      const emailBody = body || 'This is a dynamic test email sent from the Jawab API. If you received this, your email configuration is working correctly!';
-      const emailActionUrl = actionUrl || this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+      const emailBody =
+        body ||
+        'This is a dynamic test email sent from the Jawab API. If you received this, your email configuration is working correctly!';
+      const emailActionUrl =
+        actionUrl ||
+        this.configService.get<string>(
+          'app.url',
+          'https://demo.jantrah.com/jawaab',
+        );
       const emailActionText = actionText || 'Visit Jawab';
 
       const result = await this.emailTemplatesService.sendNotificationEmail({
@@ -301,9 +380,11 @@ export class TestMailController {
    * Send a dynamic test email via POST
    * POST /api/test-mail/dynamicmail
    */
+  @ApiOperation({ summary: 'Send a dynamic test email via POST' })
   @Post('dynamicmail')
   async sendDynamicMailPost(
-    @Body() body?: {
+    @Body()
+    body?: {
       email?: string;
       subject?: string;
       body?: string;
@@ -324,6 +405,8 @@ export class TestMailController {
    * Send a test email to a specific address directly
    * GET /api/test-mail/:email
    */
+  @ApiOperation({ summary: 'Send test email to specific address' })
+  @ApiParam({ name: 'email', type: String })
   @Get(':email')
   async sendMailDirectly(@Param('email') email: string) {
     return this.sendDynamicMail(email);

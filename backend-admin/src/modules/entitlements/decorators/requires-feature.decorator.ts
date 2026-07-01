@@ -15,4 +15,4 @@ export const REQUIRES_FEATURE_KEY = 'requires_feature';
  * it checks the user's merged features and throws 403 if the flag is false.
  */
 export const RequiresFeature = (feature: FeatureKey | string) =>
-    SetMetadata(REQUIRES_FEATURE_KEY, feature);
+  SetMetadata(REQUIRES_FEATURE_KEY, feature);

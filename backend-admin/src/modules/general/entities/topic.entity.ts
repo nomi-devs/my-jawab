@@ -103,4 +103,3 @@ export class Topic {
   })
   updated_at: Date;
 }
-

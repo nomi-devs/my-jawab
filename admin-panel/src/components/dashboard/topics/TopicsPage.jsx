@@ -30,7 +30,7 @@ const TopicsPage = () => {
   const [selectedTopicForDetails, setSelectedTopicForDetails] = useState(null);
 
   // Filter and search state
-  /* 
+  /*
    * Filter and Pagination State
    */
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,18 +44,22 @@ const TopicsPage = () => {
   const [localError, setLocalError] = useState(null); // For non-query errors
 
   // Memoized params for TanStack Query
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    limit: topicsPerPage,
-    parent_id: 0, // Only fetch parent topics
-    ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
-    sort_by: sortBy,
-    sort_order: sortOrder,
-    ...(statusFilter !== 'all' && statusFilter !== null && {
-      is_active: statusFilter
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: topicsPerPage,
+      parent_id: 0, // Only fetch parent topics
+      ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      ...(statusFilter !== 'all' &&
+        statusFilter !== null && {
+          is_active: statusFilter,
+        }),
+      ...(typeFilter && typeFilter !== 'all' && { type: typeFilter }),
     }),
-    ...(typeFilter && typeFilter !== 'all' && { type: typeFilter })
-  }), [currentPage, searchTerm, sortBy, sortOrder, statusFilter, typeFilter, topicsPerPage]);
+    [currentPage, searchTerm, sortBy, sortOrder, statusFilter, typeFilter, topicsPerPage],
+  );
 
   const {
     data,
@@ -63,7 +67,7 @@ const TopicsPage = () => {
     isFetching,
     isError,
     error: queryError,
-    refetch
+    refetch,
   } = useTopicsList(queryParams);
 
   const {
@@ -73,7 +77,7 @@ const TopicsPage = () => {
     deleteTopic,
     isCreating,
     isUpdating,
-    isDeleting
+    isDeleting,
   } = useTopicActions();
 
   const topics = data?.topics || [];
@@ -83,9 +87,7 @@ const TopicsPage = () => {
   // Use effective loading state for UI (shimmer only on initial load)
   const loading = isInitialLoading;
 
-
   // Fetch topics from API
-
 
   // Track previous values to prevent unnecessary fetches
   const prevFiltersRef = useRef({ searchTerm, statusFilter, typeFilter, sortBy, sortOrder });
@@ -127,7 +129,6 @@ const TopicsPage = () => {
 
   // Initial fetch and refetch when filters change
 
-
   // Filter handlers
   const handleSearch = useCallback((term) => {
     setSearchTerm(term || '');
@@ -155,18 +156,21 @@ const TopicsPage = () => {
   }, []);
 
   // Handle add topic
-  const handleAddTopic = useCallback(async (topicData) => {
-    try {
-      await createTopic(topicData);
-      setSuccessMessage('Topic created successfully!');
-      setShowAddModal(false);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error creating topic:', err);
-      setLocalError(`Failed to create topic: ${err.response?.data?.message || err.message}`);
-      setTimeout(() => setLocalError(null), 5000);
-    }
-  }, [createTopic]);
+  const handleAddTopic = useCallback(
+    async (topicData) => {
+      try {
+        await createTopic(topicData);
+        setSuccessMessage('Topic created successfully!');
+        setShowAddModal(false);
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error creating topic:', err);
+        setLocalError(`Failed to create topic: ${err.response?.data?.message || err.message}`);
+        setTimeout(() => setLocalError(null), 5000);
+      }
+    },
+    [createTopic],
+  );
 
   // Handle edit topic
   const handleEditTopic = useCallback((topic) => {
@@ -176,44 +180,58 @@ const TopicsPage = () => {
 
   // Handle save edit
   // Handle save edit
-  const handleSaveEdit = useCallback(async (topicId, updatedData) => {
-    try {
-      await updateTopic({ id: topicId, data: updatedData });
-      setSuccessMessage('Topic updated successfully!');
-      setShowEditModal(false);
-      setSelectedTopicForEdit(null);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error updating topic:', err);
-      setLocalError(`Failed to update topic: ${err.response?.data?.message || err.message}`);
-      setTimeout(() => setLocalError(null), 5000);
-    }
-  }, [updateTopic]);
+  const handleSaveEdit = useCallback(
+    async (topicId, updatedData) => {
+      try {
+        await updateTopic({ id: topicId, data: updatedData });
+        setSuccessMessage('Topic updated successfully!');
+        setShowEditModal(false);
+        setSelectedTopicForEdit(null);
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error updating topic:', err);
+        setLocalError(`Failed to update topic: ${err.response?.data?.message || err.message}`);
+        setTimeout(() => setLocalError(null), 5000);
+      }
+    },
+    [updateTopic],
+  );
 
   // Handle toggle topic active status
   // Handle toggle topic active status
-  const handleToggleActive = useCallback(async (topicId, isActive) => {
-    try {
-      // Convert boolean to 'active'/'inactive' string handled by hook or API
-      await updateTopicStatus({ id: topicId, is_active: isActive });
+  const handleToggleActive = useCallback(
+    async (topicId, isActive) => {
+      try {
+        // Convert boolean to 'active'/'inactive' string handled by hook or API
+        await updateTopicStatus({ id: topicId, is_active: isActive });
 
-      const topic = topics.find(t => t.id === topicId);
-      setSuccessMessage(isActive ? `Topic "${topic?.topic_name || 'Topic'}" activated!` : `Topic "${topic?.topic_name || 'Topic'}" deactivated!`);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error toggling topic status:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to update topic status. Please try again.';
-      setLocalError(errorMsg);
-      setTimeout(() => setLocalError(null), 5000);
-    }
-  }, [topics, updateTopicStatus]);
+        const topic = topics.find((t) => t.id === topicId);
+        setSuccessMessage(
+          isActive
+            ? `Topic "${topic?.topic_name || 'Topic'}" activated!`
+            : `Topic "${topic?.topic_name || 'Topic'}" deactivated!`,
+        );
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error toggling topic status:', err);
+        const errorMsg =
+          err.response?.data?.message || 'Failed to update topic status. Please try again.';
+        setLocalError(errorMsg);
+        setTimeout(() => setLocalError(null), 5000);
+      }
+    },
+    [topics, updateTopicStatus],
+  );
 
   // Handle delete topic
-  const handleDeleteTopic = useCallback((topicId) => {
-    const topic = topics.find(t => t.id === topicId);
-    setTopicToDelete(topic);
-    setShowDeleteConfirm(true);
-  }, [topics]);
+  const handleDeleteTopic = useCallback(
+    (topicId) => {
+      const topic = topics.find((t) => t.id === topicId);
+      setTopicToDelete(topic);
+      setShowDeleteConfirm(true);
+    },
+    [topics],
+  );
 
   const confirmDeleteTopic = useCallback(async () => {
     if (!topicToDelete) return;
@@ -252,14 +270,14 @@ const TopicsPage = () => {
         showActions
         avatarColumnIndex={1}
         columnWidths={[
-          'w-10',        // #
-          'w-[240px]',   // Topic
-          'w-[260px]',   // Description
-          'w-[120px]',   // Status
-          'w-[160px]',   // Parent
-          'w-[200px]',   // Sub-Topics
-          'w-[130px]',   // Created
-          'w-[100px]',   // Actions
+          'w-10', // #
+          'w-[240px]', // Topic
+          'w-[260px]', // Description
+          'w-[120px]', // Status
+          'w-[160px]', // Parent
+          'w-[200px]', // Sub-Topics
+          'w-[130px]', // Created
+          'w-[100px]', // Actions
         ]}
         containerClassName="min-h-[560px]"
       />
@@ -267,7 +285,12 @@ const TopicsPage = () => {
   }
 
   if (isError && !topics.length) {
-    return <ErrorMessage message={queryError?.message || 'Failed to load topics'} onRetry={() => refetch()} />;
+    return (
+      <ErrorMessage
+        message={queryError?.message || 'Failed to load topics'}
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   return (
@@ -300,7 +323,11 @@ const TopicsPage = () => {
         onConfirm={confirmDeleteTopic}
         type="danger"
         title="Delete Topic"
-        message={topicToDelete ? `Are you sure you want to permanently delete "${topicToDelete.topic_name}"? This action cannot be undone. The topic will be removed from the database.` : ''}
+        message={
+          topicToDelete
+            ? `Are you sure you want to permanently delete "${topicToDelete.topic_name}"? This action cannot be undone. The topic will be removed from the database.`
+            : ''
+        }
         confirmText="Delete"
         cancelText="Cancel"
         isLoading={isDeleting}
@@ -361,8 +388,11 @@ const TopicsPage = () => {
         />
 
         {/* Loading Overlay - Smooth transition */}
-        <div className={`relative overflow-hidden transition-all duration-300 ${isFetching && topics.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
-          }`}>
+        <div
+          className={`relative overflow-hidden transition-all duration-300 ${
+            isFetching && topics.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
@@ -371,11 +401,14 @@ const TopicsPage = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto transition-all duration-300 ease-in-out" style={{
-          minHeight: topics.length === 0 ? '400px' : 'auto',
-          opacity: isFetching && topics.length > 0 ? 0.6 : 1,
-          scrollbarGutter: 'stable'
-        }}>
+        <div
+          className="overflow-x-auto transition-all duration-300 ease-in-out"
+          style={{
+            minHeight: topics.length === 0 ? '400px' : 'auto',
+            opacity: isFetching && topics.length > 0 ? 0.6 : 1,
+            scrollbarGutter: 'stable',
+          }}
+        >
           {loading && topics.length === 0 ? (
             <div className="p-12">
               <div className="flex flex-col items-center justify-center">
@@ -388,7 +421,9 @@ const TopicsPage = () => {
               <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                 <span className="text-gray-400 dark:text-gray-500 text-2xl">#</span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No topics found</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                No topics found
+              </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
                   ? 'Try changing your search or filters'

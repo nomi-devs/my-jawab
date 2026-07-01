@@ -1,25 +1,18 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   BadRequestException,
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, In } from 'typeorm';
 import { createHash } from 'crypto';
-import { UserPost, PostStatus, PostType } from './entities/user-post.entity';
-import { PostLike, LikeStatus } from './entities/post-like.entity';
-import { Topic } from '../general/entities/topic.entity';
-import { User } from '../auth/entities/user.entity';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostResponseDto } from './dto/post-response.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 import { LikePostDto } from './dto/like-post.dto';
 import { MediaClientService } from '../shared/services/media-client.service';
-import { MediaType } from '../shared/dto/media-response.dto';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '../notification/entities/notification.entity';
 import { QuotaService } from '../entitlements/quota.service';
@@ -44,18 +37,11 @@ export class PostService {
   }
 
   constructor(
-    @InjectRepository(UserPost)
-    private postRepository: Repository<UserPost>,
-    @InjectRepository(PostLike)
-    private postLikeRepository: Repository<PostLike>,
-    @InjectRepository(Topic)
-    private topicRepository: Repository<Topic>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prisma: PrismaService,
     private mediaClientService: MediaClientService,
     private notificationService: NotificationService,
     private quotaService: QuotaService,
-  ) { }
+  ) {}
 
   /**
    * Helper: send a notification (in-app + flagged for push) without breaking the main flow.
@@ -99,7 +85,9 @@ export class PostService {
     files?: Express.Multer.File[],
   ): Promise<PostResponseDto> {
     // Debug: Log received is_featured value
-    this.logger.debug(`CreatePost - is_featured value: ${JSON.stringify(createPostDto.is_featured)}, type: ${typeof createPostDto.is_featured}`);
+    this.logger.debug(
+      `CreatePost - is_featured value: ${JSON.stringify(createPostDto.is_featured)}, type: ${typeof createPostDto.is_featured}`,
+    );
 
     // Enforce daily post limit based on user's subscription plan
     // Throws 403 "Quota Exceeded" if user has hit their daily_post_limit
@@ -109,13 +97,11 @@ export class PostService {
       'You have reached your daily post limit. Upgrade to post more.',
     );
 
-    // Note: Slug uniqueness check removed - slugs will include ID hash to ensure uniqueness
-
     // Validate topic exists if provided
     if (createPostDto.post_topic_id) {
-      const topic = await this.topicRepository.findOne({
+      const topic = await this.prisma.topic.findFirst({
         where: { id: createPostDto.post_topic_id, is_active: true },
-        select: ['id'],
+        select: { id: true },
       });
 
       if (!topic) {
@@ -131,15 +117,12 @@ export class PostService {
     if (files && files.length > 0) {
       for (const file of files) {
         try {
-          const mediaResponse = await this.mediaClientService.uploadFile(
-            file,
-            {
-              folder: 'posts',
-              userId,
-              optimize: true,
-              is_public: false,
-            },
-          );
+          const mediaResponse = await this.mediaClientService.uploadFile(file, {
+            folder: 'posts',
+            userId,
+            optimize: true,
+            is_public: false,
+          });
 
           // Determine media type based on mime type
           if (file.mimetype.startsWith('image/')) {
@@ -176,7 +159,7 @@ export class PostService {
       ? createPostDto.post_tags.join(',')
       : null;
 
-    // Create post with initial slug (will be updated with hash after save)
+    // Build data object
     const postData: any = {
       user_id: userId,
       post_slug: createPostDto.post_slug, // Temporary slug, will be updated with hash
@@ -186,8 +169,8 @@ export class PostService {
       post_video: postVideo,
       post_audio: postAudio,
       post_link: createPostDto.post_link,
-      post_status: createPostDto.post_status || PostStatus.DRAFT,
-      post_type: createPostDto.post_type || PostType.POST,
+      post_status: createPostDto.post_status || 'draft',
+      post_type: createPostDto.post_type || 'post',
       post_tags: postTagsString,
       community_ids: communityIdsString,
       is_featured: createPostDto.is_featured === 'featured',
@@ -199,20 +182,25 @@ export class PostService {
     };
 
     // Only include post_topic_id if it has a value (not null/undefined)
-    if (createPostDto.post_topic_id !== null && createPostDto.post_topic_id !== undefined) {
+    if (
+      createPostDto.post_topic_id !== null &&
+      createPostDto.post_topic_id !== undefined
+    ) {
       postData.post_topic_id = createPostDto.post_topic_id;
     }
 
-    const post = this.postRepository.create(postData);
-
     // Save to get the ID
-    // TypeScript: save() can return T or T[], but we're saving a single entity
-    // Use type assertion through unknown to handle the overload
-    const savedPost = (await this.postRepository.save(post)) as unknown as UserPost;
+    const savedPost = await this.prisma.userPost.create({ data: postData });
 
     // Generate slug with ID hash and update
-    savedPost.post_slug = this.generateSlugWithHash(createPostDto.post_slug, savedPost.id);
-    const finalPost = (await this.postRepository.save(savedPost)) as unknown as UserPost;
+    const finalSlug = this.generateSlugWithHash(
+      createPostDto.post_slug,
+      savedPost.id,
+    );
+    const finalPost = await this.prisma.userPost.update({
+      where: { id: savedPost.id },
+      data: { post_slug: finalSlug },
+    });
 
     return this.mapToResponseDto(finalPost);
   }
@@ -248,78 +236,80 @@ export class PostService {
 
     const skip = (page - 1) * limit;
 
-    // Build query
-    const queryBuilder = this.postRepository.createQueryBuilder('post');
+    // Build where clause
+    const where: any = {};
 
     if (user_id) {
-      queryBuilder.where('post.user_id = :user_id', { user_id });
+      where.user_id = user_id;
     }
 
     if (post_topic_id) {
-      queryBuilder.andWhere('post.post_topic_id = :post_topic_id', {
-        post_topic_id,
-      });
+      where.post_topic_id = post_topic_id;
     }
 
     if (community_id) {
-      queryBuilder.andWhere(
-        '(post.community_ids LIKE :community_id OR post.community_ids LIKE :community_id_start OR post.community_ids LIKE :community_id_end OR post.community_ids LIKE :community_id_middle)',
-        {
-          community_id: `${community_id}`,
-          community_id_start: `${community_id},%`,
-          community_id_end: `%,${community_id}`,
-          community_id_middle: `%,${community_id},%`,
-        },
-      );
+      // community_ids is stored as a comma-separated string
+      where.OR = [
+        { community_ids: { equals: `${community_id}` } },
+        { community_ids: { startsWith: `${community_id},` } },
+        { community_ids: { endsWith: `,${community_id}` } },
+        { community_ids: { contains: `,${community_id},` } },
+      ];
     }
 
     if (post_status) {
-      queryBuilder.andWhere('post.post_status = :post_status', { post_status });
+      where.post_status = post_status;
     } else {
       // Default to published posts only
-      queryBuilder.andWhere('post.post_status = :post_status', {
-        post_status: PostStatus.PUBLISHED,
-      });
+      where.post_status = 'published';
     }
 
     if (post_type) {
-      queryBuilder.andWhere('post.post_type = :post_type', { post_type });
+      where.post_type = post_type;
     }
 
     if (is_featured !== undefined) {
-      // Convert string to boolean for database query
-      const featuredBoolean = is_featured === 'featured';
-      queryBuilder.andWhere('post.is_featured = :is_featured', {
-        is_featured: featuredBoolean,
-      });
+      where.is_featured = is_featured === 'featured';
     }
 
     if (search) {
-      queryBuilder.andWhere(
-        '(post.post_title LIKE :search OR post.post_content LIKE :search OR post.post_slug LIKE :search)',
-        { search: `%${search}%` },
-      );
+      const searchConditions = [
+        { post_title: { contains: search } },
+        { post_content: { contains: search } },
+        { post_slug: { contains: search } },
+      ];
+      // Merge with existing OR if community_id was set
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
     }
 
-    // Add sorting
-    queryBuilder.orderBy(`post.${sort_by}`, sort_order);
+    // Build orderBy
+    const orderBy: any = { [sort_by]: sort_order.toLowerCase() };
+
+    // Build include
+    const include: any = {};
+    if (include_user) {
+      include.user = true;
+    }
+    if (include_topic) {
+      include.topic = true;
+    }
 
     // Get total count
-    const total = await queryBuilder.getCount();
+    const total = await this.prisma.userPost.count({ where });
 
     // Get paginated results
-    queryBuilder.skip(skip).take(limit);
-
-    // Load relations if requested
-    if (include_user) {
-      queryBuilder.leftJoinAndSelect('post.user', 'user');
-    }
-
-    if (include_topic) {
-      queryBuilder.leftJoinAndSelect('post.topic', 'topic');
-    }
-
-    const posts = await queryBuilder.getMany();
+    const posts = await this.prisma.userPost.findMany({
+      where,
+      orderBy,
+      take: limit,
+      skip,
+      include: Object.keys(include).length > 0 ? include : undefined,
+    });
 
     // Get user like status if userId provided
     const postsWithLikes = await Promise.all(
@@ -327,15 +317,15 @@ export class PostService {
         const response: any = { ...post };
 
         if (userId) {
-          const userLike = await this.postLikeRepository.findOne({
+          const userLike = await this.prisma.postLike.findFirst({
             where: {
               post_id: post.id,
               user_id: userId,
             },
           });
           response.user_like_status = userLike?.like_status || null;
-          response.is_liked = userLike?.like_status === LikeStatus.LIKE;
-          response.is_disliked = userLike?.like_status === LikeStatus.DISLIKE;
+          response.is_liked = userLike?.like_status === 'like';
+          response.is_disliked = userLike?.like_status === 'dislike';
         }
 
         return response;
@@ -354,10 +344,14 @@ export class PostService {
   }
 
   // Get Post by ID
-  async getPostById(postId: number, userId?: number, skipViewCount?: boolean): Promise<PostResponseDto> {
-    const post = await this.postRepository.findOne({
+  async getPostById(
+    postId: number,
+    userId?: number,
+    skipViewCount?: boolean,
+  ): Promise<PostResponseDto> {
+    const post = await this.prisma.userPost.findUnique({
       where: { id: postId },
-      relations: ['user', 'topic'],
+      include: { user: true, topic: true },
     });
 
     if (!post) {
@@ -365,38 +359,39 @@ export class PostService {
     }
 
     // Increment view count only if not skipped (skip for admin views)
+    let updatedPost: any = post;
     if (!skipViewCount) {
-      post.view_count += 1;
-      await this.postRepository.save(post);
+      updatedPost = await this.prisma.userPost.update({
+        where: { id: postId },
+        data: { view_count: { increment: 1 } },
+        include: { user: true, topic: true },
+      });
     }
 
-    const response: any = { ...post };
+    const response: any = { ...updatedPost };
 
     // Get user like status if userId provided
     if (userId) {
-      const userLike = await this.postLikeRepository.findOne({
+      const userLike = await this.prisma.postLike.findFirst({
         where: {
           post_id: postId,
           user_id: userId,
         },
       });
       response.user_like_status = userLike?.like_status || null;
-      response.is_liked = userLike?.like_status === LikeStatus.LIKE;
-      response.is_disliked = userLike?.like_status === LikeStatus.DISLIKE;
+      response.is_liked = userLike?.like_status === 'like';
+      response.is_disliked = userLike?.like_status === 'dislike';
     }
 
     return this.mapToResponseDto(response);
   }
 
   // Get Post by Slug
-  async getPostBySlug(
-    slug: string,
-    userId?: number,
-  ): Promise<PostResponseDto> {
+  async getPostBySlug(slug: string, userId?: number): Promise<PostResponseDto> {
     // Slug now includes hash, so we can search directly
-    const post = await this.postRepository.findOne({
+    const post = await this.prisma.userPost.findFirst({
       where: { post_slug: slug },
-      relations: ['user', 'topic'],
+      include: { user: true, topic: true },
     });
 
     if (!post) {
@@ -413,7 +408,7 @@ export class PostService {
     userId: number,
     files?: Express.Multer.File[],
   ): Promise<PostResponseDto> {
-    const post = await this.postRepository.findOne({
+    const post = await this.prisma.userPost.findUnique({
       where: { id: postId },
     });
 
@@ -426,18 +421,23 @@ export class PostService {
       throw new ForbiddenException('You can only update your own posts');
     }
 
+    // Build update data object
+    const updateData: any = { ...updatePostDto, updated_by: userId };
+
     // If slug is being updated, generate new slug with ID hash
     if (updatePostDto.post_slug && updatePostDto.post_slug !== post.post_slug) {
-      // Remove any existing hash and generate new one with current ID
-      updatePostDto.post_slug = this.generateSlugWithHash(updatePostDto.post_slug, post.id);
+      updateData.post_slug = this.generateSlugWithHash(
+        updatePostDto.post_slug,
+        post.id,
+      );
     }
 
     // Validate topic if being updated and provided
     if (updatePostDto.post_topic_id !== undefined) {
       if (updatePostDto.post_topic_id !== null) {
-        const topic = await this.topicRepository.findOne({
+        const topic = await this.prisma.topic.findFirst({
           where: { id: updatePostDto.post_topic_id, is_active: true },
-          select: ['id'],
+          select: { id: true },
         });
 
         if (!topic) {
@@ -451,27 +451,25 @@ export class PostService {
     if (files && files.length > 0) {
       for (const file of files) {
         try {
-          const mediaResponse = await this.mediaClientService.uploadFile(
-            file,
-            {
-              folder: 'posts',
-              userId,
-              optimize: true,
-              is_public: false,
-            },
-          );
+          const mediaResponse = await this.mediaClientService.uploadFile(file, {
+            folder: 'posts',
+            userId,
+            optimize: true,
+            is_public: false,
+          });
 
           // Determine media type based on mime type
           if (file.mimetype.startsWith('image/')) {
-            (post as any).post_image = this.mediaClientService.buildFileUrl(
+            updateData.post_image = this.mediaClientService.buildFileUrl(
               mediaResponse.file_path,
             );
           } else if (file.mimetype.startsWith('video/')) {
             // Note: Video updates are disabled - videos can only be set during creation
-            // Skip video file uploads during update
-            this.logger.warn(`Video file upload attempted during post update (postId: ${postId}). Video updates are disabled.`);
+            this.logger.warn(
+              `Video file upload attempted during post update (postId: ${postId}). Video updates are disabled.`,
+            );
           } else if (file.mimetype.startsWith('audio/')) {
-            (post as any).post_audio = this.mediaClientService.buildFileUrl(
+            updateData.post_audio = this.mediaClientService.buildFileUrl(
               mediaResponse.file_path,
             );
           }
@@ -488,39 +486,39 @@ export class PostService {
 
     // Convert community_ids array to comma-separated string if provided
     if (updatePostDto.community_ids !== undefined) {
-      updatePostDto.community_ids = updatePostDto.community_ids as any;
-      const communityIds = updatePostDto.community_ids ?? [];
-      const communityIdsString = communityIds.length ? communityIds.join(',') : '';
-      (post as any).community_ids = communityIdsString;
-      delete (updatePostDto as any).community_ids;
+      const communityIds = (updatePostDto.community_ids as any) ?? [];
+      updateData.community_ids = communityIds.length
+        ? communityIds.join(',')
+        : '';
     }
 
     // Convert post_tags array to comma-separated string if provided
     if (updatePostDto.post_tags !== undefined) {
-      const postTagsString = updatePostDto.post_tags.length > 0
-        ? updatePostDto.post_tags.join(',')
-        : null;
-      (post as any).post_tags = postTagsString;
-      delete (updatePostDto as any).post_tags;
+      updateData.post_tags =
+        updatePostDto.post_tags.length > 0
+          ? updatePostDto.post_tags.join(',')
+          : null;
     }
 
     // Convert is_featured string to boolean if provided
     if (updatePostDto.is_featured !== undefined) {
-      (post as any).is_featured = updatePostDto.is_featured === 'featured';
-      delete (updatePostDto as any).is_featured;
+      updateData.is_featured = updatePostDto.is_featured === 'featured';
     }
 
-    // Update post
-    Object.assign(post, updatePostDto);
-    post.updated_by = userId;
+    const updatedPost = await this.prisma.userPost.update({
+      where: { id: postId },
+      data: updateData,
+    });
 
-    const updatedPost = await this.postRepository.save(post);
     return this.mapToResponseDto(updatedPost);
   }
 
   // Delete Post
-  async deletePost(postId: number, userId: number): Promise<{ message: string }> {
-    const post = await this.postRepository.findOne({
+  async deletePost(
+    postId: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const post = await this.prisma.userPost.findUnique({
       where: { id: postId },
     });
 
@@ -534,9 +532,10 @@ export class PostService {
     }
 
     // Soft delete by archiving
-    post.post_status = PostStatus.ARCHIVED;
-    post.updated_by = userId;
-    await this.postRepository.save(post);
+    await this.prisma.userPost.update({
+      where: { id: postId },
+      data: { post_status: 'archived', updated_by: userId },
+    });
 
     return { message: 'Post deleted successfully' };
   }
@@ -552,7 +551,7 @@ export class PostService {
     dislike_count: number;
     like_status: 'like' | 'dislike' | null;
   }> {
-    const post = await this.postRepository.findOne({
+    const post = await this.prisma.userPost.findUnique({
       where: { id: postId },
     });
 
@@ -561,7 +560,7 @@ export class PostService {
     }
 
     // Check if user already liked/disliked
-    const existingLike = await this.postLikeRepository.findOne({
+    const existingLike = await this.prisma.postLike.findFirst({
       where: {
         post_id: postId,
         user_id: userId,
@@ -571,74 +570,87 @@ export class PostService {
     if (existingLike) {
       // If same status, remove like/dislike
       if (existingLike.like_status === likePostDto.like_status) {
-        await this.postLikeRepository.remove(existingLike);
+        await this.prisma.postLike.delete({ where: { id: existingLike.id } });
 
         // Update counts
-        if (existingLike.like_status === LikeStatus.LIKE) {
-          post.like_count = Math.max(0, post.like_count - 1);
+        const countUpdate: any = {};
+        if (existingLike.like_status === 'like') {
+          countUpdate.like_count = { decrement: 1 };
         } else {
-          post.dislike_count = Math.max(0, post.dislike_count - 1);
+          countUpdate.dislike_count = { decrement: 1 };
         }
 
-        await this.postRepository.save(post);
+        const updatedPost = await this.prisma.userPost.update({
+          where: { id: postId },
+          data: countUpdate,
+        });
 
         return {
           message: 'Like/dislike removed',
-          like_count: post.like_count,
-          dislike_count: post.dislike_count,
+          like_count: updatedPost.like_count,
+          dislike_count: updatedPost.dislike_count,
           like_status: null,
         };
       } else {
         // Change from like to dislike or vice versa
         const oldStatus = existingLike.like_status;
-        existingLike.like_status = likePostDto.like_status;
-        existingLike.updated_by = userId;
-        await this.postLikeRepository.save(existingLike);
+        await this.prisma.postLike.update({
+          where: { id: existingLike.id },
+          data: { like_status: likePostDto.like_status, updated_by: userId },
+        });
 
         // Update counts
-        if (oldStatus === LikeStatus.LIKE) {
-          post.like_count = Math.max(0, post.like_count - 1);
-          post.dislike_count += 1;
+        const countUpdate: any = {};
+        if (oldStatus === 'like') {
+          countUpdate.like_count = { decrement: 1 };
+          countUpdate.dislike_count = { increment: 1 };
         } else {
-          post.dislike_count = Math.max(0, post.dislike_count - 1);
-          post.like_count += 1;
+          countUpdate.dislike_count = { decrement: 1 };
+          countUpdate.like_count = { increment: 1 };
         }
 
-        await this.postRepository.save(post);
+        const updatedPost = await this.prisma.userPost.update({
+          where: { id: postId },
+          data: countUpdate,
+        });
 
         return {
           message: `Post ${likePostDto.like_status}d successfully`,
-          like_count: post.like_count,
-          dislike_count: post.dislike_count,
+          like_count: updatedPost.like_count,
+          dislike_count: updatedPost.dislike_count,
           like_status: likePostDto.like_status,
         };
       }
     }
 
     // Create new like/dislike
-    const postLike = this.postLikeRepository.create({
-      post_id: postId,
-      user_id: userId,
-      like_status: likePostDto.like_status,
-      created_by: userId,
+    await this.prisma.postLike.create({
+      data: {
+        post_id: postId,
+        user_id: userId,
+        like_status: likePostDto.like_status,
+        created_by: userId,
+      },
     });
 
-    await this.postLikeRepository.save(postLike);
-
     // Update counts
-    if (likePostDto.like_status === LikeStatus.LIKE) {
-      post.like_count += 1;
+    const countUpdate: any = {};
+    if (likePostDto.like_status === 'like') {
+      countUpdate.like_count = { increment: 1 };
     } else {
-      post.dislike_count += 1;
+      countUpdate.dislike_count = { increment: 1 };
     }
 
-    await this.postRepository.save(post);
+    const updatedPost = await this.prisma.userPost.update({
+      where: { id: postId },
+      data: countUpdate,
+    });
 
     // Notify the post owner — only on a new like (not dislike)
-    if (likePostDto.like_status === LikeStatus.LIKE) {
-      const liker = await this.userRepository.findOne({
+    if (likePostDto.like_status === 'like') {
+      const liker = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: ['id', 'username'],
+        select: { id: true, username: true },
       });
       const actorName = liker?.username || 'Someone';
       await this.safeNotify({
@@ -655,8 +667,8 @@ export class PostService {
 
     return {
       message: `Post ${likePostDto.like_status}d successfully`,
-      like_count: post.like_count,
-      dislike_count: post.dislike_count,
+      like_count: updatedPost.like_count,
+      dislike_count: updatedPost.dislike_count,
       like_status: likePostDto.like_status,
     };
   }
@@ -712,16 +724,6 @@ export class PostService {
 
   // Helper: Map entity to response DTO
   private mapToResponseDto(post: any): PostResponseDto {
-    // Parse community_ids string to array
-    const communityIds = post.community_ids
-      ? post.community_ids.split(',').map((id: string) => parseInt(id.trim(), 10)).filter((id: number) => !isNaN(id))
-      : [];
-
-    // Parse post_tags string to array
-    const postTags = post.post_tags
-      ? post.post_tags.split(',').map((tag: string) => tag.trim())
-      : [];
-
     return {
       id: post.id,
       community_ids: post.community_ids,

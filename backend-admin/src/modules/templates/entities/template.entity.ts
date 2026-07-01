@@ -33,7 +33,12 @@ export class Template {
   @Index()
   name: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true, comment: 'Template slug/identifier' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    unique: true,
+    comment: 'Template slug/identifier',
+  })
   slug: string;
 
   @Column({
@@ -53,22 +58,40 @@ export class Template {
   @Index()
   category: TemplateCategory;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'Template subject (for emails)' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'Template subject (for emails)',
+  })
   subject: string | null;
 
   @Column({ type: 'text', comment: 'Template HTML content' })
   content: string;
 
-  @Column({ type: 'text', nullable: true, comment: 'Plain text version (for emails)' })
+  @Column({
+    type: 'text',
+    nullable: true,
+    comment: 'Plain text version (for emails)',
+  })
   text_content: string | null;
 
-  @Column({ type: 'json', nullable: true, comment: 'Template variables/placeholders schema' })
+  @Column({
+    type: 'json',
+    nullable: true,
+    comment: 'Template variables/placeholders schema',
+  })
   variables: Record<string, any> | null;
 
   @Column({ type: 'json', nullable: true, comment: 'Default template data' })
   default_data: Record<string, any> | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'Template description' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'Template description',
+  })
   description: string | null;
 
   @Column({ type: 'boolean', default: true, comment: 'Is template active' })

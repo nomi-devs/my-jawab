@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import { Email, EmailStatus } from '../entities/email.entity';
+import { EmailStatus } from '../entities/email.entity';
 import { EmailService } from '../email.service';
 import { TemplatesService } from '../../templates/templates.service';
 
@@ -31,23 +31,37 @@ export class EmailSenderService {
     }
 
     const provider = this.configService.get<string>('email.provider', 'smtp');
-    
+
     if (provider === 'smtp') {
-      const smtpEnabled = this.configService.get<boolean>('email.smtp.enabled', true);
+      const smtpEnabled = this.configService.get<boolean>(
+        'email.smtp.enabled',
+        true,
+      );
       if (!smtpEnabled) {
         this.logger.warn('SMTP is disabled. Emails will not be sent.');
         return;
       }
 
-      const smtpUser = this.configService.get<string>('email.smtp.auth.user', '');
-      const smtpPass = this.configService.get<string>('email.smtp.auth.pass', '');
+      const smtpUser = this.configService.get<string>(
+        'email.smtp.auth.user',
+        '',
+      );
+      const smtpPass = this.configService.get<string>(
+        'email.smtp.auth.pass',
+        '',
+      );
 
       // Check if credentials are provided
       if (!smtpUser || !smtpPass) {
-        this.logger.warn('SMTP credentials are not configured. Email sending will fail until credentials are set.');
+        this.logger.warn(
+          'SMTP credentials are not configured. Email sending will fail until credentials are set.',
+        );
         // Create transporter without auth for now (will fail on send, but won't crash on init)
         this.transporter = nodemailer.createTransport({
-          host: this.configService.get<string>('email.smtp.host', 'smtp.gmail.com'),
+          host: this.configService.get<string>(
+            'email.smtp.host',
+            'smtp.gmail.com',
+          ),
           port: this.configService.get<number>('email.smtp.port', 587),
           secure: this.configService.get<boolean>('email.smtp.secure', false),
         });
@@ -55,7 +69,10 @@ export class EmailSenderService {
       }
 
       const smtpConfig = {
-        host: this.configService.get<string>('email.smtp.host', 'smtp.gmail.com'),
+        host: this.configService.get<string>(
+          'email.smtp.host',
+          'smtp.gmail.com',
+        ),
         port: this.configService.get<number>('email.smtp.port', 587),
         secure: this.configService.get<boolean>('email.smtp.secure', false),
         auth: {
@@ -63,41 +80,74 @@ export class EmailSenderService {
           pass: smtpPass,
         },
         pool: this.configService.get<boolean>('email.smtp.pool', false),
-        maxConnections: this.configService.get<number>('email.smtp.maxConnections', 5),
-        maxMessages: this.configService.get<number>('email.smtp.maxMessages', 100),
-        connectionTimeout: this.configService.get<number>('email.smtp.connectionTimeout', 10000),
-        socketTimeout: this.configService.get<number>('email.smtp.socketTimeout', 30000),
-        greetingTimeout: this.configService.get<number>('email.smtp.greetingTimeout', 5000),
+        maxConnections: this.configService.get<number>(
+          'email.smtp.maxConnections',
+          5,
+        ),
+        maxMessages: this.configService.get<number>(
+          'email.smtp.maxMessages',
+          100,
+        ),
+        connectionTimeout: this.configService.get<number>(
+          'email.smtp.connectionTimeout',
+          10000,
+        ),
+        socketTimeout: this.configService.get<number>(
+          'email.smtp.socketTimeout',
+          30000,
+        ),
+        greetingTimeout: this.configService.get<number>(
+          'email.smtp.greetingTimeout',
+          5000,
+        ),
         tls: {
-          rejectUnauthorized: this.configService.get<boolean>('email.smtp.tls.rejectUnauthorized', true),
-          ciphers: this.configService.get<string>('email.smtp.tls.ciphers', 'SSLv3'),
+          rejectUnauthorized: this.configService.get<boolean>(
+            'email.smtp.tls.rejectUnauthorized',
+            true,
+          ),
+          ciphers: this.configService.get<string>(
+            'email.smtp.tls.ciphers',
+            'SSLv3',
+          ),
         },
       };
 
       this.transporter = nodemailer.createTransport(smtpConfig);
-      
+
       // Verify connection asynchronously (don't block initialization)
       this.verifyTransporter().catch((error) => {
         this.logger.error('Initial SMTP verification failed:', error.message);
       });
     } else if (provider === 'sendgrid') {
-      const sendgridEnabled = this.configService.get<boolean>('email.sendgrid.enabled', false);
+      const sendgridEnabled = this.configService.get<boolean>(
+        'email.sendgrid.enabled',
+        false,
+      );
       if (!sendgridEnabled) {
         this.logger.warn('SendGrid is disabled. Emails will not be sent.');
         return;
       }
-      this.logger.warn('SendGrid provider is not yet fully implemented. Using SMTP fallback.');
+      this.logger.warn(
+        'SendGrid provider is not yet fully implemented. Using SMTP fallback.',
+      );
       // TODO: Implement SendGrid
     } else if (provider === 'ses') {
-      const sesEnabled = this.configService.get<boolean>('email.awsSes.enabled', false);
+      const sesEnabled = this.configService.get<boolean>(
+        'email.awsSes.enabled',
+        false,
+      );
       if (!sesEnabled) {
         this.logger.warn('AWS SES is disabled. Emails will not be sent.');
         return;
       }
-      this.logger.warn('AWS SES provider is not yet fully implemented. Using SMTP fallback.');
+      this.logger.warn(
+        'AWS SES provider is not yet fully implemented. Using SMTP fallback.',
+      );
       // TODO: Implement AWS SES
     } else {
-      this.logger.warn(`Email provider "${provider}" is not yet implemented. Using SMTP fallback.`);
+      this.logger.warn(
+        `Email provider "${provider}" is not yet implemented. Using SMTP fallback.`,
+      );
     }
   }
 
@@ -114,7 +164,8 @@ export class EmailSenderService {
     const now = new Date();
     if (
       this.lastVerificationAttempt &&
-      now.getTime() - this.lastVerificationAttempt.getTime() < this.verificationCooldown
+      now.getTime() - this.lastVerificationAttempt.getTime() <
+        this.verificationCooldown
     ) {
       return this.isTransporterVerified;
     }
@@ -128,7 +179,10 @@ export class EmailSenderService {
       return true;
     } catch (error) {
       this.isTransporterVerified = false;
-      this.logger.error('SMTP connection verification failed:', error.message || error);
+      this.logger.error(
+        'SMTP connection verification failed:',
+        error.message || error,
+      );
       return false;
     }
   }
@@ -139,7 +193,9 @@ export class EmailSenderService {
    */
   private async ensureTransporterReady(): Promise<boolean> {
     if (!this.transporter) {
-      this.logger.warn('Transporter not initialized, attempting to reinitialize...');
+      this.logger.warn(
+        'Transporter not initialized, attempting to reinitialize...',
+      );
       this.initializeTransporter();
       if (!this.transporter) {
         return false;
@@ -150,7 +206,9 @@ export class EmailSenderService {
     if (!this.isTransporterVerified) {
       const verified = await this.verifyTransporter();
       if (!verified) {
-        this.logger.warn('Transporter verification failed, but will attempt to send anyway');
+        this.logger.warn(
+          'Transporter verification failed, but will attempt to send anyway',
+        );
       }
     }
 
@@ -166,13 +224,22 @@ export class EmailSenderService {
     emailId: number,
     retryCount: number = 0,
   ): Promise<any> {
-    const maxRetries = this.configService.get<number>('email.retry.maxRetries', 3);
-    const retryDelay = this.configService.get<number>('email.retry.retryDelay', 5000);
+    const maxRetries = this.configService.get<number>(
+      'email.retry.maxRetries',
+      3,
+    );
+    const retryDelay = this.configService.get<number>(
+      'email.retry.retryDelay',
+      5000,
+    );
     const useExponentialBackoff = this.configService.get<boolean>(
       'email.retry.exponentialBackoff',
       false,
     );
-    const timeout = this.configService.get<number>('email.smtp.socketTimeout', 30000); // 30 seconds default
+    const timeout = this.configService.get<number>(
+      'email.smtp.socketTimeout',
+      30000,
+    ); // 30 seconds default
 
     try {
       // Create a promise with timeout
@@ -225,11 +292,13 @@ export class EmailSenderService {
   /**
    * Send email - if template_name is provided, render template first
    */
-  async sendEmail(email: Email): Promise<boolean> {
+  async sendEmail(email: any): Promise<boolean> {
     // Check if email service is enabled
     const emailEnabled = this.configService.get<boolean>('email.enabled', true);
     if (!emailEnabled) {
-      this.logger.warn(`Email service is disabled. Email ${email.id} will not be sent.`);
+      this.logger.warn(
+        `Email service is disabled. Email ${email.id} will not be sent.`,
+      );
       await this.emailService.updateStatus(email.id, EmailStatus.FAILED, {
         error_message: 'Email service is disabled',
       });
@@ -239,9 +308,12 @@ export class EmailSenderService {
     // Ensure transporter is ready
     const isReady = await this.ensureTransporterReady();
     if (!isReady || !this.transporter) {
-      this.logger.error(`SMTP transporter is not ready. Email ${email.id} will not be sent.`);
+      this.logger.error(
+        `SMTP transporter is not ready. Email ${email.id} will not be sent.`,
+      );
       await this.emailService.updateStatus(email.id, EmailStatus.FAILED, {
-        error_message: 'SMTP transporter is not ready. Please check SMTP configuration.',
+        error_message:
+          'SMTP transporter is not ready. Please check SMTP configuration.',
       });
       return false;
     }
@@ -250,22 +322,33 @@ export class EmailSenderService {
     const smtpUser = this.configService.get<string>('email.smtp.auth.user', '');
     const smtpPass = this.configService.get<string>('email.smtp.auth.pass', '');
     if (!smtpUser || !smtpPass) {
-      this.logger.error(`SMTP credentials are not configured. Email ${email.id} will not be sent.`);
+      this.logger.error(
+        `SMTP credentials are not configured. Email ${email.id} will not be sent.`,
+      );
       await this.emailService.updateStatus(email.id, EmailStatus.FAILED, {
-        error_message: 'SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASSWORD in .env file.',
+        error_message:
+          'SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASSWORD in .env file.',
       });
       return false;
     }
 
     // Check if templates are enabled
-    const templatesEnabled = this.configService.get<boolean>('email.templates.enabled', true);
+    const templatesEnabled = this.configService.get<boolean>(
+      'email.templates.enabled',
+      true,
+    );
     if (email.template_name && !templatesEnabled) {
-      this.logger.warn(`Email templates are disabled. Email ${email.id} will not use template.`);
+      this.logger.warn(
+        `Email templates are disabled. Email ${email.id} will not use template.`,
+      );
     }
 
     try {
       const defaultFrom = {
-        email: this.configService.get<string>('email.from', 'noreply@jawab.com'),
+        email: this.configService.get<string>(
+          'email.from',
+          'noreply@jawab.com',
+        ),
         name: this.configService.get<string>('email.fromName', 'Jawab'),
       };
 
@@ -280,21 +363,27 @@ export class EmailSenderService {
             name: email.recipient_name,
             email: email.recipient_email,
             appName: this.configService.get<string>('app.name', 'Jawab'),
-            appUrl: this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab'),
+            appUrl: this.configService.get<string>(
+              'app.url',
+              'https://demo.jantrah.com/jawaab',
+            ),
             year: new Date().getFullYear(),
           };
-          
+
           htmlContent = await this.templatesService.renderEmail(
             email.template_name,
             templateData,
           );
-          
+
           // Generate text version from HTML if not provided
           if (!textContent) {
             textContent = this.stripHtml(htmlContent);
           }
         } catch (error) {
-          this.logger.warn(`Failed to render template ${email.template_name}, using provided body:`, error);
+          this.logger.warn(
+            `Failed to render template ${email.template_name}, using provided body:`,
+            error,
+          );
           // Fall back to provided body_html/body_text
         }
       }
@@ -309,7 +398,8 @@ export class EmailSenderService {
         subject: email.subject,
         html: htmlContent || textContent || undefined,
         text: textContent || this.stripHtml(htmlContent || ''),
-        replyTo: email.reply_to || this.configService.get<string>('email.replyTo'),
+        replyTo:
+          email.reply_to || this.configService.get<string>('email.replyTo'),
         cc: email.cc_emails?.length ? email.cc_emails.join(', ') : undefined,
         bcc: email.bcc_emails?.length ? email.bcc_emails.join(', ') : undefined,
         // attachments: email.attachments, // Handle attachments if needed
@@ -325,20 +415,28 @@ export class EmailSenderService {
         sent_at: new Date(),
       });
 
-      this.logger.log(`Email sent successfully: ${email.id} to ${email.recipient_email}`);
+      this.logger.log(
+        `Email sent successfully: ${email.id} to ${email.recipient_email}`,
+      );
       return true;
     } catch (error) {
       const errorMessage = error.message || error.toString() || 'Unknown error';
-      this.logger.error(`Failed to send email ${email.id} after all retries:`, errorMessage);
-      
+      this.logger.error(
+        `Failed to send email ${email.id} after all retries:`,
+        errorMessage,
+      );
+
       // Log full error details for debugging
       if (error.stack) {
         this.logger.debug(`Error stack for email ${email.id}:`, error.stack);
       }
       if (error.response) {
-        this.logger.debug(`SMTP response for email ${email.id}:`, error.response);
+        this.logger.debug(
+          `SMTP response for email ${email.id}:`,
+          error.response,
+        );
       }
-      
+
       // Update email status with error
       await this.emailService.updateStatus(email.id, EmailStatus.FAILED, {
         error_message: errorMessage,
@@ -352,7 +450,9 @@ export class EmailSenderService {
         error.message?.includes('timeout')
       ) {
         this.isTransporterVerified = false;
-        this.logger.warn('Transporter marked as unverified due to connection error');
+        this.logger.warn(
+          'Transporter marked as unverified due to connection error',
+        );
       }
 
       return false;
@@ -360,7 +460,10 @@ export class EmailSenderService {
   }
 
   private stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    return html
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
   }
 
   async sendPendingEmails(limit: number = 10): Promise<void> {

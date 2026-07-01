@@ -17,6 +17,15 @@ import {
   UploadedFiles,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
@@ -69,18 +78,30 @@ import { PaymentStatus } from '../subscription/entities/payment.entity';
 import { ListSubscriptionPaymentNotificationsDto } from './dto/list-subscription-payment-notifications.dto';
 import { TopicSelectListDto } from '../general/dto/topic-select-list.dto';
 
+@ApiTags('Admin')
+@ApiBearerAuth('JWT-auth')
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
-  // Admin Login (no guards - public endpoint for login)
+  // ========== Auth ==========
+
+  @ApiOperation({ summary: 'Admin login' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() adminLoginDto: AdminLoginDto): Promise<AuthResponseDto> {
     return this.adminService.login(adminLoginDto);
   }
 
-  // Admin Logout (requires authentication)
+  @ApiOperation({ summary: 'Admin logout' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('logout')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -89,7 +110,9 @@ export class AdminController {
     return this.adminService.logout(admin.userId);
   }
 
-  // Admin Forgot Password (no guards - public endpoint)
+  @ApiOperation({ summary: 'Admin forgot password' })
+  @ApiResponse({ status: 200, description: 'Password reset email sent' })
+  @ApiResponse({ status: 404, description: 'Admin not found' })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(
@@ -98,7 +121,9 @@ export class AdminController {
     return this.adminService.forgotPassword(forgotPasswordDto);
   }
 
-  // Admin Reset Password (no guards - public endpoint)
+  @ApiOperation({ summary: 'Admin reset password' })
+  @ApiResponse({ status: 200, description: 'Password reset successful' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired reset code' })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
@@ -107,7 +132,10 @@ export class AdminController {
     return this.adminService.resetPassword(resetPasswordDto);
   }
 
-  // Admin Change Password (requires authentication)
+  @ApiOperation({ summary: 'Admin change password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 400, description: 'Old password is incorrect' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('change-password')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -119,16 +147,28 @@ export class AdminController {
     return this.adminService.changePassword(admin.userId, changePasswordDto);
   }
 
-  // Protected routes - require authentication and admin/sub-admin role
-  // Dashboard
+  // ========== Dashboard ==========
+
+  @ApiOperation({ summary: 'Get dashboard statistics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard stats returned',
+    type: DashboardStatsDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('dashboard/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
   @HttpCode(HttpStatus.OK)
-  async getDashboardStats(@Query() queryDto: DashboardStatsQueryDto): Promise<DashboardStatsDto> {
+  async getDashboardStats(
+    @Query() queryDto: DashboardStatsQueryDto,
+  ): Promise<DashboardStatsDto> {
     return this.adminService.getDashboardStats(queryDto);
   }
 
+  @ApiOperation({ summary: 'Get user growth metrics' })
+  @ApiResponse({ status: 200, description: 'User growth data returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('dashboard/user-growth')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -137,7 +177,11 @@ export class AdminController {
     return this.adminService.getUserGrowth(queryDto);
   }
 
-  // Global Search (users, posts, communities, topics)
+  // ========== Search ==========
+
+  @ApiOperation({ summary: 'Global admin search' })
+  @ApiResponse({ status: 200, description: 'Search results returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('search')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -148,6 +192,9 @@ export class AdminController {
 
   // ========== Export Functionality ==========
 
+  @ApiOperation({ summary: 'Export users list' })
+  @ApiResponse({ status: 200, description: 'Users export data returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -156,6 +203,9 @@ export class AdminController {
     return this.adminService.exportUsers(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Export posts list' })
+  @ApiResponse({ status: 200, description: 'Posts export data returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -164,6 +214,9 @@ export class AdminController {
     return this.adminService.exportPosts(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Export comments list' })
+  @ApiResponse({ status: 200, description: 'Comments export data returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('comments/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -172,6 +225,9 @@ export class AdminController {
     return this.adminService.exportComments(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Export communities list' })
+  @ApiResponse({ status: 200, description: 'Communities export data returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -180,6 +236,9 @@ export class AdminController {
     return this.adminService.exportCommunities(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Export topics list' })
+  @ApiResponse({ status: 200, description: 'Topics export data returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -188,6 +247,9 @@ export class AdminController {
     return this.adminService.exportTopics(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Export polls list' })
+  @ApiResponse({ status: 200, description: 'Polls export data returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -196,6 +258,12 @@ export class AdminController {
     return this.adminService.exportPolls(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Export subscriptions list' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscriptions export data returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('subscriptions/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -204,6 +272,9 @@ export class AdminController {
     return this.adminService.exportSubscriptions(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Export payments list' })
+  @ApiResponse({ status: 200, description: 'Payments export data returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('payments/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -212,7 +283,11 @@ export class AdminController {
     return this.adminService.exportPayments(listQueryDto);
   }
 
-  // User Management
+  // ========== User Management ==========
+
+  @ApiOperation({ summary: 'List users' })
+  @ApiResponse({ status: 200, description: 'Paginated list of users returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -221,10 +296,12 @@ export class AdminController {
     return this.adminService.getUsers(listQueryDto);
   }
 
-  /**
-   * List soft-deleted users (admin only).
-   * These users are hidden from /admin/users and cannot log in.
-   */
+  @ApiOperation({ summary: 'List soft-deleted users' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of deleted users returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/deleted')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -233,9 +310,11 @@ export class AdminController {
     return this.adminService.getDeletedUsers(listQueryDto);
   }
 
-  /**
-   * Restore a soft-deleted user. Fails if another active user has taken the same email/username.
-   */
+  @ApiOperation({ summary: 'Restore a soft-deleted user' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'User restored successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('users/:userId/restore')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -247,9 +326,11 @@ export class AdminController {
     return this.adminService.restoreUser(userId, admin.userId);
   }
 
-  /**
-   * Permanently delete a user (hard delete). Only allowed when user has no content.
-   */
+  @ApiOperation({ summary: 'Permanently delete a user (hard delete)' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'User permanently deleted' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('users/:userId/hard')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -261,6 +342,10 @@ export class AdminController {
     return this.adminService.hardDeleteUser(userId, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Create user' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('users')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -272,6 +357,11 @@ export class AdminController {
     return this.adminService.createUser(createUserDto, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'User returned' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -280,6 +370,30 @@ export class AdminController {
     return this.adminService.getUserById(userId);
   }
 
+  @ApiOperation({ summary: 'Update user' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description:
+      'User update payload. Attach profile_picture and/or profile_background as files.',
+    schema: {
+      type: 'object',
+      properties: {
+        username: { type: 'string', example: 'johndoe' },
+        email: { type: 'string', example: 'john@example.com' },
+        full_name: { type: 'string', example: 'John Doe' },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description:
+            'Up to 2 image files (profile picture and/or background)',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('users/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -289,11 +403,22 @@ export class AdminController {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max per file
       fileFilter: (req, file, cb) => {
         // Only allow image files - strict type checking
-        const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        const allowedMimeTypes = [
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+        ];
         if (allowedMimeTypes.includes(file.mimetype)) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('Only image files are allowed (JPEG, PNG, GIF, WebP)'), false);
+          cb(
+            new BadRequestException(
+              'Only image files are allowed (JPEG, PNG, GIF, WebP)',
+            ),
+            false,
+          );
         }
       },
     }),
@@ -304,9 +429,21 @@ export class AdminController {
     @GetUser() admin: any,
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.adminService.updateUser(userId, updateUserDto, admin.userId, files);
+    return this.adminService.updateUser(
+      userId,
+      updateUserDto,
+      admin.userId,
+      files,
+    );
   }
 
+  @ApiOperation({ summary: 'Get posts by user' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of user posts returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId/posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -318,6 +455,13 @@ export class AdminController {
     return this.adminService.getUserPosts(userId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get communities by user' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of user communities returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId/communities')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -329,6 +473,13 @@ export class AdminController {
     return this.adminService.getUserCommunities(userId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get comments by user' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of user comments returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId/comments')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -340,6 +491,11 @@ export class AdminController {
     return this.adminService.getUserComments(userId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get user statistics' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'User stats returned' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -348,6 +504,11 @@ export class AdminController {
     return this.adminService.getUserStats(userId);
   }
 
+  @ApiOperation({ summary: 'Update user status or role' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'User status updated' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('users/:userId/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -364,6 +525,11 @@ export class AdminController {
     );
   }
 
+  @ApiOperation({ summary: 'Delete user (soft delete)' })
+  @ApiParam({ name: 'userId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('users/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -375,7 +541,11 @@ export class AdminController {
     return this.adminService.deleteUser(userId, admin.userId);
   }
 
-  // Post Management
+  // ========== Post Management ==========
+
+  @ApiOperation({ summary: 'List posts (admin)' })
+  @ApiResponse({ status: 200, description: 'Paginated list of posts returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -384,6 +554,11 @@ export class AdminController {
     return this.adminService.getPosts(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get post by ID' })
+  @ApiParam({ name: 'postId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Post returned' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts/:postId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -392,6 +567,10 @@ export class AdminController {
     return this.adminService.getPostByIdEnhanced(postId);
   }
 
+  @ApiOperation({ summary: 'Get comments on a post' })
+  @ApiParam({ name: 'postId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Paginated comments returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts/:postId/comments')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -403,6 +582,10 @@ export class AdminController {
     return this.adminService.getPostComments(postId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get post analytics' })
+  @ApiParam({ name: 'postId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Post analytics returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts/:postId/analytics')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -414,6 +597,26 @@ export class AdminController {
     return this.adminService.getPostAnalytics(postId, timeRange);
   }
 
+  @ApiOperation({ summary: 'Create post (admin)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Post creation payload with optional media files.',
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', example: 'My Post Title' },
+        content: { type: 'string', example: 'Post content here' },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Up to 3 media files',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Post created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -431,6 +634,27 @@ export class AdminController {
     return this.adminService.createPost(createPostDto, admin.userId, files);
   }
 
+  @ApiOperation({ summary: 'Update post (admin)' })
+  @ApiParam({ name: 'postId', type: Number, example: 1 })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Post update payload with optional media files.',
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', example: 'Updated Post Title' },
+        content: { type: 'string', example: 'Updated content here' },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Up to 3 media files',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Post updated successfully' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('posts/:postId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -446,9 +670,19 @@ export class AdminController {
     @GetUser() admin: any,
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.adminService.updatePost(postId, updatePostDto, admin.userId, files);
+    return this.adminService.updatePost(
+      postId,
+      updatePostDto,
+      admin.userId,
+      files,
+    );
   }
 
+  @ApiOperation({ summary: 'Update post status or featured flag' })
+  @ApiParam({ name: 'postId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Post status updated' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('posts/:postId/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -465,6 +699,11 @@ export class AdminController {
     );
   }
 
+  @ApiOperation({ summary: 'Delete post (admin)' })
+  @ApiParam({ name: 'postId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Post deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('posts/:postId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -476,7 +715,14 @@ export class AdminController {
     return this.adminService.deletePost(postId, admin.userId);
   }
 
-  // Comment Management
+  // ========== Comment Management ==========
+
+  @ApiOperation({ summary: 'List comments (admin)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of comments returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('comments')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -485,6 +731,11 @@ export class AdminController {
     return this.adminService.getComments(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get comment by ID' })
+  @ApiParam({ name: 'commentId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Comment returned' })
+  @ApiResponse({ status: 404, description: 'Comment not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('comments/:commentId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -493,6 +744,13 @@ export class AdminController {
     return this.adminService.getCommentByIdEnhanced(commentId);
   }
 
+  @ApiOperation({ summary: 'Get replies for a comment' })
+  @ApiParam({ name: 'commentId', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of replies returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('comments/:commentId/replies')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -504,6 +762,11 @@ export class AdminController {
     return this.adminService.getCommentReplies(commentId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Update comment (admin)' })
+  @ApiParam({ name: 'commentId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Comment updated successfully' })
+  @ApiResponse({ status: 404, description: 'Comment not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('comments/:commentId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -513,9 +776,18 @@ export class AdminController {
     @Body() updateCommentDto: UpdateCommentDto,
     @GetUser() admin: any,
   ) {
-    return this.adminService.updateComment(commentId, updateCommentDto, admin.userId);
+    return this.adminService.updateComment(
+      commentId,
+      updateCommentDto,
+      admin.userId,
+    );
   }
 
+  @ApiOperation({ summary: 'Delete comment (admin)' })
+  @ApiParam({ name: 'commentId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Comment deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Comment not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('comments/:commentId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -527,7 +799,14 @@ export class AdminController {
     return this.adminService.deleteComment(commentId, admin.userId);
   }
 
-  // Topic Management
+  // ========== Topic Management ==========
+
+  @ApiOperation({ summary: 'List topics (admin)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of topics returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -536,6 +815,12 @@ export class AdminController {
     return this.adminService.getTopics(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'List parent topics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of parent topics returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('parent-topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -544,6 +829,13 @@ export class AdminController {
     return this.adminService.getParentTopics(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get topics select list (id + name only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Topics select list returned',
+    type: [TopicSelectListDto],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/select-list')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -552,6 +844,11 @@ export class AdminController {
     return this.adminService.getTopicsForSelectList();
   }
 
+  @ApiOperation({ summary: 'Get topic by ID' })
+  @ApiParam({ name: 'topicId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Topic returned' })
+  @ApiResponse({ status: 404, description: 'Topic not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/:topicId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -560,6 +857,13 @@ export class AdminController {
     return this.adminService.getTopicByIdEnhanced(topicId);
   }
 
+  @ApiOperation({ summary: 'Get posts in a topic' })
+  @ApiParam({ name: 'topicId', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of topic posts returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/:topicId/posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -571,6 +875,13 @@ export class AdminController {
     return this.adminService.getTopicPosts(topicId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get communities in a topic' })
+  @ApiParam({ name: 'topicId', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of topic communities returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/:topicId/communities')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -582,6 +893,11 @@ export class AdminController {
     return this.adminService.getTopicCommunities(topicId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get topic statistics' })
+  @ApiParam({ name: 'topicId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Topic stats returned' })
+  @ApiResponse({ status: 404, description: 'Topic not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/:topicId/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -590,6 +906,26 @@ export class AdminController {
     return this.adminService.getTopicStats(topicId);
   }
 
+  @ApiOperation({ summary: 'Create topic (admin)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Topic creation payload with optional image.',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Technology' },
+        slug: { type: 'string', example: 'technology' },
+        topic_image: {
+          type: 'string',
+          format: 'binary',
+          description: 'Topic image file',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Topic created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -607,6 +943,27 @@ export class AdminController {
     return this.adminService.createTopic(createTopicDto, admin.userId, file);
   }
 
+  @ApiOperation({ summary: 'Update topic (admin)' })
+  @ApiParam({ name: 'topicId', type: Number, example: 1 })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Topic update payload with optional image.',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Technology' },
+        slug: { type: 'string', example: 'technology' },
+        topic_image: {
+          type: 'string',
+          format: 'binary',
+          description: 'Topic image file',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Topic updated successfully' })
+  @ApiResponse({ status: 404, description: 'Topic not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('topics/:topicId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -622,9 +979,19 @@ export class AdminController {
     @GetUser() admin: any,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.adminService.updateTopic(topicId, updateTopicDto, admin.userId, file);
+    return this.adminService.updateTopic(
+      topicId,
+      updateTopicDto,
+      admin.userId,
+      file,
+    );
   }
 
+  @ApiOperation({ summary: 'Update topic status (active/inactive)' })
+  @ApiParam({ name: 'topicId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Topic status updated' })
+  @ApiResponse({ status: 404, description: 'Topic not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('topics/:topicId/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -641,6 +1008,11 @@ export class AdminController {
     );
   }
 
+  @ApiOperation({ summary: 'Delete topic (admin)' })
+  @ApiParam({ name: 'topicId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Topic deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Topic not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('topics/:topicId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -652,7 +1024,14 @@ export class AdminController {
     return this.adminService.deleteTopic(topicId, admin.userId);
   }
 
-  // Community Management
+  // ========== Community Management ==========
+
+  @ApiOperation({ summary: 'List communities (admin)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of communities returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -661,6 +1040,11 @@ export class AdminController {
     return this.adminService.getCommunities(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get community by ID' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Community returned' })
+  @ApiResponse({ status: 404, description: 'Community not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities/:communityId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -671,6 +1055,26 @@ export class AdminController {
     return this.adminService.getCommunityByIdEnhanced(communityId);
   }
 
+  @ApiOperation({ summary: 'Create community (admin)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Community creation payload with optional banner image.',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Tech Enthusiasts' },
+        description: { type: 'string', example: 'A community for tech lovers' },
+        community_image: {
+          type: 'string',
+          format: 'binary',
+          description: 'Community banner image',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Community created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('communities')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -687,13 +1091,41 @@ export class AdminController {
   ) {
     // Debug logging
     console.log('=== CONTROLLER: CREATE COMMUNITY ===');
-    console.log('Raw DTO received:', JSON.stringify(createCommunityDto, null, 2));
+    console.log(
+      'Raw DTO received:',
+      JSON.stringify(createCommunityDto, null, 2),
+    );
     console.log('is_active value:', createCommunityDto.is_active);
     console.log('is_active type:', typeof createCommunityDto.is_active);
 
-    return this.adminService.createCommunity(createCommunityDto, admin.userId, file);
+    return this.adminService.createCommunity(
+      createCommunityDto,
+      admin.userId,
+      file,
+    );
   }
 
+  @ApiOperation({ summary: 'Update community (admin)' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Community update payload with optional banner image.',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Tech Enthusiasts' },
+        description: { type: 'string', example: 'A community for tech lovers' },
+        community_image: {
+          type: 'string',
+          format: 'binary',
+          description: 'Community banner image',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Community updated successfully' })
+  @ApiResponse({ status: 404, description: 'Community not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('communities/:communityId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -711,13 +1143,26 @@ export class AdminController {
   ) {
     // Debug logging
     console.log('=== CONTROLLER: UPDATE COMMUNITY ===');
-    console.log('Raw DTO received:', JSON.stringify(updateCommunityDto, null, 2));
+    console.log(
+      'Raw DTO received:',
+      JSON.stringify(updateCommunityDto, null, 2),
+    );
     console.log('is_active value:', updateCommunityDto.is_active);
     console.log('is_active type:', typeof updateCommunityDto.is_active);
 
-    return this.adminService.updateCommunity(communityId, updateCommunityDto, admin.userId, file);
+    return this.adminService.updateCommunity(
+      communityId,
+      updateCommunityDto,
+      admin.userId,
+      file,
+    );
   }
 
+  @ApiOperation({ summary: 'Update community status (active/inactive)' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Community status updated' })
+  @ApiResponse({ status: 404, description: 'Community not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('communities/:communityId/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -734,6 +1179,11 @@ export class AdminController {
     );
   }
 
+  @ApiOperation({ summary: 'Delete community (admin)' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Community deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Community not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('communities/:communityId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -745,6 +1195,13 @@ export class AdminController {
     return this.adminService.deleteCommunity(communityId, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Get community members' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of community members returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities/:communityId/members')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -756,6 +1213,12 @@ export class AdminController {
     return this.adminService.getCommunityMembers(communityId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Update community member role' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiParam({ name: 'memberId', type: Number, example: 5 })
+  @ApiResponse({ status: 200, description: 'Member role updated' })
+  @ApiResponse({ status: 404, description: 'Community or member not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('communities/:communityId/members/:memberId/role')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -774,6 +1237,10 @@ export class AdminController {
     );
   }
 
+  @ApiOperation({ summary: 'Get topics in a community' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Community topics returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities/:communityId/topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -784,6 +1251,11 @@ export class AdminController {
     return this.adminService.getCommunityTopics(communityId);
   }
 
+  @ApiOperation({ summary: 'Add topic to community' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiResponse({ status: 201, description: 'Topic added to community' })
+  @ApiResponse({ status: 404, description: 'Community or topic not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('communities/:communityId/topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -793,9 +1265,19 @@ export class AdminController {
     @Body() addTopicDto: AddTopicToCommunityDto,
     @GetUser() admin: any,
   ) {
-    return this.adminService.addTopicToCommunity(communityId, addTopicDto, admin.userId);
+    return this.adminService.addTopicToCommunity(
+      communityId,
+      addTopicDto,
+      admin.userId,
+    );
   }
 
+  @ApiOperation({ summary: 'Remove topic from community' })
+  @ApiParam({ name: 'communityId', type: Number, example: 1 })
+  @ApiParam({ name: 'topicId', type: Number, example: 3 })
+  @ApiResponse({ status: 200, description: 'Topic removed from community' })
+  @ApiResponse({ status: 404, description: 'Community or topic not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('communities/:communityId/topics/:topicId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -805,10 +1287,18 @@ export class AdminController {
     @Param('topicId', ParseIntPipe) topicId: number,
     @GetUser() admin: any,
   ) {
-    return this.adminService.removeTopicFromCommunity(communityId, topicId, admin.userId);
+    return this.adminService.removeTopicFromCommunity(
+      communityId,
+      topicId,
+      admin.userId,
+    );
   }
 
-  // Poll Management
+  // ========== Poll Management ==========
+
+  @ApiOperation({ summary: 'List polls (admin)' })
+  @ApiResponse({ status: 200, description: 'Paginated list of polls returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -817,6 +1307,11 @@ export class AdminController {
     return this.adminService.getPolls(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get poll by ID' })
+  @ApiParam({ name: 'pollId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Poll returned' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls/:pollId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -825,6 +1320,10 @@ export class AdminController {
     return this.adminService.getPollByIdEnhanced(pollId);
   }
 
+  @ApiOperation({ summary: 'Get poll analytics' })
+  @ApiParam({ name: 'pollId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Poll analytics returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls/:pollId/analytics')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -833,6 +1332,13 @@ export class AdminController {
     return this.adminService.getPollAnalytics(pollId);
   }
 
+  @ApiOperation({ summary: 'Get poll votes' })
+  @ApiParam({ name: 'pollId', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of poll votes returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls/:pollId/votes')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -844,6 +1350,10 @@ export class AdminController {
     return this.adminService.getPollVotes(pollId, listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Create poll (admin)' })
+  @ApiResponse({ status: 201, description: 'Poll created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('polls')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -855,6 +1365,11 @@ export class AdminController {
     return this.adminService.createPoll(createPollDto, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Update poll (admin)' })
+  @ApiParam({ name: 'pollId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Poll updated successfully' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('polls/:pollId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -867,6 +1382,11 @@ export class AdminController {
     return this.adminService.updatePoll(pollId, updatePollDto, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Delete poll (admin)' })
+  @ApiParam({ name: 'pollId', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Poll deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('polls/:pollId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -880,6 +1400,12 @@ export class AdminController {
 
   // ========== Subscription Management ==========
 
+  @ApiOperation({ summary: 'List subscription plans (admin)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of subscriptions returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('subscriptions')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -888,6 +1414,11 @@ export class AdminController {
     return this.adminService.getSubscriptions(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get subscription plan by ID' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Subscription plan returned' })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('subscriptions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -896,6 +1427,13 @@ export class AdminController {
     return this.adminService.getSubscriptionById(id);
   }
 
+  @ApiOperation({ summary: 'Create subscription plan (admin)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Subscription plan created successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('subscriptions')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -904,9 +1442,20 @@ export class AdminController {
     @GetUser() admin: any,
     @Body() createSubscriptionDto: CreateSubscriptionDto,
   ) {
-    return this.adminService.createSubscription(createSubscriptionDto, admin.userId);
+    return this.adminService.createSubscription(
+      createSubscriptionDto,
+      admin.userId,
+    );
   }
 
+  @ApiOperation({ summary: 'Update subscription plan (admin)' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription plan updated successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('subscriptions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -916,9 +1465,21 @@ export class AdminController {
     @GetUser() admin: any,
     @Body() updateSubscriptionDto: UpdateSubscriptionDto,
   ) {
-    return this.adminService.updateSubscription(id, updateSubscriptionDto, admin.userId);
+    return this.adminService.updateSubscription(
+      id,
+      updateSubscriptionDto,
+      admin.userId,
+    );
   }
 
+  @ApiOperation({ summary: 'Delete subscription plan (admin)' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription plan deleted successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('subscriptions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -932,14 +1493,27 @@ export class AdminController {
 
   // ========== User Subscription Management ==========
 
+  @ApiOperation({ summary: 'List user subscriptions (admin)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of user subscriptions returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('user-subscriptions')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
   @HttpCode(HttpStatus.OK)
-  async getUserSubscriptions(@Query() listQueryDto: ListUserSubscriptionsQueryDto) {
+  async getUserSubscriptions(
+    @Query() listQueryDto: ListUserSubscriptionsQueryDto,
+  ) {
     return this.adminService.getUserSubscriptions(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get user subscription by ID' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'User subscription returned' })
+  @ApiResponse({ status: 404, description: 'User subscription not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('user-subscriptions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -948,6 +1522,11 @@ export class AdminController {
     return this.adminService.getUserSubscriptionById(id);
   }
 
+  @ApiOperation({ summary: 'Update user subscription status' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'User subscription status updated' })
+  @ApiResponse({ status: 404, description: 'User subscription not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('user-subscriptions/:id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -957,11 +1536,21 @@ export class AdminController {
     @GetUser() admin: any,
     @Body('status') status: SubscriptionStatus,
   ) {
-    return this.adminService.updateUserSubscriptionStatus(id, status, admin.userId);
+    return this.adminService.updateUserSubscriptionStatus(
+      id,
+      status,
+      admin.userId,
+    );
   }
 
   // ========== Payment Management ==========
 
+  @ApiOperation({ summary: 'List payments (admin)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of payments returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('payments')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -970,6 +1559,11 @@ export class AdminController {
     return this.adminService.getPayments(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get payment by ID' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Payment returned' })
+  @ApiResponse({ status: 404, description: 'Payment not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('payments/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -978,6 +1572,10 @@ export class AdminController {
     return this.adminService.getPaymentById(id);
   }
 
+  @ApiOperation({ summary: 'Create payment record (admin)' })
+  @ApiResponse({ status: 201, description: 'Payment created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('payments')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -989,6 +1587,11 @@ export class AdminController {
     return this.adminService.createPayment(createPaymentDto, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Update payment status (admin)' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Payment status updated' })
+  @ApiResponse({ status: 404, description: 'Payment not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('payments/:id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -1003,6 +1606,12 @@ export class AdminController {
 
   // ========== Subscription & Payment Notifications ==========
 
+  @ApiOperation({ summary: 'List subscription and payment notifications' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of notifications returned',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('notifications/subscription-payment')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -1015,6 +1624,10 @@ export class AdminController {
 
   // ========== Bulk Operations ==========
 
+  @ApiOperation({ summary: 'Bulk update users' })
+  @ApiResponse({ status: 200, description: 'Users updated successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('users/bulk-update')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -1026,6 +1639,10 @@ export class AdminController {
     return this.adminService.bulkUpdateUsers(bulkUpdateDto, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Bulk update posts' })
+  @ApiResponse({ status: 200, description: 'Posts updated successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('posts/bulk-update')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -1037,10 +1654,10 @@ export class AdminController {
     return this.adminService.bulkUpdatePosts(bulkUpdateDto, admin.userId);
   }
 
-
-
-
-
+  @ApiOperation({ summary: 'Bulk update communities' })
+  @ApiResponse({ status: 200, description: 'Communities updated successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('communities/bulk-update')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -1052,6 +1669,10 @@ export class AdminController {
     return this.adminService.bulkUpdateCommunities(bulkUpdateDto, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Bulk update topics' })
+  @ApiResponse({ status: 200, description: 'Topics updated successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('topics/bulk-update')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -1062,6 +1683,4 @@ export class AdminController {
   ) {
     return this.adminService.bulkUpdateTopics(bulkUpdateDto, admin.userId);
   }
-
 }
-

@@ -32,8 +32,14 @@ export class EmailTemplateService {
   ) {
     // Render template
     const html = await this.templateService.render(templateSlug, data);
-    const subject = await this.templateService.renderSubject(templateSlug, data);
-    const textContent = await this.templateService.renderTextContent(templateSlug, data);
+    const subject = await this.templateService.renderSubject(
+      templateSlug,
+      data,
+    );
+    const textContent = await this.templateService.renderTextContent(
+      templateSlug,
+      data,
+    );
 
     // Get template for default from email
     const template = await this.templateService.findBySlug(templateSlug);

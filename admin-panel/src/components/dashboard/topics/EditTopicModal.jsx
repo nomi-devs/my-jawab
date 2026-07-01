@@ -4,19 +4,14 @@ import { X, Hash, Save } from 'lucide-react';
 import ConfirmationModal from '../../common/ConfirmationModal';
 import topicsApi from '../../../api/topicsApi';
 
-const EditTopicModal = React.memo(({
-  isOpen,
-  onClose,
-  topic,
-  onSave
-}) => {
+const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
   const [formData, setFormData] = useState({
     topic_name: '',
     topic_slug: '',
     topic_description: '',
     parent_id: 0,
     is_active: true,
-    topic_image: null
+    topic_image: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [changes, setChanges] = useState([]);
@@ -38,7 +33,7 @@ const EditTopicModal = React.memo(({
       const response = await topicsApi.getParentTopics({ limit: 100 });
       if (response && response.data && response.data.data) {
         // API returns only parent topics (parent_id = 0), exclude current topic
-        const parents = response.data.data.filter(t => t.id !== topic?.id);
+        const parents = response.data.data.filter((t) => t.id !== topic?.id);
         setParentTopics(parents);
       }
     } catch (err) {
@@ -57,9 +52,17 @@ const EditTopicModal = React.memo(({
         // Handle both boolean and string values from API
         if (typeof topic.is_active === 'boolean') {
           isActive = topic.is_active;
-        } else if (topic.is_active === 'active' || topic.is_active === true || topic.is_active === 1) {
+        } else if (
+          topic.is_active === 'active' ||
+          topic.is_active === true ||
+          topic.is_active === 1
+        ) {
           isActive = true;
-        } else if (topic.is_active === 'inactive' || topic.is_active === false || topic.is_active === 0) {
+        } else if (
+          topic.is_active === 'inactive' ||
+          topic.is_active === false ||
+          topic.is_active === 0
+        ) {
           isActive = false;
         }
       }
@@ -70,7 +73,7 @@ const EditTopicModal = React.memo(({
         topic_description: topic.topic_description || '',
         parent_id: topic.parent_id || 0,
         is_active: isActive,
-        topic_image: null // Don't pre-fill image, user needs to upload new one if changing
+        topic_image: null, // Don't pre-fill image, user needs to upload new one if changing
       };
 
       setFormData(initialData);
@@ -82,17 +85,17 @@ const EditTopicModal = React.memo(({
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
 
-    setFormData(prev => {
+    setFormData((prev) => {
       const oldValue = prev[name];
 
       // Track changes
       if (oldValue !== newValue && !changes.includes(name)) {
-        setChanges(prevChanges => [...prevChanges, name]);
+        setChanges((prevChanges) => [...prevChanges, name]);
       }
 
       const updated = {
         ...prev,
-        [name]: newValue
+        [name]: newValue,
       };
 
       // Auto-generate slug from topic_name (always regenerate)
@@ -106,7 +109,7 @@ const EditTopicModal = React.memo(({
           updated.topic_slug = '';
         }
         if (!changes.includes('topic_slug')) {
-          setChanges(prevChanges => [...prevChanges, 'topic_slug']);
+          setChanges((prevChanges) => [...prevChanges, 'topic_slug']);
         }
       }
 
@@ -117,12 +120,12 @@ const EditTopicModal = React.memo(({
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        topic_image: file
+        topic_image: file,
       }));
       if (!changes.includes('topic_image')) {
-        setChanges(prev => [...prev, 'topic_image']);
+        setChanges((prev) => [...prev, 'topic_image']);
       }
     }
   };
@@ -142,7 +145,10 @@ const EditTopicModal = React.memo(({
       // Convert boolean to 'active'/'inactive' string
       // Handle both boolean and string values
       const isActiveValue = formData.is_active;
-      const status = (isActiveValue === true || isActiveValue === 'active' || isActiveValue === 1) ? 'active' : 'inactive';
+      const status =
+        isActiveValue === true || isActiveValue === 'active' || isActiveValue === 1
+          ? 'active'
+          : 'inactive';
       formDataToSend.append('is_active', status);
       // Only allow image upload for parent topics (parent_id === 0 or undefined)
       if (formData.topic_image && (!formData.parent_id || formData.parent_id === 0)) {
@@ -176,9 +182,17 @@ const EditTopicModal = React.memo(({
         // Handle both boolean and string values from API
         if (typeof topic.is_active === 'boolean') {
           isActive = topic.is_active;
-        } else if (topic.is_active === 'active' || topic.is_active === true || topic.is_active === 1) {
+        } else if (
+          topic.is_active === 'active' ||
+          topic.is_active === true ||
+          topic.is_active === 1
+        ) {
           isActive = true;
-        } else if (topic.is_active === 'inactive' || topic.is_active === false || topic.is_active === 0) {
+        } else if (
+          topic.is_active === 'inactive' ||
+          topic.is_active === false ||
+          topic.is_active === 0
+        ) {
           isActive = false;
         }
       }
@@ -189,7 +203,7 @@ const EditTopicModal = React.memo(({
         topic_description: topic.topic_description || '',
         parent_id: topic.parent_id || 0,
         is_active: isActive,
-        topic_image: null
+        topic_image: null,
       });
     }
     setChanges([]);
@@ -200,7 +214,6 @@ const EditTopicModal = React.memo(({
     setShowDiscardConfirm(false);
     onClose();
   }, [onClose]);
-
 
   if (!isOpen || !topic) return null;
 
@@ -214,8 +227,12 @@ const EditTopicModal = React.memo(({
               <Hash className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">Edit Topic</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Modify topic details and settings</p>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Edit Topic
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                Modify topic details and settings
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -235,10 +252,16 @@ const EditTopicModal = React.memo(({
         </div>
 
         {/* Scrollable Modal Body */}
-        <form id="edit-topic-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form
+          id="edit-topic-form"
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarGutter: 'stable' }}>
             {/* Basic Information Section */}
-            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3 transition-colors">Basic Information</h4>
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3 transition-colors">
+              Basic Information
+            </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Topic Name - Full width */}
@@ -295,7 +318,8 @@ const EditTopicModal = React.memo(({
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Select a parent topic to create a subtopic, or leave as "None" to create a main category
+                    Select a parent topic to create a subtopic, or leave as "None" to create a main
+                    category
                   </p>
                 </div>
               )}
@@ -307,7 +331,8 @@ const EditTopicModal = React.memo(({
                     <div className="flex items-center space-x-2">
                       <Hash size={14} className="text-purple-600 dark:text-purple-400" />
                       <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
-                        This is a parent category topic. Parent topics cannot have a parent category.
+                        This is a parent category topic. Parent topics cannot have a parent
+                        category.
                       </p>
                     </div>
                   </div>
@@ -356,10 +381,11 @@ const EditTopicModal = React.memo(({
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
                     disabled={isSubmitting}
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Maximum file size: 10MB. Only parent topics can have images.</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Maximum file size: 10MB. Only parent topics can have images.
+                  </p>
                 </div>
               )}
-
             </div>
           </div>
         </form>
@@ -399,7 +425,10 @@ const EditTopicModal = React.memo(({
               <span className="flex-shrink-0">Changes detected:</span>
               <div className="flex flex-wrap gap-1">
                 {changes.map((change, index) => (
-                  <span key={`${change}-${index}`} className="px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-700 text-purple-600 dark:text-purple-400 rounded transition-colors">
+                  <span
+                    key={`${change}-${index}`}
+                    className="px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-700 text-purple-600 dark:text-purple-400 rounded transition-colors"
+                  >
                     {change}
                   </span>
                 ))}

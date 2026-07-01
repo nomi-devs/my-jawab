@@ -17,32 +17,32 @@ export const templateConfig = {
     primary: '#7C3AED', // Purple-600 (main brand color)
     primaryDark: '#6D28D9', // Purple-700 (hover states)
     primaryLight: '#8B5CF6', // Purple-500 (light accents)
-    
+
     // Secondary Colors
     secondary: '#A78BFA', // Purple-400
     secondaryLight: '#C4B5FD', // Purple-300
-    
+
     // Background Colors
     background: '#FFFFFF', // White
     backgroundLight: '#F8F9FA', // Light gray background
     backgroundDark: '#F4F4F4', // Darker gray for body
-    
+
     // Text Colors
     textPrimary: '#1F2937', // Dark gray (main text)
     textSecondary: '#6B7280', // Medium gray (secondary text)
     textLight: '#9CA3AF', // Light gray (muted text)
     textWhite: '#FFFFFF', // White text
-    
+
     // Border Colors
     border: '#E5E7EB', // Light gray border
     borderLight: '#F3F4F6', // Very light border
-    
+
     // Status Colors
     success: '#10B981', // Green-500
     warning: '#F59E0B', // Amber-500
     error: '#EF4444', // Red-500
     info: '#3B82F6', // Blue-500
-    
+
     // Accent Colors
     accent: '#7C3AED', // Same as primary
     accentLight: '#EDE9FE', // Purple-100 (light background)
@@ -105,4 +105,3 @@ export const templateConfig = {
 };
 
 export default templateConfig;
-

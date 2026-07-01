@@ -39,7 +39,11 @@ export class User {
   @Index()
   role: UserRole;
 
-  @Column({ type: 'varchar', length: 255, comment: 'Unique username for login' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    comment: 'Unique username for login',
+  })
   @Index()
   username: string;
 
@@ -152,4 +156,3 @@ export class User {
   @OneToMany(() => UserDevice, (device) => device.user)
   devices: UserDevice[];
 }
-

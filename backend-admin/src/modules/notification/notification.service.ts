@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Notification, NotificationType, NotificationPriority } from './entities/notification.entity';
+import { PrismaService } from '../../prisma/prisma.service';
+import {
+  NotificationType,
+  NotificationPriority,
+} from './entities/notification.entity';
 
 @Injectable()
 export class NotificationService {
-  constructor(
-    @InjectRepository(Notification)
-    private notificationRepository: Repository<Notification>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async create(data: {
     user_id: number;
@@ -22,20 +21,26 @@ export class NotificationService {
     push_enabled?: boolean;
     email_enabled?: boolean;
     created_by?: number;
-  }): Promise<Notification> {
-    const notification = this.notificationRepository.create({
-      ...data,
-      priority: data.priority || NotificationPriority.NORMAL,
-      in_app_enabled: data.in_app_enabled ?? true,
-      push_enabled: data.push_enabled ?? true,
-      email_enabled: data.email_enabled ?? true,
+  }) {
+    return await this.prisma.notification.create({
+      data: {
+        user_id: data.user_id,
+        notification_type: data.notification_type as any,
+        title: data.title,
+        body: data.body,
+        data: data.data ?? undefined,
+        action_url: data.action_url ?? null,
+        priority: (data.priority ?? NotificationPriority.NORMAL) as any,
+        in_app_enabled: data.in_app_enabled ?? true,
+        push_enabled: data.push_enabled ?? true,
+        email_enabled: data.email_enabled ?? true,
+        created_by: data.created_by ?? null,
+      },
     });
-
-    return await this.notificationRepository.save(notification);
   }
 
-  async findById(id: number): Promise<Notification | null> {
-    return await this.notificationRepository.findOne({ where: { id } });
+  async findById(id: number) {
+    return await this.prisma.notification.findUnique({ where: { id } });
   }
 
   async findByUserId(
@@ -46,33 +51,23 @@ export class NotificationService {
       limit?: number;
       offset?: number;
     },
-  ): Promise<Notification[]> {
-    const query = this.notificationRepository
-      .createQueryBuilder('notification')
-      .where('notification.user_id = :user_id', { user_id })
-      .orderBy('notification.created_at', 'DESC');
-
-    if (options?.is_read !== undefined) {
-      query.andWhere('notification.is_read = :is_read', { is_read: options.is_read });
-    }
-
-    if (options?.notification_type) {
-      query.andWhere('notification.notification_type = :type', { type: options.notification_type });
-    }
-
-    if (options?.limit) {
-      query.limit(options.limit);
-    }
-
-    if (options?.offset) {
-      query.offset(options.offset);
-    }
-
-    return await query.getMany();
+  ) {
+    return await this.prisma.notification.findMany({
+      where: {
+        user_id,
+        ...(options?.is_read !== undefined ? { is_read: options.is_read } : {}),
+        ...(options?.notification_type
+          ? { notification_type: options.notification_type as any }
+          : {}),
+      },
+      orderBy: { created_at: 'desc' },
+      ...(options?.limit !== undefined ? { take: options.limit } : {}),
+      ...(options?.offset !== undefined ? { skip: options.offset } : {}),
+    });
   }
 
-  async markAsRead(id: number, user_id: number): Promise<Notification> {
-    const notification = await this.notificationRepository.findOne({
+  async markAsRead(id: number, user_id: number) {
+    const notification = await this.prisma.notification.findFirst({
       where: { id, user_id },
     });
 
@@ -80,25 +75,25 @@ export class NotificationService {
       throw new Error('Notification not found');
     }
 
-    notification.is_read = true;
-    notification.read_at = new Date();
-
-    return await this.notificationRepository.save(notification);
+    return await this.prisma.notification.update({
+      where: { id },
+      data: { is_read: true, read_at: new Date() },
+    });
   }
 
   async markAllAsRead(user_id: number): Promise<void> {
-    await this.notificationRepository.update(
-      { user_id, is_read: false },
-      { is_read: true, read_at: new Date() },
-    );
+    await this.prisma.notification.updateMany({
+      where: { user_id, is_read: false },
+      data: { is_read: true, read_at: new Date() },
+    });
   }
 
   async delete(id: number, user_id: number): Promise<void> {
-    await this.notificationRepository.delete({ id, user_id });
+    await this.prisma.notification.deleteMany({ where: { id, user_id } });
   }
 
   async getUnreadCount(user_id: number): Promise<number> {
-    return await this.notificationRepository.count({
+    return await this.prisma.notification.count({
       where: { user_id, is_read: false },
     });
   }
@@ -112,7 +107,7 @@ export class NotificationService {
     search?: string;
     sort_by?: string;
     sort_order?: 'ASC' | 'DESC';
-  }): Promise<{ data: Notification[]; total: number }> {
+  }): Promise<{ data: any[]; total: number }> {
     const {
       page = 1,
       limit = 10,
@@ -123,44 +118,56 @@ export class NotificationService {
       sort_order = 'DESC',
     } = options;
 
-    const queryBuilder = this.notificationRepository
-      .createQueryBuilder('notification')
-      .where(
-        '(notification.notification_type = :subscriptionType OR JSON_EXTRACT(notification.data, "$.subscription_id") IS NOT NULL OR JSON_EXTRACT(notification.data, "$.payment_id") IS NOT NULL OR JSON_EXTRACT(notification.data, "$.user_subscription_id") IS NOT NULL)',
-        { subscriptionType: NotificationType.SUBSCRIPTION_EXPIRED },
-      );
-
-    // Filter by read status
-    if (is_read !== undefined) {
-      queryBuilder.andWhere('notification.is_read = :is_read', { is_read });
-    }
-
-    // Filter by user_id
-    if (user_id) {
-      queryBuilder.andWhere('notification.user_id = :user_id', { user_id });
-    }
-
-    // Search in title and body
-    if (search) {
-      const searchLike = `%${search}%`;
-      queryBuilder.andWhere(
-        '(notification.title LIKE :search OR notification.body LIKE :search)',
-        { search: searchLike },
-      );
-    }
-
-    // Sorting
     const validSortFields = ['created_at', 'updated_at', 'title', 'is_read'];
-    const sortField = validSortFields.includes(sort_by) ? sort_by : 'created_at';
-    queryBuilder.orderBy(`notification.${sortField}`, sort_order);
+    const sortField = validSortFields.includes(sort_by)
+      ? sort_by
+      : 'created_at';
+    const orderDirection = sort_order === 'ASC' ? 'asc' : 'desc';
 
-    // Pagination
     const skip = (page - 1) * limit;
-    queryBuilder.skip(skip).take(limit);
 
-    const [notifications, total] = await queryBuilder.getManyAndCount();
+    const where: any = {
+      OR: [
+        { notification_type: 'subscription_expired' },
+        {
+          data: {
+            path: ['$.subscription_id'],
+            not: null,
+          },
+        },
+      ],
+    };
+
+    if (is_read !== undefined) {
+      where.is_read = is_read;
+    }
+
+    if (user_id) {
+      where.user_id = user_id;
+    }
+
+    if (search) {
+      // Wrap the existing filter in an AND with the search filter
+      const existingWhere = { ...where };
+      Object.keys(existingWhere).forEach((k) => delete where[k]);
+      where.AND = [
+        existingWhere,
+        {
+          OR: [{ title: { contains: search } }, { body: { contains: search } }],
+        },
+      ];
+    }
+
+    const [notifications, total] = await this.prisma.$transaction([
+      this.prisma.notification.findMany({
+        where,
+        orderBy: { [sortField]: orderDirection },
+        skip,
+        take: limit,
+      }),
+      this.prisma.notification.count({ where }),
+    ]);
 
     return { data: notifications, total };
   }
 }
-

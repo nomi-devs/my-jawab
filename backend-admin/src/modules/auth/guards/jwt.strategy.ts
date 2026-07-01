@@ -1,16 +1,17 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { User } from '../entities/user.entity';
+import { PrismaService } from '../../../prisma/prisma.service';
+
+type CachedUser = {
+  id: number;
+  username: string;
+  role: string;
+  is_active: boolean;
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -18,8 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   constructor(
     private configService: ConfigService,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     super({
@@ -27,35 +27,34 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET', 'your-secret-key'),
     });
-    this.cacheTtl = configService.get<number>('JWT_CACHE_TTL', 300); // 5 minutes
+    this.cacheTtl = configService.get<number>('JWT_CACHE_TTL', 300);
   }
 
   async validate(payload: any) {
     const cacheKey = `user:${payload.sub}`;
 
-    // Try to get user from cache first
-    let user = await this.cacheManager.get<User>(cacheKey);
+    let user = await this.cacheManager.get<CachedUser>(cacheKey);
 
     if (!user) {
-      // If not in cache, fetch from database (select only needed fields)
-      user = await this.userRepository.findOne({
+      const dbUser = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: ['id', 'username', 'role', 'is_active'],
+        select: { id: true, username: true, role: true, is_active: true },
       });
 
-      if (!user) {
+      if (!dbUser) {
         throw new UnauthorizedException('User not found');
       }
 
-      // Cache user data for faster subsequent requests
+      user = dbUser as CachedUser;
       await this.cacheManager.set(cacheKey, user, this.cacheTtl * 1000);
     }
 
     if (!user.is_active) {
-      throw new UnauthorizedException('Your account has been inactive.. If you want to reactivate it, please contact support.');
+      throw new UnauthorizedException(
+        'Your account has been inactive.. If you want to reactivate it, please contact support.',
+      );
     }
 
     return { userId: user.id, username: user.username, role: user.role };
   }
 }
-

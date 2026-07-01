@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Support } from './entities/support.entity';
 import {
   SupportController,
   AdminSupportController,
@@ -8,7 +6,7 @@ import {
 import { SupportService } from './support.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Support])],
+  imports: [],
   controllers: [SupportController, AdminSupportController],
   providers: [SupportService],
   exports: [SupportService],

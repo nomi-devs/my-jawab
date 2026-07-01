@@ -4,11 +4,11 @@ import { PdfService } from './pdf.service';
 
 /**
  * Templates Module
- * 
+ *
  * This module handles HTML template rendering for emails and PDFs.
  * Templates are stored as static .hbs (Handlebars) files in the views directory.
  * No database is used - all templates are file-based.
- * 
+ *
  * Usage:
  * - Email templates: Use TemplatesService.renderEmail() to render email HTML
  * - PDF templates: Use PdfService.generateFromTemplate() to create PDFs

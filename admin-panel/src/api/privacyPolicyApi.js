@@ -1,5 +1,5 @@
 // src/api/privacyPolicyApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const privacyPolicyApi = {
   /**
@@ -7,7 +7,7 @@ const privacyPolicyApi = {
    * @returns {Promise} Response with active privacy policy
    */
   getActive() {
-    return axiosClient.get("/privacy-policy");
+    return axiosClient.get('/privacy-policy');
   },
 
   /**
@@ -15,7 +15,7 @@ const privacyPolicyApi = {
    * @returns {Promise} Response with privacy policy data
    */
   getAdmin() {
-    return axiosClient.get("/admin/privacy-policy");
+    return axiosClient.get('/admin/privacy-policy');
   },
 
   /**
@@ -24,7 +24,7 @@ const privacyPolicyApi = {
    * @returns {Promise} Response with created privacy policy
    */
   create(data) {
-    return axiosClient.post("/admin/privacy-policy", data);
+    return axiosClient.post('/admin/privacy-policy', data);
   },
 
   /**

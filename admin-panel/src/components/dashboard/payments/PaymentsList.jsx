@@ -4,12 +4,7 @@ import PaymentRow from './PaymentRow';
 import PaymentCard from './PaymentCard';
 import { CreditCard } from 'lucide-react';
 
-const PaymentsList = React.memo(({ 
-  payments, 
-  loading, 
-  viewMode, 
-  onViewDetails
-}) => {
+const PaymentsList = React.memo(({ payments, loading, viewMode, onViewDetails }) => {
   if (loading && payments.length === 0) {
     return (
       <div className="text-center py-12">
@@ -25,8 +20,12 @@ const PaymentsList = React.memo(({
         <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
           <CreditCard className="text-purple-600 dark:text-purple-400" size={24} />
         </div>
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 transition-colors">No payments found</h3>
-        <p className="text-gray-500 dark:text-gray-400 transition-colors">Create your first payment to get started</p>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 transition-colors">
+          No payments found
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400 transition-colors">
+          Create your first payment to get started
+        </p>
       </div>
     );
   }
@@ -35,11 +34,7 @@ const PaymentsList = React.memo(({
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
         {payments.map((payment) => (
-          <PaymentCard
-            key={payment.id}
-            payment={payment}
-            onViewDetails={onViewDetails}
-          />
+          <PaymentCard key={payment.id} payment={payment} onViewDetails={onViewDetails} />
         ))}
       </div>
     );
@@ -61,11 +56,7 @@ const PaymentsList = React.memo(({
           </thead>
           <tbody className="divide-y divide-purple-100 dark:divide-gray-700 text-sm">
             {payments.map((payment) => (
-              <PaymentRow
-                key={payment.id}
-                payment={payment}
-                onViewDetails={onViewDetails}
-              />
+              <PaymentRow key={payment.id} payment={payment} onViewDetails={onViewDetails} />
             ))}
           </tbody>
         </table>
@@ -76,4 +67,3 @@ const PaymentsList = React.memo(({
 
 PaymentsList.displayName = 'PaymentsList';
 export default PaymentsList;
-

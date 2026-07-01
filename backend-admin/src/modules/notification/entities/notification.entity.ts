@@ -69,20 +69,44 @@ export class Notification {
   @Column({ type: 'text', comment: 'Notification body/content' })
   body: string;
 
-  @Column({ type: 'json', nullable: true, comment: 'Additional notification data' })
+  @Column({
+    type: 'json',
+    nullable: true,
+    comment: 'Additional notification data',
+  })
   data: Record<string, any> | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'URL to navigate when notification is clicked' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'URL to navigate when notification is clicked',
+  })
   action_url: string | null;
 
   // Delivery channels
-  @Column({ type: 'tinyint', width: 1, default: 1, comment: 'In-app notification enabled' })
+  @Column({
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+    comment: 'In-app notification enabled',
+  })
   in_app_enabled: boolean;
 
-  @Column({ type: 'tinyint', width: 1, default: 1, comment: 'Push notification enabled' })
+  @Column({
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+    comment: 'Push notification enabled',
+  })
   push_enabled: boolean;
 
-  @Column({ type: 'tinyint', width: 1, default: 1, comment: 'Email notification enabled' })
+  @Column({
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+    comment: 'Email notification enabled',
+  })
   email_enabled: boolean;
 
   // In-app status
@@ -90,7 +114,11 @@ export class Notification {
   @Index()
   is_read: boolean;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When notification was read' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When notification was read',
+  })
   read_at: Date | null;
 
   // Push notification tracking
@@ -103,11 +131,20 @@ export class Notification {
   @Index()
   push_status: PushStatus | null;
 
-  @Column({ type: 'int', nullable: true, comment: 'Device ID for push notification' })
+  @Column({
+    type: 'int',
+    nullable: true,
+    comment: 'Device ID for push notification',
+  })
   @Index()
   device_id: number | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, comment: 'Device token for push notification' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'Device token for push notification',
+  })
   device_token: string | null;
 
   @Column({
@@ -118,19 +155,41 @@ export class Notification {
   })
   device_type: DeviceType | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'FCM message ID' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'FCM message ID',
+  })
   fcm_message_id: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'APNS message ID' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'APNS message ID',
+  })
   apns_id: string | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When push notification was sent' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When push notification was sent',
+  })
   push_sent_at: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When push notification was delivered' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When push notification was delivered',
+  })
   push_delivered_at: Date | null;
 
-  @Column({ type: 'text', nullable: true, comment: 'Push notification error message' })
+  @Column({
+    type: 'text',
+    nullable: true,
+    comment: 'Push notification error message',
+  })
   push_error_message: string | null;
 
   // Email tracking
@@ -142,7 +201,11 @@ export class Notification {
   @JoinColumn({ name: 'email_id' })
   email: Email | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When email notification was sent' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When email notification was sent',
+  })
   email_sent_at: Date | null;
 
   // Metadata
@@ -155,7 +218,11 @@ export class Notification {
   @Index()
   priority: NotificationPriority;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'Notification expiration time' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'Notification expiration time',
+  })
   expires_at: Date | null;
 
   @Column({ type: 'int', nullable: true, comment: 'Created by user ID' })
@@ -180,4 +247,3 @@ export class Notification {
   })
   updated_at: Date;
 }
-

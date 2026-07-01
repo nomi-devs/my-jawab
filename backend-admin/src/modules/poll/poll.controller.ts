@@ -12,6 +12,13 @@ import {
   HttpStatus,
   ParseIntPipe,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+} from '@nestjs/swagger';
 import { PollService } from './poll.service';
 import { CreatePollDto } from './dto/create-poll.dto';
 import { UpdatePollDto } from './dto/update-poll.dto';
@@ -24,6 +31,8 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { FeatureGuard } from '../entitlements/guards/feature.guard';
 import { RequiresFeature } from '../entitlements/decorators/requires-feature.decorator';
 
+@ApiTags('Polls')
+@ApiBearerAuth('JWT-auth')
 @Controller('polls')
 @UseGuards(JwtAuthGuard)
 export class PollController {
@@ -32,6 +41,13 @@ export class PollController {
   // Public endpoints (authenticated users can view)
   @Get()
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List polls with pagination and filters' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of polls',
+    type: PollResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getPolls(
     @Query() listQueryDto: ListPollsQueryDto,
     @GetUser() user: any,
@@ -49,6 +65,13 @@ export class PollController {
 
   @Get('featured')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get featured polls' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of featured polls',
+    type: PollResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getFeaturedPolls(
     @Query() listQueryDto: ListPollsQueryDto,
     @GetUser() user: any,
@@ -66,6 +89,19 @@ export class PollController {
 
   @Get('slug/:slug')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get poll by slug' })
+  @ApiParam({
+    name: 'slug',
+    description: 'URL-friendly poll identifier',
+    example: 'favorite-color-poll',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Poll found',
+    type: PollResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
   async getPollBySlug(
     @Param('slug') slug: string,
     @GetUser() user: any,
@@ -75,6 +111,13 @@ export class PollController {
 
   @Get('my-polls')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get polls created by current user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of polls created by the authenticated user',
+    type: PollResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getMyPolls(
     @Query() listQueryDto: ListPollsQueryDto,
     @GetUser() user: any,
@@ -92,6 +135,19 @@ export class PollController {
 
   @Get('user/:userId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get polls by user ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'ID of the user whose polls to retrieve',
+    example: 7,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of polls created by the specified user',
+    type: PollResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async getUserPolls(
     @Param('userId', ParseIntPipe) userId: number,
     @Query() listQueryDto: ListPollsQueryDto,
@@ -110,6 +166,15 @@ export class PollController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get poll by ID' })
+  @ApiParam({ name: 'id', description: 'Poll ID', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Poll found',
+    type: PollResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
   async getPollById(
     @Param('id', ParseIntPipe) id: number,
     @GetUser() user: any,
@@ -122,6 +187,18 @@ export class PollController {
   @UseGuards(JwtAuthGuard, FeatureGuard)
   @RequiresFeature('can_create_polls')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new poll' })
+  @ApiResponse({
+    status: 201,
+    description: 'Poll created successfully',
+    type: PollResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Feature not available for current plan',
+  })
   async createPoll(
     @GetUser() user: any,
     @Body() createPollDto: CreatePollDto,
@@ -131,6 +208,17 @@ export class PollController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update a poll' })
+  @ApiParam({ name: 'id', description: 'Poll ID', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Poll updated successfully',
+    type: PollResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden — not the poll owner' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
   async updatePoll(
     @Param('id', ParseIntPipe) id: number,
     @GetUser() user: any,
@@ -141,6 +229,12 @@ export class PollController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a poll' })
+  @ApiParam({ name: 'id', description: 'Poll ID', example: 1 })
+  @ApiResponse({ status: 200, description: 'Poll deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden — not the poll owner' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
   async deletePoll(
     @Param('id', ParseIntPipe) id: number,
     @GetUser() user: any,
@@ -151,6 +245,15 @@ export class PollController {
   // Vote endpoint
   @Post(':id/vote')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Vote on a poll option' })
+  @ApiParam({ name: 'id', description: 'Poll ID', example: 1 })
+  @ApiResponse({ status: 200, description: 'Vote recorded successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid option or poll already ended',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
   async votePoll(
     @Param('id', ParseIntPipe) id: number,
     @GetUser() user: any,
@@ -166,6 +269,15 @@ export class PollController {
   // Like/Dislike endpoints
   @Post(':id/like')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Like or dislike a poll' })
+  @ApiParam({ name: 'id', description: 'Poll ID', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Like/dislike recorded successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Poll not found' })
   async likePoll(
     @Param('id', ParseIntPipe) id: number,
     @GetUser() user: any,
@@ -179,4 +291,3 @@ export class PollController {
     return this.pollService.likePoll(id, likePollDto, user.userId);
   }
 }
-

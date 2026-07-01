@@ -14,28 +14,36 @@ const StatCard = ({ title, count, icon: Icon, trend, description }) => {
           <Icon size={20} />
         </div>
         {trend && (
-          <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full transition-colors ${
-            isPositiveTrend && trendValue > 0
-              ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
-              : trendValue < 0
-              ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30'
-              : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'
-          }`}>
-            {trendValue !== null && trendValue !== 0 && (
-              isPositiveTrend && trendValue > 0 ? (
+          <span
+            className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full transition-colors ${
+              isPositiveTrend && trendValue > 0
+                ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
+                : trendValue < 0
+                  ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30'
+                  : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'
+            }`}
+          >
+            {trendValue !== null &&
+              trendValue !== 0 &&
+              (isPositiveTrend && trendValue > 0 ? (
                 <TrendingUp size={12} className="mr-1" />
               ) : (
                 <TrendingDown size={12} className="mr-1" />
-              )
-            )}
+              ))}
             {trend}
           </span>
         )}
       </div>
-      <h3 className="text-gray-500 dark:text-gray-400 text-xs font-medium mb-1 transition-colors">{title}</h3>
-      <p className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors mb-1">{count}</p>
+      <h3 className="text-gray-500 dark:text-gray-400 text-xs font-medium mb-1 transition-colors">
+        {title}
+      </h3>
+      <p className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors mb-1">
+        {count}
+      </p>
       {description && (
-        <p className="text-[10px] text-gray-500 dark:text-gray-400 transition-colors">{description}</p>
+        <p className="text-[10px] text-gray-500 dark:text-gray-400 transition-colors">
+          {description}
+        </p>
       )}
     </div>
   );

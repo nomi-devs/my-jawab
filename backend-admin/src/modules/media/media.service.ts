@@ -4,11 +4,9 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { Media, MediaType, MediaStatus, StorageType } from './entities/media.entity';
+import { StorageType } from './entities/media.entity';
 import { StorageService } from './services/storage.service';
 import { MediaProcessingService } from './services/media-processing.service';
 import { ListMediaDto } from './dto/list-media.dto';
@@ -16,6 +14,7 @@ import { UpdateMediaDto } from './dto/update-media.dto';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { MediaResponseDto } from './dto/media-response.dto';
 import { OptimizeImageDto } from './dto/optimize-image.dto';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class MediaService {
@@ -23,8 +22,7 @@ export class MediaService {
   private readonly DEFAULT_FOLDER = 'other';
 
   constructor(
-    @InjectRepository(Media)
-    private mediaRepository: Repository<Media>,
+    private prisma: PrismaService,
     private storageService: StorageService,
     private mediaProcessingService: MediaProcessingService,
     private configService: ConfigService,
@@ -43,12 +41,20 @@ export class MediaService {
 
     const mediaType =
       uploadDto.media_type ||
-      (await this.mediaProcessingService.detectMediaType(file.mimetype, file.originalname));
+      (await this.mediaProcessingService.detectMediaType(
+        file.mimetype,
+        file.originalname,
+      ));
 
-    const storageType = uploadDto.storage_type || this.storageService.getStorageType();
+    const storageType =
+      uploadDto.storage_type || this.storageService.getStorageType();
     const folder = uploadDto.folder || this.DEFAULT_FOLDER;
 
-    const uploadResult = await this.storageService.uploadFile(file, folder, storageType);
+    const uploadResult = await this.storageService.uploadFile(
+      file,
+      folder,
+      storageType,
+    );
 
     let optimizedPath: string | null = null;
     let thumbnailPath: string | null = null;
@@ -56,9 +62,11 @@ export class MediaService {
     let height: number | null = null;
     let duration: number | null = null;
 
-    if (mediaType === MediaType.IMAGE && uploadDto.optimize !== false) {
+    if (mediaType === 'image' && uploadDto.optimize !== false) {
       try {
-        const processedImage = await this.mediaProcessingService.processImage(file.buffer);
+        const processedImage = await this.mediaProcessingService.processImage(
+          file.buffer,
+        );
         width = processedImage.metadata.width;
         height = processedImage.metadata.height;
         const savedPaths = await this.mediaProcessingService.saveProcessedImage(
@@ -71,22 +79,27 @@ export class MediaService {
         thumbnailPath = savedPaths.thumbnailPath;
       } catch (error) {
         this.logger.warn(`Image optimization failed: ${error.message}`);
-        const metadata = await this.mediaProcessingService.extractImageMetadata(file.buffer);
+        const metadata = await this.mediaProcessingService.extractImageMetadata(
+          file.buffer,
+        );
         width = metadata.width;
         height = metadata.height;
       }
-    } else if (mediaType === MediaType.IMAGE) {
-      const metadata = await this.mediaProcessingService.extractImageMetadata(file.buffer);
+    } else if (mediaType === 'image') {
+      const metadata = await this.mediaProcessingService.extractImageMetadata(
+        file.buffer,
+      );
       width = metadata.width;
       height = metadata.height;
-    } else if (mediaType === MediaType.VIDEO) {
+    } else if (mediaType === 'video') {
       try {
-        const videoThumbnail = await this.mediaProcessingService.generateVideoThumbnail(
-          file.buffer,
-          file.originalname,
-          folder,
-          storageType,
-        );
+        const videoThumbnail =
+          await this.mediaProcessingService.generateVideoThumbnail(
+            file.buffer,
+            file.originalname,
+            folder,
+            storageType,
+          );
         thumbnailPath = videoThumbnail.thumbnailPath;
         duration = videoThumbnail.duration;
         width = videoThumbnail.width;
@@ -96,29 +109,30 @@ export class MediaService {
       }
     }
 
-    const media = this.mediaRepository.create({
-      original_filename: file.originalname,
-      filename: uploadResult.fileName,
-      file_path: uploadResult.filePath,
-      mime_type: file.mimetype,
-      file_size: file.size,
-      media_type: mediaType,
-      storage_type: storageType,
-      status: MediaStatus.READY,
-      width,
-      height,
-      duration,
-      thumbnail_path: thumbnailPath,
-      optimized_path: optimizedPath,
-      uuid: uuidv4(),
-      file_hash: uploadResult.fileHash,
-      uploaded_by: userId || null,
-      folder,
-      is_public: uploadDto.is_public ?? false,
-      is_active: true,
+    const savedMedia = await this.prisma.media.create({
+      data: {
+        original_filename: file.originalname,
+        filename: uploadResult.fileName,
+        file_path: uploadResult.filePath,
+        mime_type: file.mimetype,
+        file_size: BigInt(file.size),
+        media_type: mediaType,
+        storage_type: storageType,
+        status: 'ready',
+        width,
+        height,
+        duration,
+        thumbnail_path: thumbnailPath,
+        optimized_path: optimizedPath,
+        uuid: uuidv4(),
+        file_hash: uploadResult.fileHash,
+        uploaded_by: userId || null,
+        folder,
+        is_public: uploadDto.is_public ?? false,
+        is_active: true,
+      },
     });
 
-    const savedMedia = await this.mediaRepository.save(media);
     this.logger.log(`Media uploaded: ${savedMedia.uuid}`);
     return MediaResponseDto.fromEntity(savedMedia);
   }
@@ -136,26 +150,27 @@ export class MediaService {
     } = listDto;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.mediaRepository.createQueryBuilder('media');
+    const where: any = { is_active: true };
 
     if (userId) {
-      queryBuilder.where('media.uploaded_by = :userId', { userId });
+      where.uploaded_by = userId;
     }
     if (search) {
-      queryBuilder.andWhere(
-        '(media.original_filename LIKE :search OR media.filename LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { original_filename: { contains: search } },
+        { filename: { contains: search } },
+      ];
     }
-    if (media_type) queryBuilder.andWhere('media.media_type = :media_type', { media_type });
-    if (status) queryBuilder.andWhere('media.status = :status', { status });
-    if (folder) queryBuilder.andWhere('media.folder = :folder', { folder });
+    if (media_type) where.media_type = media_type;
+    if (status) where.status = status;
+    if (folder) where.folder = folder;
 
-    queryBuilder.andWhere('media.is_active = :is_active', { is_active: true });
-    queryBuilder.orderBy(`media.${sort_by}`, sort_order);
-    queryBuilder.skip(skip).take(limit);
+    const orderBy: any = { [sort_by]: sort_order.toLowerCase() as any };
 
-    const [mediaList, total] = await queryBuilder.getManyAndCount();
+    const [mediaList, total] = await Promise.all([
+      this.prisma.media.findMany({ where, orderBy, skip, take: limit }),
+      this.prisma.media.count({ where }),
+    ]);
 
     return {
       data: mediaList.map((m) => MediaResponseDto.fromEntity(m)),
@@ -164,113 +179,206 @@ export class MediaService {
   }
 
   async getMediaById(id: number, userId?: number): Promise<MediaResponseDto> {
-    const media = await this.mediaRepository.findOne({ where: { id, is_active: true } });
+    const media = await this.prisma.media.findFirst({
+      where: { id, is_active: true },
+    });
     if (!media) throw new NotFoundException('Media not found');
     if (!media.is_public && userId && media.uploaded_by !== userId) {
       throw new NotFoundException('Media not found');
     }
-    media.view_count += 1;
-    await this.mediaRepository.save(media);
-    return MediaResponseDto.fromEntity(media);
+    const updated = await this.prisma.media.update({
+      where: { id },
+      data: { view_count: { increment: 1 } },
+    });
+    return MediaResponseDto.fromEntity(updated);
   }
 
-  async getMediaByUuid(uuid: string, userId?: number): Promise<MediaResponseDto> {
-    const media = await this.mediaRepository.findOne({ where: { uuid, is_active: true } });
+  async getMediaByUuid(
+    uuid: string,
+    userId?: number,
+  ): Promise<MediaResponseDto> {
+    const media = await this.prisma.media.findFirst({
+      where: { uuid, is_active: true },
+    });
     if (!media) throw new NotFoundException('Media not found');
     if (!media.is_public && userId && media.uploaded_by !== userId) {
       throw new NotFoundException('Media not found');
     }
-    media.view_count += 1;
-    await this.mediaRepository.save(media);
-    return MediaResponseDto.fromEntity(media);
+    const updated = await this.prisma.media.update({
+      where: { id: media.id },
+      data: { view_count: { increment: 1 } },
+    });
+    return MediaResponseDto.fromEntity(updated);
   }
 
-  async updateMedia(id: number, updateDto: UpdateMediaDto, userId?: number): Promise<MediaResponseDto> {
-    const media = await this.mediaRepository.findOne({ where: { id, is_active: true } });
+  async updateMedia(
+    id: number,
+    updateDto: UpdateMediaDto,
+    userId?: number,
+  ): Promise<MediaResponseDto> {
+    const media = await this.prisma.media.findFirst({
+      where: { id, is_active: true },
+    });
     if (!media) throw new NotFoundException('Media not found');
     if (userId && media.uploaded_by !== userId) {
-      throw new BadRequestException('You do not have permission to update this media');
+      throw new BadRequestException(
+        'You do not have permission to update this media',
+      );
     }
-    if (updateDto.folder !== undefined) media.folder = updateDto.folder;
-    if (updateDto.is_public !== undefined) media.is_public = updateDto.is_public;
-    if (updateDto.is_active !== undefined) media.is_active = updateDto.is_active;
-    return MediaResponseDto.fromEntity(await this.mediaRepository.save(media));
+    const updateData: any = {};
+    if (updateDto.folder !== undefined) updateData.folder = updateDto.folder;
+    if (updateDto.is_public !== undefined)
+      updateData.is_public = updateDto.is_public;
+    if (updateDto.is_active !== undefined)
+      updateData.is_active = updateDto.is_active;
+    const updated = await this.prisma.media.update({
+      where: { id },
+      data: updateData,
+    });
+    return MediaResponseDto.fromEntity(updated);
   }
 
   async deleteMedia(id: number, userId?: number): Promise<{ message: string }> {
-    const media = await this.mediaRepository.findOne({ where: { id } });
+    const media = await this.prisma.media.findUnique({ where: { id } });
     if (!media) throw new NotFoundException('Media not found');
     if (userId && media.uploaded_by !== userId) {
-      throw new BadRequestException('You do not have permission to delete this media');
+      throw new BadRequestException(
+        'You do not have permission to delete this media',
+      );
     }
     try {
-      await this.storageService.deleteFile(media.file_path, media.storage_type);
-      if (media.optimized_path) await this.storageService.deleteFile(media.optimized_path, media.storage_type);
-      if (media.thumbnail_path) await this.storageService.deleteFile(media.thumbnail_path, media.storage_type);
+      await this.storageService.deleteFile(
+        media.file_path,
+        media.storage_type as StorageType,
+      );
+      if (media.optimized_path)
+        await this.storageService.deleteFile(
+          media.optimized_path,
+          media.storage_type as StorageType,
+        );
+      if (media.thumbnail_path)
+        await this.storageService.deleteFile(
+          media.thumbnail_path,
+          media.storage_type as StorageType,
+        );
     } catch (error) {
-      this.logger.warn(`Failed to delete files for media ${id}: ${error.message}`);
+      this.logger.warn(
+        `Failed to delete files for media ${id}: ${error.message}`,
+      );
     }
-    media.is_active = false;
-    await this.mediaRepository.save(media);
+    await this.prisma.media.update({
+      where: { id },
+      data: { is_active: false },
+    });
     return { message: 'Media deleted successfully' };
   }
 
-  async optimizeImage(id: number, optimizeDto: OptimizeImageDto, userId?: number): Promise<MediaResponseDto> {
-    const media = await this.mediaRepository.findOne({ where: { id, is_active: true } });
+  async optimizeImage(
+    id: number,
+    optimizeDto: OptimizeImageDto,
+    userId?: number,
+  ): Promise<MediaResponseDto> {
+    const media = await this.prisma.media.findFirst({
+      where: { id, is_active: true },
+    });
     if (!media) throw new NotFoundException('Media not found');
-    if (media.media_type !== MediaType.IMAGE) throw new BadRequestException('Only images can be optimized');
+    if (media.media_type !== 'image')
+      throw new BadRequestException('Only images can be optimized');
     if (userId && media.uploaded_by !== userId) {
-      throw new BadRequestException('You do not have permission to optimize this media');
+      throw new BadRequestException(
+        'You do not have permission to optimize this media',
+      );
     }
-    const fileBuffer = await this.storageService.readFile(media.file_path, media.storage_type);
-    const processedImage = await this.mediaProcessingService.processImage(fileBuffer, optimizeDto);
+    const fileBuffer = await this.storageService.readFile(
+      media.file_path,
+      media.storage_type as StorageType,
+    );
+    const processedImage = await this.mediaProcessingService.processImage(
+      fileBuffer,
+      optimizeDto,
+    );
     const folder = media.folder || this.DEFAULT_FOLDER;
     const savedPaths = await this.mediaProcessingService.saveProcessedImage(
       processedImage,
       media.original_filename,
       folder,
-      media.storage_type,
+      media.storage_type as StorageType,
     );
-    media.optimized_path = savedPaths.optimizedPath;
-    if (savedPaths.thumbnailPath) media.thumbnail_path = savedPaths.thumbnailPath;
-    media.width = processedImage.metadata.width;
-    media.height = processedImage.metadata.height;
-    return MediaResponseDto.fromEntity(await this.mediaRepository.save(media));
+    const updateData: any = {
+      optimized_path: savedPaths.optimizedPath,
+      width: processedImage.metadata.width,
+      height: processedImage.metadata.height,
+    };
+    if (savedPaths.thumbnailPath)
+      updateData.thumbnail_path = savedPaths.thumbnailPath;
+    const updated = await this.prisma.media.update({
+      where: { id },
+      data: updateData,
+    });
+    return MediaResponseDto.fromEntity(updated);
   }
 
-  async getFileUrl(id: number, optimized: boolean = false, expiresIn: number = 3600): Promise<string> {
-    const media = await this.mediaRepository.findOne({ where: { id, is_active: true } });
+  async getFileUrl(
+    id: number,
+    optimized: boolean = false,
+    expiresIn: number = 3600,
+  ): Promise<string> {
+    const media = await this.prisma.media.findFirst({
+      where: { id, is_active: true },
+    });
     if (!media) throw new NotFoundException('Media not found');
-    const filePath = optimized && media.optimized_path ? media.optimized_path : media.file_path;
-    return this.storageService.getFileUrl(filePath, media.storage_type, expiresIn);
+    const filePath =
+      optimized && media.optimized_path
+        ? media.optimized_path
+        : media.file_path;
+    return this.storageService.getFileUrl(
+      filePath,
+      media.storage_type as StorageType,
+      expiresIn,
+    );
   }
 
   async getFileBuffer(id: number, optimized: boolean = false): Promise<Buffer> {
-    const media = await this.mediaRepository.findOne({ where: { id, is_active: true } });
+    const media = await this.prisma.media.findFirst({
+      where: { id, is_active: true },
+    });
     if (!media) throw new NotFoundException('Media not found');
-    const filePath = optimized && media.optimized_path ? media.optimized_path : media.file_path;
-    return this.storageService.readFile(filePath, media.storage_type);
+    const filePath =
+      optimized && media.optimized_path
+        ? media.optimized_path
+        : media.file_path;
+    return this.storageService.readFile(
+      filePath,
+      media.storage_type as StorageType,
+    );
   }
 
-  async findMediaByPath(filePath: string): Promise<Media | null> {
-    return this.mediaRepository.findOne({
-      where: [
-        { file_path: filePath, is_active: true },
-        { optimized_path: filePath, is_active: true },
-        { thumbnail_path: filePath, is_active: true },
-      ],
+  async findMediaByPath(filePath: string): Promise<any | null> {
+    return this.prisma.media.findFirst({
+      where: {
+        OR: [
+          { file_path: filePath, is_active: true },
+          { optimized_path: filePath, is_active: true },
+          { thumbnail_path: filePath, is_active: true },
+        ],
+      },
     });
   }
 
-  async getFileBufferByPath(filePath: string, storageType: StorageType): Promise<Buffer> {
+  async getFileBufferByPath(
+    filePath: string,
+    storageType: StorageType,
+  ): Promise<Buffer> {
     return this.storageService.readFile(filePath, storageType);
   }
 
   async incrementDownloadCount(id: number): Promise<void> {
-    const media = await this.mediaRepository.findOne({ where: { id } });
+    const media = await this.prisma.media.findUnique({ where: { id } });
     if (media) {
-      media.download_count += 1;
-      await this.mediaRepository.save(media);
+      await this.prisma.media.update({
+        where: { id },
+        data: { download_count: { increment: 1 } },
+      });
     }
   }
 

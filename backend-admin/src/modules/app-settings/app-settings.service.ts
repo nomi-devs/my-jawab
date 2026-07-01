@@ -1,63 +1,70 @@
 import {
-    Injectable,
-    NotFoundException,
-    ConflictException,
+  Injectable,
+  NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AppSetting } from './entities/app-setting.entity';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAppSettingDto } from './dto/create-app-setting.dto';
 import { UpdateAppSettingDto } from './dto/update-app-setting.dto';
 
 @Injectable()
 export class AppSettingsService {
-    constructor(
-        @InjectRepository(AppSetting)
-        private appSettingRepository: Repository<AppSetting>,
-    ) { }
+  constructor(private prisma: PrismaService) {}
 
-    async create(createAppSettingDto: CreateAppSettingDto, userId: number): Promise<AppSetting> {
-        const existing = await this.appSettingRepository.findOne({
-            where: { setting_key: createAppSettingDto.setting_key },
-        });
+  async create(createAppSettingDto: CreateAppSettingDto, userId: number) {
+    const existing = await this.prisma.appSetting.findFirst({
+      where: { setting_key: createAppSettingDto.setting_key },
+    });
 
-        if (existing) {
-            throw new ConflictException('Setting with this key already exists');
-        }
-
-        const setting = this.appSettingRepository.create({
-            ...createAppSettingDto,
-            created_by: userId,
-        });
-
-        return await this.appSettingRepository.save(setting);
+    if (existing) {
+      throw new ConflictException('Setting with this key already exists');
     }
 
-    async findAll(group?: string): Promise<AppSetting[]> {
-        if (group) {
-            return await this.appSettingRepository.find({ where: { setting_group: group } });
-        }
-        return await this.appSettingRepository.find();
-    }
+    return await this.prisma.appSetting.create({
+      data: {
+        ...createAppSettingDto,
+        created_by: userId,
+      },
+    });
+  }
 
-    async findByKey(key: string): Promise<AppSetting> {
-        const setting = await this.appSettingRepository.findOne({ where: { setting_key: key } });
-        if (!setting) {
-            throw new NotFoundException(`Setting with key ${key} not found`);
-        }
-        return setting;
+  async findAll(group?: string) {
+    if (group) {
+      return await this.prisma.appSetting.findMany({
+        where: { setting_group: group },
+      });
     }
+    return await this.prisma.appSetting.findMany();
+  }
 
-    async update(key: string, updateAppSettingDto: UpdateAppSettingDto, userId: number): Promise<AppSetting> {
-        const setting = await this.findByKey(key);
-        Object.assign(setting, updateAppSettingDto);
-        setting.updated_by = userId;
-        return await this.appSettingRepository.save(setting);
+  async findByKey(key: string) {
+    const setting = await this.prisma.appSetting.findFirst({
+      where: { setting_key: key },
+    });
+    if (!setting) {
+      throw new NotFoundException(`Setting with key ${key} not found`);
     }
+    return setting;
+  }
 
-    async remove(key: string): Promise<{ message: string }> {
-        const setting = await this.findByKey(key);
-        await this.appSettingRepository.remove(setting);
-        return { message: 'Setting deleted successfully' };
-    }
+  async update(
+    key: string,
+    updateAppSettingDto: UpdateAppSettingDto,
+    userId: number,
+  ) {
+    const setting = await this.findByKey(key);
+    return await this.prisma.appSetting.update({
+      where: { id: setting.id },
+      data: {
+        ...updateAppSettingDto,
+        updated_by: userId,
+      },
+    });
+  }
+
+  async remove(key: string): Promise<{ message: string }> {
+    const setting = await this.findByKey(key);
+    await this.prisma.appSetting.delete({ where: { id: setting.id } });
+    return { message: 'Setting deleted successfully' };
+  }
 }

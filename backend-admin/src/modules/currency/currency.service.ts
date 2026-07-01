@@ -1,72 +1,77 @@
 import {
-    Injectable,
-    NotFoundException,
-    ConflictException,
-    BadRequestException,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Currency } from './entities/currency.entity';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCurrencyDto } from './dto/create-currency.dto';
 import { UpdateCurrencyDto } from './dto/update-currency.dto';
 
 @Injectable()
 export class CurrencyService {
-    constructor(
-        @InjectRepository(Currency)
-        private currencyRepository: Repository<Currency>,
-    ) { }
+  constructor(private prisma: PrismaService) {}
 
-    async create(createCurrencyDto: CreateCurrencyDto, userId: number): Promise<Currency> {
-        const existing = await this.currencyRepository.findOne({
-            where: { currency_code: createCurrencyDto.currency_code },
-        });
+  async create(createCurrencyDto: CreateCurrencyDto, userId: number) {
+    const existing = await this.prisma.currency.findFirst({
+      where: { currency_code: createCurrencyDto.currency_code },
+    });
 
-        if (existing) {
-            throw new ConflictException('Currency with this code already exists');
-        }
-
-        const currency = this.currencyRepository.create({
-            ...createCurrencyDto,
-            created_by: userId,
-        });
-
-        return await this.currencyRepository.save(currency);
+    if (existing) {
+      throw new ConflictException('Currency with this code already exists');
     }
 
-    async findAll(): Promise<Currency[]> {
-        return await this.currencyRepository.find();
+    return await this.prisma.currency.create({
+      data: {
+        ...createCurrencyDto,
+        created_by: userId,
+      },
+    });
+  }
+
+  async findAll() {
+    return await this.prisma.currency.findMany();
+  }
+
+  async findOne(id: number) {
+    const currency = await this.prisma.currency.findUnique({ where: { id } });
+    if (!currency) {
+      throw new NotFoundException(`Currency with ID ${id} not found`);
+    }
+    return currency;
+  }
+
+  async update(
+    id: number,
+    updateCurrencyDto: UpdateCurrencyDto,
+    userId: number,
+  ) {
+    const currency = await this.findOne(id);
+
+    if (
+      updateCurrencyDto.currency_code &&
+      updateCurrencyDto.currency_code !== currency.currency_code
+    ) {
+      const existing = await this.prisma.currency.findFirst({
+        where: { currency_code: updateCurrencyDto.currency_code },
+      });
+      if (existing) {
+        throw new ConflictException('Currency with this code already exists');
+      }
     }
 
-    async findOne(id: number): Promise<Currency> {
-        const currency = await this.currencyRepository.findOne({ where: { id } });
-        if (!currency) {
-            throw new NotFoundException(`Currency with ID ${id} not found`);
-        }
-        return currency;
-    }
+    return await this.prisma.currency.update({
+      where: { id },
+      data: {
+        ...updateCurrencyDto,
+        updated_by: userId,
+      },
+    });
+  }
 
-    async update(id: number, updateCurrencyDto: UpdateCurrencyDto, userId: number): Promise<Currency> {
-        const currency = await this.findOne(id);
-
-        if (updateCurrencyDto.currency_code && updateCurrencyDto.currency_code !== currency.currency_code) {
-            const existing = await this.currencyRepository.findOne({
-                where: { currency_code: updateCurrencyDto.currency_code },
-            });
-            if (existing) {
-                throw new ConflictException('Currency with this code already exists');
-            }
-        }
-
-        Object.assign(currency, updateCurrencyDto);
-        currency.updated_by = userId;
-
-        return await this.currencyRepository.save(currency);
-    }
-
-    async remove(id: number): Promise<{ message: string }> {
-        const currency = await this.findOne(id);
-        await this.currencyRepository.remove(currency);
-        return { message: 'Currency deleted successfully' };
-    }
+  async remove(id: number): Promise<{ message: string }> {
+    await this.findOne(id);
+    await this.prisma.currency.delete({ where: { id } });
+    return { message: 'Currency deleted successfully' };
+  }
 }

@@ -34,7 +34,9 @@ export default registerAs('services', () => ({
   },
 }));
 
-export const getRedisConfig = (_configService: ConfigService): RedisOptions | null => {
+export const getRedisConfig = (
+  _configService: ConfigService,
+): RedisOptions | null => {
   return {
     host: active.redis.host,
     port: 6379,

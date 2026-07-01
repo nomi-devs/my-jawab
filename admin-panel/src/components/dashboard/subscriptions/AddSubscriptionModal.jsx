@@ -82,16 +82,16 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       setLoadingCurrencies(true);
       const response = await currenciesApi.getCurrencies();
-      const activeCurrencies = (response.data || []).filter(c => c.is_active);
+      const activeCurrencies = (response.data || []).filter((c) => c.is_active);
       setCurrencies(activeCurrencies);
 
       // Select default currency if available
       if (activeCurrencies.length > 0 && !formData.subscription_currency) {
-        const usd = activeCurrencies.find(c => c.currency_code === 'USD');
+        const usd = activeCurrencies.find((c) => c.currency_code === 'USD');
         const defaultCurrency = usd || activeCurrencies[0];
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          subscription_currency: defaultCurrency.currency_code
+          subscription_currency: defaultCurrency.currency_code,
         }));
       }
     } catch (err) {
@@ -105,7 +105,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => {
+    setFormData((prev) => {
       const newVal = type === 'checkbox' ? checked : value;
       const updated = { ...prev, [name]: newVal };
       // When the plan type changes, prefill features with sensible defaults for that tier
@@ -117,7 +117,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const handleFeaturesChange = (features) => {
-    setFormData(prev => ({ ...prev, features }));
+    setFormData((prev) => ({ ...prev, features }));
   };
 
   const handleSubmit = async (e) => {
@@ -132,9 +132,10 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
         subscription_price: parseFloat(formData.subscription_price),
         subscription_duration: parseInt(formData.subscription_duration),
         subscription_currency: formData.subscription_currency || null,
-        features: formData.features && Object.keys(formData.features).length > 0
-          ? formData.features
-          : undefined,
+        features:
+          formData.features && Object.keys(formData.features).length > 0
+            ? formData.features
+            : undefined,
       };
 
       await createSubscription(submitData);
@@ -154,7 +155,9 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
           <div className="flex items-center space-x-2">
             <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add Subscription</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Add Subscription
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -165,7 +168,11 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarGutter: 'stable' }}>
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto px-6 py-5"
+          style={{ scrollbarGutter: 'stable' }}
+        >
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-xs rounded-lg">
               {error}
@@ -316,7 +323,9 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
                   <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
                     Active Status
                   </label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Enable or disable this subscription</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                    Enable or disable this subscription
+                  </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -369,4 +378,3 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 export default AddSubscriptionModal;
-

@@ -1,20 +1,27 @@
 // src/components/dashboard/users/UsersGrid.jsx
 import React from 'react';
-import { Eye, Shield, CheckCircle, XCircle, Mail, Calendar, User, Edit, Trash2 } from 'lucide-react';
+import {
+  Eye,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Mail,
+  Calendar,
+  User,
+  Edit,
+  Trash2,
+} from 'lucide-react';
 
-const UsersGrid = React.memo(({
-  users,
-  onEdit,
-  onDelete,
-  onViewDetails
-}) => {
+const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
   if (users.length === 0) {
     return (
       <div className="p-12 text-center">
         <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
           <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No users found</h3>
+        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          No users found
+        </h3>
         <p className="text-gray-500 dark:text-gray-400">Try changing your search or filters</p>
       </div>
     );
@@ -27,7 +34,7 @@ const UsersGrid = React.memo(({
           key={user.id}
           className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 p-5 hover:shadow-lg transition-all duration-200 animate-fadeIn"
           style={{
-            animationDelay: `${index * 50}ms`
+            animationDelay: `${index * 50}ms`,
           }}
         >
           {/* User Header */}
@@ -67,14 +74,17 @@ const UsersGrid = React.memo(({
 
           {/* Role Badge */}
           <div className="mb-3">
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${user.role === 'Pro User' || user.role === 'pro_user'
-                ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-                : user.role === 'Admin' || user.role === 'admin'
-                  ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                  : user.role === 'Sub Admin'
-                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-              }`}>
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                user.role === 'Pro User' || user.role === 'pro_user'
+                  ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+                  : user.role === 'Admin' || user.role === 'admin'
+                    ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                    : user.role === 'Sub Admin'
+                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
               <Shield size={12} />
               <span className="capitalize">{user.role?.replace('_', ' ') || 'User'}</span>
             </span>
@@ -82,19 +92,30 @@ const UsersGrid = React.memo(({
 
           {/* Status and Verification */}
           <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user.status === 'Active'
-                ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
-                : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30'
-              }`}>
-              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.status === 'Active' ? 'bg-green-500 dark:bg-green-400' : 'bg-red-500 dark:bg-red-400'
-                }`}></span>
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                user.status === 'Active'
+                  ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
+                  : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30'
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                  user.status === 'Active'
+                    ? 'bg-green-500 dark:bg-green-400'
+                    : 'bg-red-500 dark:bg-red-400'
+                }`}
+              ></span>
               {user.status}
             </span>
             {user.is_verified !== undefined && (
-              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.is_verified
-                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
-                }`}>
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                  user.is_verified
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                    : 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                }`}
+              >
                 {user.is_verified ? <CheckCircle size={12} /> : <XCircle size={12} />}
                 {user.is_verified ? 'Verified' : 'Unverified'}
               </span>
@@ -134,4 +155,3 @@ const UsersGrid = React.memo(({
 
 UsersGrid.displayName = 'UsersGrid';
 export default UsersGrid;
-

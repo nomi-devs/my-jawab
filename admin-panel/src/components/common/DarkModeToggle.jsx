@@ -22,7 +22,7 @@ const DarkModeToggle = () => {
             : 'bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500'
         }`}
       />
-      
+
       {/* Toggle Circle */}
       <span
         className={`relative inline-flex h-6 w-6 transform rounded-full bg-white shadow-lg transition-all duration-300 items-center justify-center ${
@@ -42,4 +42,3 @@ const DarkModeToggle = () => {
 };
 
 export default DarkModeToggle;
-

@@ -25,4 +25,3 @@ export class UploadFileOptionsDto {
   @IsOptional()
   userId?: number;
 }
-

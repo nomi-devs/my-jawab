@@ -1,0 +1,1073 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  admin
+  sub_admin
+  pro_user
+  user
+}
+
+enum AuthType {
+  email
+  phone
+  google
+  apple
+}
+
+enum DeviceType {
+  android
+  ios
+  web
+}
+
+enum BannerType {
+  promotion
+  ad
+  announcement
+}
+
+enum LikeStatus {
+  like
+  dislike
+}
+
+enum CommunityUserRole {
+  admin
+  moderator
+  member
+}
+
+enum EmailType {
+  verification
+  password_reset
+  welcome
+  notification
+  admin
+  bulk
+  system
+}
+
+enum EmailStatus {
+  pending
+  queued
+  processing
+  sent
+  delivered
+  failed
+  bounced
+  opened
+  clicked
+}
+
+enum JobType {
+  notification
+  email
+  push
+  sms
+  bulk_notification
+  bulk_email
+  scheduled_notification
+  email_retry
+  template_render
+}
+
+enum JobStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
+enum MediaType {
+  image
+  video
+  document
+  audio
+  other
+}
+
+enum StorageType {
+  local
+  s3
+  cloudinary
+}
+
+enum MediaStatus {
+  pending
+  processing
+  ready
+  failed
+}
+
+enum NotificationType {
+  comment
+  reply
+  like
+  follow
+  mention
+  post_approved
+  comment_approved
+  community_invite
+  poll_ended
+  subscription_expired
+  system
+  admin
+}
+
+enum PushStatus {
+  pending
+  sent
+  delivered
+  failed
+  bounced
+}
+
+enum NotificationPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+enum NotificationDeviceType {
+  android
+  ios
+  web
+}
+
+enum PollStatus {
+  draft
+  published
+  ended
+}
+
+enum PostStatus {
+  draft
+  published
+  archived
+}
+
+enum PostType {
+  post
+  question
+}
+
+enum ProfileGender {
+  male
+  female
+  other
+}
+
+enum SubscriptionType {
+  free
+  pro
+  premium
+}
+
+enum SubscriptionDurationType {
+  days
+  weeks
+  months
+  years
+}
+
+enum SubscriptionRenewalType {
+  auto
+  manual
+}
+
+enum SubscriptionStatus {
+  pending
+  active
+  inactive
+  expired
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+}
+
+enum PaymentMethod {
+  credit_card
+  debit_card
+  paypal
+  bank_transfer
+  cash
+}
+
+enum TemplateType {
+  email
+  pdf
+  html
+  sms
+}
+
+enum TemplateCategory {
+  verification
+  password_reset
+  welcome
+  notification
+  invoice
+  report
+  custom
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id            Int       @id @default(autoincrement())
+  role          UserRole  @default(user)
+  username      String    @db.VarChar(255)
+  email         String    @db.VarChar(255)
+  password_hash String?   @db.VarChar(255)
+  auth_type     AuthType  @default(email)
+  access_token  String?   @db.VarChar(500)
+  refresh_token String?   @db.VarChar(500)
+  expires_in    Int       @default(3600)
+  is_active     Boolean   @default(false)
+  is_verified   Boolean   @default(false)
+  is_deleted    Boolean   @default(false)
+  deleted_at    DateTime? @db.Timestamp(6)
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime  @updatedAt @db.Timestamp(6)
+
+  verifications         UserVerification[]
+  password_resets       UserPasswordReset[]
+  devices               UserDevice[]
+  profile               UserProfile?
+  posts                 UserPost[]
+  comments              PostComment[]
+  polls                 UserPoll[]
+  following             UserFollower[]      @relation("Following")
+  followers             UserFollower[]      @relation("Followers")
+  user_topics           UserTopic[]
+  community_memberships CommunityUser[]
+  payments              Payment[]
+  poll_comments         PollComment[]
+
+  @@index([role])
+  @@index([username])
+  @@index([email])
+  @@index([auth_type])
+  @@index([is_active])
+  @@index([is_verified])
+  @@index([is_deleted])
+  @@index([created_at])
+  @@map("users")
+}
+
+model UserVerification {
+  id                Int      @id @default(autoincrement())
+  user_id           Int
+  user              User     @relation(fields: [user_id], references: [id])
+  verification_code String   @db.VarChar(255)
+  expires_at        DateTime @db.Timestamp(6)
+  is_used           Boolean  @default(false)
+  created_by        Int?
+  updated_by        Int?
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+  updated_at        DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([user_id])
+  @@index([verification_code])
+  @@index([expires_at])
+  @@index([is_used])
+  @@index([created_at])
+  @@map("user_verification")
+}
+
+model UserPasswordReset {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  user         User     @relation(fields: [user_id], references: [id])
+  phone_number String?  @db.VarChar(255)
+  email        String?  @db.VarChar(255)
+  reset_code   String   @db.VarChar(255)
+  expires_at   DateTime @db.Timestamp(6)
+  is_used      Boolean  @default(false)
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+  updated_at   DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([user_id])
+  @@index([phone_number])
+  @@index([email])
+  @@index([reset_code])
+  @@index([expires_at])
+  @@index([is_used])
+  @@map("user_password_reset")
+}
+
+model UserDevice {
+  id             Int        @id @default(autoincrement())
+  user_id        Int
+  user           User       @relation(fields: [user_id], references: [id])
+  device_id      String     @db.VarChar(255)
+  device_type    DeviceType
+  device_token   String?    @db.VarChar(500)
+  is_active      Boolean    @default(true)
+  last_active_at DateTime?  @db.Timestamp(6)
+  created_by     Int?
+  updated_by     Int?
+  created_at     DateTime   @default(now()) @db.Timestamp(6)
+  updated_at     DateTime   @updatedAt @db.Timestamp(6)
+
+  @@unique([user_id, device_id])
+  @@index([user_id])
+  @@index([device_id])
+  @@index([device_type])
+  @@index([is_active])
+  @@map("user_devices")
+}
+
+model UserProfile {
+  id                 Int            @id @default(autoincrement())
+  user_id            Int            @unique
+  user               User           @relation(fields: [user_id], references: [id])
+  full_name          String?        @db.VarChar(255)
+  profile_picture    String?        @db.VarChar(500)
+  profile_background String?        @db.VarChar(500)
+  tagline            String?        @db.VarChar(255)
+  profile_bio        String?        @db.Text
+  profile_gender     ProfileGender?
+  profile_birthday   DateTime?      @db.Date
+  profile_website    String?        @db.VarChar(500)
+  profile_location   String?        @db.VarChar(255)
+  created_by         Int?
+  updated_by         Int?
+  created_at         DateTime       @default(now()) @db.Timestamp(6)
+  updated_at         DateTime       @updatedAt @db.Timestamp(6)
+
+  @@map("user_profile")
+}
+
+model UserFollower {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  user        User     @relation("Followers", fields: [user_id], references: [id])
+  follower_id Int
+  follower    User     @relation("Following", fields: [follower_id], references: [id])
+  is_active   Boolean  @default(true)
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @updatedAt @db.Timestamp(6)
+
+  @@unique([user_id, follower_id])
+  @@index([user_id])
+  @@index([follower_id])
+  @@index([is_active])
+  @@map("user_followers")
+}
+
+model UserTopic {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  user       User     @relation(fields: [user_id], references: [id])
+  topic_id   Int
+  is_active  Boolean  @default(true)
+  created_by Int?
+  updated_by Int?
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @updatedAt @db.Timestamp(6)
+
+  @@unique([user_id, topic_id])
+  @@index([user_id])
+  @@index([topic_id])
+  @@index([is_active])
+  @@map("user_topics")
+}
+
+model AppSetting {
+  id            Int      @id @default(autoincrement())
+  setting_key   String   @unique @db.VarChar(255)
+  setting_value String?  @db.Text
+  setting_group String   @default("general") @db.VarChar(255)
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([setting_group])
+  @@map("app_settings")
+}
+
+model Banner {
+  id                        Int        @id @default(autoincrement())
+  banner_title              String?    @db.VarChar(255)
+  banner_description        String?    @db.Text
+  banner_image              String     @db.VarChar(500)
+  banner_link               String?    @db.VarChar(500)
+  banner_type               BannerType @default(promotion)
+  target_countries          String?    @db.VarChar(500)
+  target_topic_ids          String?    @db.VarChar(500)
+  target_subscription_ids   String?    @db.VarChar(500)
+  excluded_countries        String?    @db.VarChar(500)
+  excluded_topic_ids        String?    @db.VarChar(500)
+  excluded_subscription_ids String?    @db.VarChar(500)
+  valid_from                DateTime?  @db.Timestamp(6)
+  valid_until               DateTime?  @db.Timestamp(6)
+  display_order             Int        @default(0)
+  is_active                 Boolean    @default(true)
+  created_by                Int?
+  updated_by                Int?
+  created_at                DateTime   @default(now()) @db.Timestamp(6)
+  updated_at                DateTime   @updatedAt @db.Timestamp(6)
+
+  @@index([banner_type])
+  @@index([display_order])
+  @@index([is_active])
+  @@map("banners")
+}
+
+model Topic {
+  id                Int      @id @default(autoincrement())
+  parent_id         Int      @default(0)
+  topic_slug        String   @unique @db.VarChar(255)
+  topic_name        String   @db.VarChar(255)
+  topic_description String?  @db.Text
+  topic_image       String?  @db.VarChar(500)
+  is_active         Boolean  @default(true)
+  created_by        Int?
+  updated_by        Int?
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+  updated_at        DateTime @updatedAt @db.Timestamp(6)
+
+  userPosts       UserPost[]
+  communityTopics CommunityTopic[]
+
+  @@index([parent_id])
+  @@index([topic_name])
+  @@index([is_active])
+  @@map("topics")
+}
+
+model Community {
+  id                    Int      @id @default(autoincrement())
+  community_slug        String   @db.VarChar(255)
+  community_name        String   @db.VarChar(255)
+  community_description String?  @db.Text
+  community_image       String?  @db.VarChar(500)
+  is_active             Boolean  @default(true)
+  created_by            Int?
+  updated_by            Int?
+  created_at            DateTime @default(now()) @db.Timestamp(6)
+  updated_at            DateTime @updatedAt @db.Timestamp(6)
+
+  topics  CommunityTopic[]
+  members CommunityUser[]
+
+  @@index([community_slug])
+  @@index([community_name])
+  @@index([is_active])
+  @@index([created_at])
+  @@map("communities")
+}
+
+model CommunityTopic {
+  id           Int       @id @default(autoincrement())
+  community_id Int
+  community    Community @relation(fields: [community_id], references: [id])
+  topic_id     Int
+  topic        Topic     @relation(fields: [topic_id], references: [id])
+  is_active    Boolean   @default(true)
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime  @default(now()) @db.Timestamp(6)
+  updated_at   DateTime  @updatedAt @db.Timestamp(6)
+
+  @@unique([community_id, topic_id])
+  @@index([community_id])
+  @@index([topic_id])
+  @@index([is_active])
+  @@map("community_topics")
+}
+
+model CommunityUser {
+  id           Int               @id @default(autoincrement())
+  community_id Int
+  community    Community         @relation(fields: [community_id], references: [id])
+  user_id      Int
+  user         User              @relation(fields: [user_id], references: [id])
+  role         CommunityUserRole @default(member)
+  is_active    Boolean           @default(true)
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime          @default(now()) @db.Timestamp(6)
+  updated_at   DateTime          @updatedAt @db.Timestamp(6)
+
+  @@unique([community_id, user_id])
+  @@index([community_id])
+  @@index([user_id])
+  @@index([role])
+  @@index([is_active])
+  @@map("community_users")
+}
+
+model Currency {
+  id              Int      @id @default(autoincrement())
+  currency_name   String   @db.VarChar(255)
+  currency_code   String   @unique @db.VarChar(10)
+  currency_symbol String   @db.VarChar(10)
+  is_active       Boolean  @default(true)
+  created_by      Int?
+  updated_by      Int?
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  subscriptions Subscription[]
+  payments      Payment[]
+
+  @@index([is_active])
+  @@map("currencies")
+}
+
+model UserPost {
+  id            Int        @id @default(autoincrement())
+  community_ids String?    @db.VarChar(500)
+  user_id       Int
+  user          User       @relation(fields: [user_id], references: [id])
+  post_slug     String     @db.VarChar(255)
+  post_title    String     @db.VarChar(255)
+  post_content  String     @db.Text
+  post_image    String?    @db.VarChar(500)
+  post_video    String?    @db.VarChar(500)
+  post_audio    String?    @db.VarChar(500)
+  post_link     String?    @db.VarChar(500)
+  post_status   PostStatus @default(draft)
+  post_type     PostType   @default(post)
+  post_topic_id Int?
+  topic         Topic?     @relation(fields: [post_topic_id], references: [id])
+  post_tags     String?    @db.VarChar(500)
+  view_count    Int        @default(0)
+  like_count    Int        @default(0)
+  dislike_count Int        @default(0)
+  comment_count Int        @default(0)
+  is_featured   Boolean    @default(false)
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime   @default(now()) @db.Timestamp(6)
+  updated_at    DateTime   @updatedAt @db.Timestamp(6)
+
+  likes    PostLike[]
+  comments PostComment[]
+
+  @@index([user_id])
+  @@index([post_slug])
+  @@index([post_status])
+  @@index([post_type])
+  @@index([post_topic_id])
+  @@index([view_count])
+  @@index([like_count])
+  @@index([is_featured])
+  @@index([created_at])
+  @@map("user_posts")
+}
+
+model PostLike {
+  id          Int        @id @default(autoincrement())
+  post_id     Int
+  post        UserPost   @relation(fields: [post_id], references: [id])
+  user_id     Int
+  like_status LikeStatus
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime   @default(now()) @db.Timestamp(6)
+  updated_at  DateTime   @updatedAt @db.Timestamp(6)
+
+  @@unique([post_id, user_id])
+  @@index([post_id])
+  @@index([user_id])
+  @@index([like_status])
+  @@map("post_likes")
+}
+
+model PostComment {
+  id                Int           @id @default(autoincrement())
+  post_id           Int
+  post              UserPost      @relation(fields: [post_id], references: [id])
+  user_id           Int
+  user              User          @relation(fields: [user_id], references: [id])
+  parent_comment_id Int?
+  parent_comment    PostComment?  @relation("CommentReplies", fields: [parent_comment_id], references: [id])
+  replies           PostComment[] @relation("CommentReplies")
+  comment_content   String        @db.Text
+  like_count        Int           @default(0)
+  dislike_count     Int           @default(0)
+  is_approved       Boolean       @default(true)
+  created_by        Int?
+  updated_by        Int?
+  created_at        DateTime      @default(now()) @db.Timestamp(6)
+  updated_at        DateTime      @updatedAt @db.Timestamp(6)
+
+  likes CommentLike[]
+
+  @@index([post_id])
+  @@index([user_id])
+  @@index([parent_comment_id])
+  @@index([like_count])
+  @@index([is_approved])
+  @@index([created_at])
+  @@map("post_comments")
+}
+
+model CommentLike {
+  id          Int         @id @default(autoincrement())
+  comment_id  Int
+  comment     PostComment @relation(fields: [comment_id], references: [id])
+  user_id     Int
+  like_status LikeStatus
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime    @default(now()) @db.Timestamp(6)
+  updated_at  DateTime    @updatedAt @db.Timestamp(6)
+
+  @@unique([comment_id, user_id])
+  @@index([comment_id])
+  @@index([user_id])
+  @@index([like_status])
+  @@map("comments_likes")
+}
+
+model UserPoll {
+  id                    Int        @id @default(autoincrement())
+  user_id               Int
+  user                  User       @relation(fields: [user_id], references: [id])
+  community_ids         String?    @db.VarChar(500)
+  poll_slug             String     @db.VarChar(255)
+  poll_title            String     @db.VarChar(255)
+  poll_description      String     @db.Text
+  poll_expires_at       DateTime?  @db.Timestamp(6)
+  poll_status           PollStatus @default(draft)
+  poll_winner_option_id Int?
+  vote_count            Int        @default(0)
+  view_count            Int        @default(0)
+  is_featured           Boolean    @default(false)
+  created_by            Int?
+  updated_by            Int?
+  created_at            DateTime   @default(now()) @db.Timestamp(6)
+  updated_at            DateTime   @updatedAt @db.Timestamp(6)
+
+  options  PollOption[]
+  votes    PollVote[]
+  likes    PollLike[]
+  comments PollComment[]
+
+  @@index([user_id])
+  @@index([poll_slug])
+  @@index([poll_expires_at])
+  @@index([poll_status])
+  @@index([vote_count])
+  @@index([is_featured])
+  @@index([created_at])
+  @@map("user_polls")
+}
+
+model PollOption {
+  id            Int      @id @default(autoincrement())
+  poll_id       Int
+  poll          UserPoll @relation(fields: [poll_id], references: [id])
+  option_text   String   @db.VarChar(255)
+  vote_count    Int      @default(0)
+  display_order Int      @default(0)
+  is_active     Boolean  @default(true)
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @updatedAt @db.Timestamp(6)
+
+  votes PollVote[]
+
+  @@index([poll_id])
+  @@index([vote_count])
+  @@index([display_order])
+  @@index([is_active])
+  @@map("poll_options")
+}
+
+model PollVote {
+  id             Int        @id @default(autoincrement())
+  poll_id        Int
+  poll           UserPoll   @relation(fields: [poll_id], references: [id])
+  user_id        Int
+  vote_option_id Int
+  option         PollOption @relation(fields: [vote_option_id], references: [id])
+  created_by     Int?
+  updated_by     Int?
+  created_at     DateTime   @default(now()) @db.Timestamp(6)
+  updated_at     DateTime   @updatedAt @db.Timestamp(6)
+
+  @@unique([poll_id, user_id])
+  @@index([poll_id])
+  @@index([user_id])
+  @@index([vote_option_id])
+  @@index([created_at])
+  @@map("poll_votes")
+}
+
+model PollLike {
+  id          Int        @id @default(autoincrement())
+  poll_id     Int
+  poll        UserPoll   @relation(fields: [poll_id], references: [id])
+  user_id     Int
+  like_status LikeStatus
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime   @default(now()) @db.Timestamp(6)
+  updated_at  DateTime   @updatedAt @db.Timestamp(6)
+
+  @@unique([poll_id, user_id])
+  @@index([poll_id])
+  @@index([user_id])
+  @@index([like_status])
+  @@map("poll_likes")
+}
+
+model PollComment {
+  id                Int           @id @default(autoincrement())
+  poll_id           Int
+  poll              UserPoll      @relation(fields: [poll_id], references: [id])
+  user_id           Int
+  user              User          @relation(fields: [user_id], references: [id])
+  parent_comment_id Int?
+  parent_comment    PollComment?  @relation("PollCommentReplies", fields: [parent_comment_id], references: [id])
+  replies           PollComment[] @relation("PollCommentReplies")
+  comment_content   String        @db.Text
+  like_count        Int           @default(0)
+  dislike_count     Int           @default(0)
+  is_approved       Boolean       @default(true)
+  created_by        Int?
+  updated_by        Int?
+  created_at        DateTime      @default(now()) @db.Timestamp(6)
+  updated_at        DateTime      @updatedAt @db.Timestamp(6)
+
+  @@index([poll_id])
+  @@index([user_id])
+  @@index([parent_comment_id])
+  @@index([like_count])
+  @@index([is_approved])
+  @@index([created_at])
+  @@map("poll_comments")
+}
+
+model Subscription {
+  id                         Int                      @id @default(autoincrement())
+  subscription_type          SubscriptionType
+  subscription_name          String                   @unique @db.VarChar(255)
+  subscription_description   String?                  @db.Text
+  subscription_price         Decimal                  @db.Decimal(10, 2)
+  subscription_duration      Int
+  subscription_duration_type SubscriptionDurationType
+  subscription_currency      String?                  @db.VarChar(10)
+  currency_id                Int?
+  currency                   Currency?                @relation(fields: [currency_id], references: [id])
+  features                   Json?
+  is_active                  Boolean                  @default(true)
+  created_by                 Int?
+  updated_by                 Int?
+  created_at                 DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime                 @updatedAt @db.Timestamp(6)
+
+  user_subscriptions UserSubscription[]
+
+  @@index([is_active])
+  @@index([created_at])
+  @@map("subscriptions")
+}
+
+model UserSubscription {
+  id                            Int                     @id @default(autoincrement())
+  user_id                       Int
+  subscription_id               Int
+  subscription                  Subscription            @relation(fields: [subscription_id], references: [id])
+  subscription_start_date       DateTime?               @db.Timestamp(6)
+  subscription_end_date         DateTime?               @db.Timestamp(6)
+  subscription_renewal_type     SubscriptionRenewalType
+  subscription_renewal_date     DateTime?               @db.Timestamp(6)
+  subscription_renewal_amount   Decimal                 @db.Decimal(10, 2)
+  subscription_renewal_currency String                  @db.VarChar(10)
+  subscription_renewal_gateway  String                  @db.VarChar(255)
+  subscription_status           SubscriptionStatus
+  is_active                     Boolean                 @default(true)
+  created_by                    Int?
+  updated_by                    Int?
+  created_at                    DateTime                @default(now()) @db.Timestamp(6)
+  updated_at                    DateTime                @updatedAt @db.Timestamp(6)
+
+  payments Payment[]
+
+  @@unique([user_id, subscription_id])
+  @@index([user_id])
+  @@index([subscription_id])
+  @@index([is_active])
+  @@map("users_subscriptions")
+}
+
+model Payment {
+  id                     Int              @id @default(autoincrement())
+  users_subscriptions_id Int
+  user_subscription      UserSubscription @relation(fields: [users_subscriptions_id], references: [id])
+  user_id                Int
+  user                   User             @relation(fields: [user_id], references: [id])
+  payment_amount         Decimal          @db.Decimal(10, 2)
+  payment_status         PaymentStatus
+  payment_method         PaymentMethod
+  payment_currency       String           @db.VarChar(10)
+  currency_id            Int?
+  currency               Currency?        @relation(fields: [currency_id], references: [id])
+  payment_gateway        String           @db.VarChar(255)
+  payment_transaction_id String           @db.VarChar(255)
+  created_by             Int?
+  updated_by             Int?
+  created_at             DateTime         @default(now()) @db.Timestamp(6)
+  updated_at             DateTime         @updatedAt @db.Timestamp(6)
+
+  @@unique([users_subscriptions_id, user_id])
+  @@index([users_subscriptions_id])
+  @@index([user_id])
+  @@index([payment_status])
+  @@index([payment_method])
+  @@index([currency_id])
+  @@index([created_at])
+  @@map("payments")
+}
+
+model Email {
+  id                  Int         @id @default(autoincrement())
+  notification_id     Int?
+  user_id             Int?
+  email_type          EmailType
+  recipient_email     String      @db.VarChar(255)
+  recipient_name      String?     @db.VarChar(255)
+  subject             String      @db.VarChar(500)
+  body_html           String?     @db.Text
+  body_text           String?     @db.Text
+  template_name       String?     @db.VarChar(255)
+  template_data       Json?
+  from_email          String      @db.VarChar(255)
+  from_name           String?     @db.VarChar(255)
+  reply_to            String?     @db.VarChar(255)
+  cc_emails           Json?
+  bcc_emails          Json?
+  attachments         Json?
+  status              EmailStatus @default(pending)
+  provider            String?     @db.VarChar(100)
+  provider_message_id String?     @db.VarChar(255)
+  error_message       String?     @db.Text
+  sent_at             DateTime?   @db.Timestamp(6)
+  delivered_at        DateTime?   @db.Timestamp(6)
+  opened_at           DateTime?   @db.Timestamp(6)
+  clicked_at          DateTime?   @db.Timestamp(6)
+  retry_count         Int         @default(0)
+  max_retries         Int         @default(3)
+  next_retry_at       DateTime?   @db.Timestamp(6)
+  created_by          Int?
+  updated_by          Int?
+  created_at          DateTime    @default(now()) @db.Timestamp(6)
+  updated_at          DateTime    @updatedAt @db.Timestamp(6)
+
+  notifications Notification[]
+  jobs          Job[]
+
+  @@index([notification_id])
+  @@index([user_id])
+  @@index([email_type])
+  @@index([recipient_email])
+  @@index([status])
+  @@index([provider])
+  @@index([next_retry_at])
+  @@index([created_at])
+  @@map("emails")
+}
+
+model Notification {
+  id                 Int                     @id @default(autoincrement())
+  user_id            Int
+  notification_type  NotificationType
+  title              String                  @db.VarChar(255)
+  body               String                  @db.Text
+  data               Json?
+  action_url         String?                 @db.VarChar(500)
+  in_app_enabled     Boolean                 @default(true)
+  push_enabled       Boolean                 @default(true)
+  email_enabled      Boolean                 @default(true)
+  is_read            Boolean                 @default(false)
+  read_at            DateTime?               @db.Timestamp(6)
+  push_status        PushStatus?
+  device_id          Int?
+  device_token       String?                 @db.VarChar(500)
+  device_type        NotificationDeviceType?
+  fcm_message_id     String?                 @db.VarChar(255)
+  apns_id            String?                 @db.VarChar(255)
+  push_sent_at       DateTime?               @db.Timestamp(6)
+  push_delivered_at  DateTime?               @db.Timestamp(6)
+  push_error_message String?                 @db.Text
+  email_id           Int?
+  email              Email?                  @relation(fields: [email_id], references: [id])
+  email_sent_at      DateTime?               @db.Timestamp(6)
+  priority           NotificationPriority    @default(normal)
+  expires_at         DateTime?               @db.Timestamp(6)
+  created_by         Int?
+  updated_by         Int?
+  created_at         DateTime                @default(now()) @db.Timestamp(6)
+  updated_at         DateTime                @updatedAt @db.Timestamp(6)
+
+  jobs Job[]
+
+  @@index([user_id])
+  @@index([notification_type])
+  @@index([is_read])
+  @@index([push_status])
+  @@index([device_id])
+  @@index([email_id])
+  @@index([priority])
+  @@index([created_at])
+  @@map("notifications")
+}
+
+model Job {
+  id              Int           @id @default(autoincrement())
+  job_type        JobType
+  job_status      JobStatus     @default(pending)
+  priority        Int           @default(5)
+  payload         Json
+  notification_id Int?
+  notification    Notification? @relation(fields: [notification_id], references: [id])
+  email_id        Int?
+  email           Email?        @relation(fields: [email_id], references: [id])
+  attempts        Int           @default(0)
+  max_attempts    Int           @default(3)
+  error_message   String?       @db.Text
+  error_details   Json?
+  started_at      DateTime?     @db.Timestamp(6)
+  completed_at    DateTime?     @db.Timestamp(6)
+  scheduled_at    DateTime?     @db.Timestamp(6)
+  next_retry_at   DateTime?     @db.Timestamp(6)
+  logs            Json?
+  created_by      Int?
+  updated_by      Int?
+  created_at      DateTime      @default(now()) @db.Timestamp(6)
+  updated_at      DateTime      @updatedAt @db.Timestamp(6)
+
+  @@index([job_type])
+  @@index([job_status])
+  @@index([priority])
+  @@index([notification_id])
+  @@index([email_id])
+  @@index([scheduled_at])
+  @@index([next_retry_at])
+  @@index([created_at])
+  @@map("jobs")
+}
+
+model Media {
+  id                Int         @id @default(autoincrement())
+  original_filename String      @db.VarChar(255)
+  filename          String      @db.VarChar(255)
+  file_path         String      @db.VarChar(500)
+  mime_type         String      @db.VarChar(100)
+  file_size         BigInt
+  media_type        MediaType
+  storage_type      StorageType @default(local)
+  status            MediaStatus @default(pending)
+  width             Int?
+  height            Int?
+  duration          Int?
+  thumbnail_path    String?     @db.VarChar(500)
+  optimized_path    String?     @db.VarChar(500)
+  uuid              String      @unique @db.VarChar(36)
+  file_hash         String?     @db.VarChar(64)
+  uploaded_by       Int?
+  folder            String?     @db.VarChar(255)
+  metadata          String?     @db.Text
+  download_count    Int         @default(0)
+  view_count        Int         @default(0)
+  is_active         Boolean     @default(true)
+  is_public         Boolean     @default(false)
+  created_at        DateTime    @default(now()) @db.Timestamp(6)
+  updated_at        DateTime    @updatedAt @db.Timestamp(6)
+
+  @@index([filename])
+  @@index([media_type])
+  @@index([status])
+  @@index([file_hash])
+  @@index([uploaded_by])
+  @@index([folder])
+  @@index([is_active])
+  @@index([is_public])
+  @@index([created_at])
+  @@map("media")
+}
+
+model PrivacyPolicy {
+  id         Int      @id @default(autoincrement())
+  slug       String   @db.VarChar(255)
+  title      String   @db.VarChar(255)
+  content    String   @db.Text
+  is_active  Boolean  @default(true)
+  created_by Int?
+  updated_by Int?
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([slug])
+  @@index([is_active])
+  @@map("privacy_policy")
+}
+
+model Support {
+  id         Int      @id @default(autoincrement())
+  email      String   @db.VarChar(255)
+  phone      String   @db.VarChar(20)
+  whatsapp   String   @db.VarChar(20)
+  website    String   @db.VarChar(255)
+  address    String   @db.Text
+  is_active  Boolean  @default(true)
+  created_by Int?
+  updated_by Int?
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([is_active])
+  @@map("support")
+}
+
+model Template {
+  id           Int              @id @default(autoincrement())
+  name         String           @db.VarChar(255)
+  slug         String           @unique @db.VarChar(255)
+  type         TemplateType
+  category     TemplateCategory @default(custom)
+  subject      String?          @db.VarChar(500)
+  content      String           @db.Text
+  text_content String?          @db.Text
+  variables    Json?
+  default_data Json?
+  description  String?          @db.VarChar(255)
+  is_active    Boolean          @default(true)
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime         @default(now()) @db.Timestamp(6)
+  updated_at   DateTime         @updatedAt @db.Timestamp(6)
+
+  @@index([name])
+  @@index([type])
+  @@index([category])
+  @@index([is_active])
+  @@map("templates")
+}

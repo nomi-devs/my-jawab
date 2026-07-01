@@ -19,21 +19,34 @@ export default registerAs('app', () => ({
 
   // Verification & Reset Codes
   verification: {
-    codeExpiresIn: parseInt(process.env.VERIFICATION_CODE_EXPIRES_IN || '900000', 10), // 15 minutes
-    resetCodeExpiresIn: parseInt(process.env.RESET_CODE_EXPIRES_IN || '3600000', 10), // 1 hour
+    codeExpiresIn: parseInt(
+      process.env.VERIFICATION_CODE_EXPIRES_IN || '900000',
+      10,
+    ), // 15 minutes
+    resetCodeExpiresIn: parseInt(
+      process.env.RESET_CODE_EXPIRES_IN || '3600000',
+      10,
+    ), // 1 hour
   },
 
   // Subscription Reminders
   subscription: {
-    reminderDaysBeforeExpiry: parseInt(process.env.SUBSCRIPTION_REMINDER_DAYS || '3', 10),
-    pendingReminderHours: parseInt(process.env.PENDING_SUBSCRIPTION_REMINDER_HOURS || '24', 10),
+    reminderDaysBeforeExpiry: parseInt(
+      process.env.SUBSCRIPTION_REMINDER_DAYS || '3',
+      10,
+    ),
+    pendingReminderHours: parseInt(
+      process.env.PENDING_SUBSCRIPTION_REMINDER_HOURS || '24',
+      10,
+    ),
   },
 
   // Feature Flags (Application-wide)
   features: {
     emailVerification: process.env.FEATURE_EMAIL_VERIFICATION !== 'false',
     passwordReset: process.env.FEATURE_PASSWORD_RESET !== 'false',
-    subscriptionReminders: process.env.FEATURE_SUBSCRIPTION_REMINDERS !== 'false',
+    subscriptionReminders:
+      process.env.FEATURE_SUBSCRIPTION_REMINDERS !== 'false',
   },
 
   // Timezone Configuration

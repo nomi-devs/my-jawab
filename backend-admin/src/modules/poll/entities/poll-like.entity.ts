@@ -77,4 +77,3 @@ export class PollLike {
   })
   updated_at: Date;
 }
-

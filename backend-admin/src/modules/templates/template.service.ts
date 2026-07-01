@@ -1,7 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Template, TemplateType, TemplateCategory } from './entities/template.entity';
+import { PrismaService } from '../../prisma/prisma.service';
+import { TemplateType, TemplateCategory } from './entities/template.entity';
 import * as Handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -11,10 +10,7 @@ export class TemplateService {
   private readonly logger = new Logger(TemplateService.name);
   private readonly templatesPath = path.join(process.cwd(), 'templates');
 
-  constructor(
-    @InjectRepository(Template)
-    private templateRepository: Repository<Template>,
-  ) {
+  constructor(private prisma: PrismaService) {
     // Register Handlebars helpers
     this.registerHelpers();
     // Ensure templates directory exists
@@ -35,18 +31,24 @@ export class TemplateService {
     });
 
     // Currency formatting helper
-    Handlebars.registerHelper('formatCurrency', (amount: number, currency: string = 'USD') => {
-      if (amount === null || amount === undefined) return '';
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-      }).format(amount);
-    });
+    Handlebars.registerHelper(
+      'formatCurrency',
+      (amount: number, currency: string = 'USD') => {
+        if (amount === null || amount === undefined) return '';
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currency,
+        }).format(amount);
+      },
+    );
 
     // Conditional helper
-    Handlebars.registerHelper('ifEquals', (arg1: any, arg2: any, options: any) => {
-      return arg1 === arg2 ? options.fn(this) : options.inverse(this);
-    });
+    Handlebars.registerHelper(
+      'ifEquals',
+      (arg1: any, arg2: any, options: any) => {
+        return arg1 === arg2 ? options.fn(this) : options.inverse(this);
+      },
+    );
 
     // Uppercase helper
     Handlebars.registerHelper('uppercase', (str: string) => {
@@ -79,26 +81,37 @@ export class TemplateService {
     default_data?: Record<string, any>;
     description?: string;
     created_by?: number;
-  }): Promise<Template> {
-    const template = this.templateRepository.create({
-      ...data,
-      category: data.category || TemplateCategory.CUSTOM,
-      is_active: true,
+  }) {
+    return await this.prisma.template.create({
+      data: {
+        name: data.name,
+        slug: data.slug,
+        type: data.type as any,
+        category: (data.category ?? TemplateCategory.CUSTOM) as any,
+        subject: data.subject ?? null,
+        content: data.content,
+        text_content: data.text_content ?? null,
+        variables: data.variables ?? undefined,
+        default_data: data.default_data ?? undefined,
+        description: data.description ?? null,
+        is_active: true,
+        created_by: data.created_by ?? null,
+      },
     });
-
-    return await this.templateRepository.save(template);
   }
 
-  async findById(id: number): Promise<Template> {
-    const template = await this.templateRepository.findOne({ where: { id } });
+  async findById(id: number) {
+    const template = await this.prisma.template.findUnique({ where: { id } });
     if (!template) {
       throw new NotFoundException(`Template with ID ${id} not found`);
     }
     return template;
   }
 
-  async findBySlug(slug: string): Promise<Template> {
-    const template = await this.templateRepository.findOne({ where: { slug, is_active: true } });
+  async findBySlug(slug: string) {
+    const template = await this.prisma.template.findFirst({
+      where: { slug, is_active: true },
+    });
     if (!template) {
       throw new NotFoundException(`Template with slug "${slug}" not found`);
     }
@@ -109,33 +122,30 @@ export class TemplateService {
     type?: TemplateType;
     category?: TemplateCategory;
     is_active?: boolean;
-  }): Promise<Template[]> {
-    const query = this.templateRepository.createQueryBuilder('template');
-
-    if (options?.type) {
-      query.andWhere('template.type = :type', { type: options.type });
-    }
-
-    if (options?.category) {
-      query.andWhere('template.category = :category', { category: options.category });
-    }
-
-    if (options?.is_active !== undefined) {
-      query.andWhere('template.is_active = :is_active', { is_active: options.is_active });
-    }
-
-    return await query.orderBy('template.created_at', 'DESC').getMany();
+  }) {
+    return await this.prisma.template.findMany({
+      where: {
+        ...(options?.type ? { type: options.type as any } : {}),
+        ...(options?.category ? { category: options.category as any } : {}),
+        ...(options?.is_active !== undefined
+          ? { is_active: options.is_active }
+          : {}),
+      },
+      orderBy: { created_at: 'desc' },
+    });
   }
 
-  async update(id: number, data: Partial<Template>): Promise<Template> {
-    const template = await this.findById(id);
-    Object.assign(template, data);
-    return await this.templateRepository.save(template);
+  async update(id: number, data: Record<string, any>) {
+    await this.findById(id);
+    return await this.prisma.template.update({
+      where: { id },
+      data,
+    });
   }
 
   async delete(id: number): Promise<void> {
-    const template = await this.findById(id);
-    await this.templateRepository.remove(template);
+    await this.findById(id);
+    await this.prisma.template.delete({ where: { id } });
   }
 
   // Template Rendering
@@ -144,16 +154,22 @@ export class TemplateService {
     return this.renderTemplate(template, data);
   }
 
-  async renderById(id: number, data: Record<string, any> = {}): Promise<string> {
+  async renderById(
+    id: number,
+    data: Record<string, any> = {},
+  ): Promise<string> {
     const template = await this.findById(id);
     return this.renderTemplate(template, data);
   }
 
-  private renderTemplate(template: Template, data: Record<string, any> = {}): string {
+  private renderTemplate(
+    template: { content: string; default_data: any; slug: string },
+    data: Record<string, any> = {},
+  ): string {
     try {
       // Merge default data with provided data
       const templateData = {
-        ...(template.default_data || {}),
+        ...((template.default_data as Record<string, any>) || {}),
         ...data,
       };
 
@@ -167,7 +183,10 @@ export class TemplateService {
   }
 
   // Render subject (for emails)
-  async renderSubject(slug: string, data: Record<string, any> = {}): Promise<string> {
+  async renderSubject(
+    slug: string,
+    data: Record<string, any> = {},
+  ): Promise<string> {
     const template = await this.findBySlug(slug);
     if (!template.subject) {
       return '';
@@ -175,15 +194,24 @@ export class TemplateService {
 
     try {
       const compiledSubject = Handlebars.compile(template.subject);
-      return compiledSubject({ ...(template.default_data || {}), ...data });
+      return compiledSubject({
+        ...((template.default_data as Record<string, any>) || {}),
+        ...data,
+      });
     } catch (error) {
-      this.logger.error(`Error rendering subject for template ${template.slug}:`, error);
+      this.logger.error(
+        `Error rendering subject for template ${template.slug}:`,
+        error,
+      );
       return template.subject;
     }
   }
 
   // Render text content (for emails)
-  async renderTextContent(slug: string, data: Record<string, any> = {}): Promise<string> {
+  async renderTextContent(
+    slug: string,
+    data: Record<string, any> = {},
+  ): Promise<string> {
     const template = await this.findBySlug(slug);
     if (!template.text_content) {
       // Convert HTML to text if text_content is not provided
@@ -192,9 +220,15 @@ export class TemplateService {
 
     try {
       const compiledText = Handlebars.compile(template.text_content);
-      return compiledText({ ...(template.default_data || {}), ...data });
+      return compiledText({
+        ...((template.default_data as Record<string, any>) || {}),
+        ...data,
+      });
     } catch (error) {
-      this.logger.error(`Error rendering text content for template ${template.slug}:`, error);
+      this.logger.error(
+        `Error rendering text content for template ${template.slug}:`,
+        error,
+      );
       return template.text_content || '';
     }
   }

@@ -77,4 +77,3 @@ export class PostLike {
   })
   updated_at: Date;
 }
-

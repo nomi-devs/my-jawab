@@ -1,15 +1,19 @@
 import { IsString, IsOptional } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateAppSettingDto {
-    @IsString()
-    @IsOptional()
-    setting_key?: string;
+  @ApiPropertyOptional({ example: 'site_name' })
+  @IsString()
+  @IsOptional()
+  setting_key?: string;
 
-    @IsString()
-    @IsOptional()
-    setting_value?: string;
+  @ApiPropertyOptional({ example: 'Jawab' })
+  @IsString()
+  @IsOptional()
+  setting_value?: string;
 
-    @IsString()
-    @IsOptional()
-    setting_group?: string;
+  @ApiPropertyOptional({ example: 'general' })
+  @IsString()
+  @IsOptional()
+  setting_group?: string;
 }

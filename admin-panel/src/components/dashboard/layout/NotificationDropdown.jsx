@@ -1,40 +1,55 @@
 // src/components/dashboard/layout/NotificationDropdown.jsx
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bell, CheckCircle, AlertCircle, Info, X, CreditCard, Package, Loader2 } from 'lucide-react';
+import {
+  Bell,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  X,
+  CreditCard,
+  Package,
+  Loader2,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import notificationApi from '../../../api/notificationApi';
 
 // Helper function to format time ago
 const formatTimeAgo = (dateString) => {
   if (!dateString) return 'Just now';
-  
+
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now - date) / 1000);
-  
+
   if (diffInSeconds < 60) return 'Just now';
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-  
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  });
 };
 
 // Helper function to determine notification type and icon
 const getNotificationType = (notificationType, data) => {
   // Check if it's a subscription-related notification
-  if (notificationType === 'subscription_expired' || 
-      notificationType?.includes('subscription') ||
-      data?.subscription_id ||
-      data?.user_subscription_id) {
+  if (
+    notificationType === 'subscription_expired' ||
+    notificationType?.includes('subscription') ||
+    data?.subscription_id ||
+    data?.user_subscription_id
+  ) {
     return { type: 'subscription', icon: Package, color: 'purple' };
   }
-  
+
   // Check if it's a payment-related notification
   if (notificationType?.includes('payment') || data?.payment_id) {
     return { type: 'payment', icon: CreditCard, color: 'green' };
   }
-  
+
   // Default to info
   return { type: 'info', icon: Info, color: 'blue' };
 };
@@ -47,23 +62,23 @@ const NotificationDropdown = React.memo(() => {
 
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await notificationApi.getSubscriptionPaymentNotifications({
         page: 1,
         limit: 20,
         sort_by: 'created_at',
-        sort_order: 'DESC'
+        sort_order: 'DESC',
       });
-      
+
       // Transform API response to component format
-      const transformedNotifications = (response.data.data || []).map(notification => ({
+      const transformedNotifications = (response.data.data || []).map((notification) => ({
         id: notification.id,
         title: notification.title || 'Notification',
         message: notification.body || '',
@@ -73,9 +88,9 @@ const NotificationDropdown = React.memo(() => {
         notificationType: notification.notification_type,
         data: notification.data,
         actionUrl: notification.action_url,
-        createdAt: notification.created_at
+        createdAt: notification.created_at,
       }));
-      
+
       setNotifications(transformedNotifications);
     } catch (err) {
       console.error('Error fetching notifications:', err);
@@ -106,20 +121,16 @@ const NotificationDropdown = React.memo(() => {
   }, []);
 
   const handleNotificationClick = async (id) => {
-    const notification = notifications.find(n => n.id === id);
+    const notification = notifications.find((n) => n.id === id);
     if (!notification || notification.read) return;
-    
+
     try {
       // Mark as read via API
       await notificationApi.markAsRead(id);
-      
+
       // Update local state
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === id ? { ...n, read: true } : n
-        )
-      );
-      
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+
       // Navigate to action URL if available
       if (notification.actionUrl) {
         // You can implement navigation here if needed
@@ -128,53 +139,48 @@ const NotificationDropdown = React.memo(() => {
     } catch (err) {
       console.error('Error marking notification as read:', err);
       // Still update UI optimistically
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === id ? { ...n, read: true } : n
-        )
-      );
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     }
   };
 
   const markAllAsRead = async () => {
     try {
       await notificationApi.markAllAsRead();
-      
+
       // Update local state
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, read: true }))
-      );
+      setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
     } catch (err) {
       console.error('Error marking all as read:', err);
       // Still update UI optimistically
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, read: true }))
-      );
+      setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
     }
   };
 
   const deleteNotification = async (id, e) => {
     e.stopPropagation();
-    
+
     try {
       await notificationApi.deleteNotification(id);
-      
+
       // Remove from local state
-      setNotifications(prev => prev.filter(notification => notification.id !== id));
+      setNotifications((prev) => prev.filter((notification) => notification.id !== id));
     } catch (err) {
       console.error('Error deleting notification:', err);
       // Still remove from UI optimistically
-      setNotifications(prev => prev.filter(notification => notification.id !== id));
+      setNotifications((prev) => prev.filter((notification) => notification.id !== id));
     }
   };
 
   const getNotificationIcon = (notification) => {
-    const { icon: Icon, color } = getNotificationType(notification.notificationType, notification.data);
+    const { icon: Icon, color } = getNotificationType(
+      notification.notificationType,
+      notification.data,
+    );
     const colorClasses = {
       purple: 'text-purple-500',
       green: 'text-green-500',
       blue: 'text-blue-500',
-      amber: 'text-amber-500'
+      amber: 'text-amber-500',
     };
     return <Icon className={`w-4 h-4 ${colorClasses[color] || colorClasses.blue}`} />;
   };
@@ -185,7 +191,7 @@ const NotificationDropdown = React.memo(() => {
       purple: 'bg-purple-100 border-purple-200 dark:bg-purple-900/30',
       green: 'bg-green-100 border-green-200 dark:bg-green-900/30',
       blue: 'bg-blue-100 border-blue-200 dark:bg-blue-900/30',
-      amber: 'bg-amber-100 border-amber-200 dark:bg-amber-900/30'
+      amber: 'bg-amber-100 border-amber-200 dark:bg-amber-900/30',
     };
     return colorClasses[color] || colorClasses.blue;
   };
@@ -215,8 +221,12 @@ const NotificationDropdown = React.memo(() => {
           {/* Dropdown Header */}
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-gray-800 dark:text-gray-100 transition-colors">Notifications</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{unreadCount} unread notifications</p>
+              <h3 className="font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Notifications
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                {unreadCount} unread notifications
+              </p>
             </div>
             {unreadCount > 0 && (
               <button
@@ -258,7 +268,9 @@ const NotificationDropdown = React.memo(() => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-3 flex-1 min-w-0">
-                        <div className={`p-2 rounded-lg ${getNotificationColor(notification)} flex-shrink-0`}>
+                        <div
+                          className={`p-2 rounded-lg ${getNotificationColor(notification)} flex-shrink-0`}
+                        >
                           {getNotificationIcon(notification)}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -294,8 +306,12 @@ const NotificationDropdown = React.memo(() => {
                 <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Bell className="w-6 h-6 text-purple-400 dark:text-purple-500" />
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 transition-colors">No notifications</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 transition-colors">You're all caught up!</p>
+                <p className="text-gray-500 dark:text-gray-400 transition-colors">
+                  No notifications
+                </p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 transition-colors">
+                  You're all caught up!
+                </p>
               </div>
             )}
           </div>

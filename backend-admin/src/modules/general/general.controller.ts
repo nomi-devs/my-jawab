@@ -15,6 +15,14 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiConsumes,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 import { GeneralService } from './general.service';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
@@ -27,17 +35,17 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from '../auth/entities/user.entity';
 
+@ApiTags('Topics')
 @Controller('topics')
 @UseGuards(JwtAuthGuard)
 export class GeneralController {
   constructor(private readonly generalService: GeneralService) {}
 
   // Public endpoints (authenticated users can view)
+  @ApiOperation({ summary: 'List all topics' })
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getTopics(
-    @Query() listQueryDto: ListTopicsQueryDto,
-  ): Promise<{
+  async getTopics(@Query() listQueryDto: ListTopicsQueryDto): Promise<{
     data: TopicResponseDto[];
     meta: {
       total: number;
@@ -49,26 +57,30 @@ export class GeneralController {
     return this.generalService.getTopics(listQueryDto);
   }
 
+  @ApiOperation({ summary: 'Get active topics' })
   @Get('active')
   @HttpCode(HttpStatus.OK)
   async getActiveTopics(): Promise<TopicResponseDto[]> {
     return this.generalService.getActiveTopics();
   }
 
+  @ApiOperation({ summary: 'Get topics for select list' })
   @Get('select-list')
   @HttpCode(HttpStatus.OK)
   async getTopicsForSelectList(): Promise<TopicSelectListDto[]> {
     return this.generalService.getTopicsForSelectList();
   }
 
+  @ApiOperation({ summary: 'Get topic by slug' })
+  @ApiParam({ name: 'slug', type: String })
   @Get('slug/:slug')
   @HttpCode(HttpStatus.OK)
-  async getTopicBySlug(
-    @Param('slug') slug: string,
-  ): Promise<TopicResponseDto> {
+  async getTopicBySlug(@Param('slug') slug: string): Promise<TopicResponseDto> {
     return this.generalService.getTopicBySlug(slug);
   }
 
+  @ApiOperation({ summary: 'Get topic sub-topics' })
+  @ApiParam({ name: 'id', type: Number })
   @Get(':id/children')
   @HttpCode(HttpStatus.OK)
   async getTopicChildren(
@@ -77,6 +89,8 @@ export class GeneralController {
     return this.generalService.getTopicChildren(id);
   }
 
+  @ApiOperation({ summary: 'Get topic by ID' })
+  @ApiParam({ name: 'id', type: Number })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getTopicById(
@@ -86,6 +100,22 @@ export class GeneralController {
   }
 
   // Admin-only endpoints
+  @ApiOperation({ summary: 'Create topic' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        topic_image: { type: 'string', format: 'binary' },
+        parent_id: { type: 'integer', example: 0 },
+        topic_slug: { type: 'string', example: 'javascript' },
+        topic_name: { type: 'string', example: 'JavaScript' },
+        topic_description: { type: 'string' },
+        is_active: { type: 'string', enum: ['active', 'inactive'] },
+      },
+    },
+  })
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -103,6 +133,23 @@ export class GeneralController {
     return this.generalService.createTopic(createTopicDto, user.userId, file);
   }
 
+  @ApiOperation({ summary: 'Update topic' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', type: Number })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        topic_image: { type: 'string', format: 'binary' },
+        parent_id: { type: 'integer', example: 0 },
+        topic_slug: { type: 'string', example: 'javascript' },
+        topic_name: { type: 'string', example: 'JavaScript' },
+        topic_description: { type: 'string' },
+        is_active: { type: 'string', enum: ['active', 'inactive'] },
+      },
+    },
+  })
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -118,9 +165,17 @@ export class GeneralController {
     @Body() updateTopicDto: UpdateTopicDto,
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<TopicResponseDto> {
-    return this.generalService.updateTopic(id, updateTopicDto, user.userId, file);
+    return this.generalService.updateTopic(
+      id,
+      updateTopicDto,
+      user.userId,
+      file,
+    );
   }
 
+  @ApiOperation({ summary: 'Delete topic' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', type: Number })
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
@@ -132,4 +187,3 @@ export class GeneralController {
     return this.generalService.deleteTopic(id, user.userId);
   }
 }
-

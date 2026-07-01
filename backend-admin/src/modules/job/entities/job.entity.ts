@@ -53,7 +53,11 @@ export class Job {
   @Index()
   job_status: JobStatus;
 
-  @Column({ type: 'int', default: 5, comment: 'Job priority (1 = highest, 10 = lowest)' })
+  @Column({
+    type: 'int',
+    default: 5,
+    comment: 'Job priority (1 = highest, 10 = lowest)',
+  })
   @Index()
   priority: number;
 
@@ -87,21 +91,41 @@ export class Job {
   @Column({ type: 'text', nullable: true, comment: 'Error message if failed' })
   error_message: string | null;
 
-  @Column({ type: 'json', nullable: true, comment: 'Detailed error information' })
+  @Column({
+    type: 'json',
+    nullable: true,
+    comment: 'Detailed error information',
+  })
   error_details: Record<string, any> | null;
 
   // Execution tracking
-  @Column({ type: 'timestamp', nullable: true, comment: 'When job processing started' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When job processing started',
+  })
   started_at: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When job was completed' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When job was completed',
+  })
   completed_at: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When job is scheduled to run' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When job is scheduled to run',
+  })
   @Index()
   scheduled_at: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'Next retry attempt time' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'Next retry attempt time',
+  })
   @Index()
   next_retry_at: Date | null;
 
@@ -137,4 +161,3 @@ export class Job {
   })
   updated_at: Date;
 }
-

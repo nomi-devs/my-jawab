@@ -33,15 +33,18 @@ const PaymentsPage = () => {
   const paymentsPerPage = 10;
 
   // Memoized params for TanStack Query
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    limit: paymentsPerPage,
-    ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
-    sort_by: sortBy,
-    sort_order: sortOrder,
-    ...(statusFilter && statusFilter !== 'all' && { payment_status: statusFilter }),
-    ...(methodFilter && methodFilter !== 'all' && { payment_method: methodFilter })
-  }), [currentPage, searchTerm, sortBy, sortOrder, statusFilter, methodFilter, paymentsPerPage]);
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: paymentsPerPage,
+      ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      ...(statusFilter && statusFilter !== 'all' && { payment_status: statusFilter }),
+      ...(methodFilter && methodFilter !== 'all' && { payment_method: methodFilter }),
+    }),
+    [currentPage, searchTerm, sortBy, sortOrder, statusFilter, methodFilter, paymentsPerPage],
+  );
 
   const {
     data,
@@ -49,13 +52,10 @@ const PaymentsPage = () => {
     isFetching,
     isError,
     error: queryError,
-    refetch
+    refetch,
   } = usePaymentsList(queryParams);
 
-  const {
-    createPayment,
-    isCreating
-  } = usePaymentActions();
+  const { createPayment, isCreating } = usePaymentActions();
 
   const payments = data?.payments || [];
   const totalPayments = data?.total || 0;
@@ -64,16 +64,12 @@ const PaymentsPage = () => {
   // Use effective loading state for UI (shimmer only on initial load)
   const loading = isInitialLoading;
 
-
-
   // Fetch payments from API
-
 
   // Track previous values to prevent unnecessary fetches
   const prevFiltersRef = useRef({ searchTerm, statusFilter, methodFilter, sortBy, sortOrder });
 
   // Initial fetch and refetch when filters change
-
 
   // Handlers
   const handleSearch = useCallback((term) => {
@@ -129,13 +125,13 @@ const PaymentsPage = () => {
         showAvatar={false}
         showActions
         columnWidths={[
-          'w-10',        // #
-          'w-[260px]',   // User / Reference
-          'w-[220px]',   // Method
-          'w-[140px]',   // Amount
-          'w-[120px]',   // Status
-          'w-[130px]',   // Date
-          'w-[100px]',   // Actions
+          'w-10', // #
+          'w-[260px]', // User / Reference
+          'w-[220px]', // Method
+          'w-[140px]', // Amount
+          'w-[120px]', // Status
+          'w-[130px]', // Date
+          'w-[100px]', // Actions
         ]}
         containerClassName="min-h-[560px]"
       />
@@ -205,8 +201,11 @@ const PaymentsPage = () => {
         />
 
         {/* Loading Overlay - Smooth transition */}
-        <div className={`relative overflow-hidden transition-all duration-300 ${isFetching && payments.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
-          }`}>
+        <div
+          className={`relative overflow-hidden transition-all duration-300 ${
+            isFetching && payments.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
@@ -215,11 +214,14 @@ const PaymentsPage = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto transition-all duration-300 ease-in-out p-2" style={{
-          minHeight: payments.length === 0 ? '400px' : 'auto',
-          opacity: isFetching && payments.length > 0 ? 0.6 : 1,
-          scrollbarGutter: 'stable'
-        }}>
+        <div
+          className="overflow-x-auto transition-all duration-300 ease-in-out p-2"
+          style={{
+            minHeight: payments.length === 0 ? '400px' : 'auto',
+            opacity: isFetching && payments.length > 0 ? 0.6 : 1,
+            scrollbarGutter: 'stable',
+          }}
+        >
           {loading && payments.length === 0 ? (
             <div className="p-12">
               <div className="flex flex-col items-center justify-center">
@@ -232,7 +234,9 @@ const PaymentsPage = () => {
               <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                 <CreditCard className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No payments found</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                No payments found
+              </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all' || methodFilter !== 'all'
                   ? 'Try changing your search or filters'
@@ -272,4 +276,3 @@ const PaymentsPage = () => {
 };
 
 export default PaymentsPage;
-

@@ -17,7 +17,7 @@ import {
   RefreshCw,
   Calendar,
   X,
-  Heart
+  Heart,
 } from 'lucide-react';
 import StatCard from './StatCard';
 import UserGrowthGraph from './UserGrowthGraph';
@@ -67,7 +67,7 @@ const DashboardOverview = () => {
       }
       return {}; // 'all'
     } else if (filterMode === 'custom') {
-      // Return null or partial params if invalid, to control 'enabled' if desired, 
+      // Return null or partial params if invalid, to control 'enabled' if desired,
       // or just return what we have and let API validate/fail.
       // But for smooth UX, we might want to wait until both are set.
       if (startDate && endDate) {
@@ -77,7 +77,7 @@ const DashboardOverview = () => {
     return {};
   }, [filterMode, timeRange, startDate, endDate]);
 
-  const isValidCustomRange = filterMode === 'custom' ? (startDate && endDate) : true;
+  const isValidCustomRange = filterMode === 'custom' ? startDate && endDate : true;
 
   const {
     data: stats,
@@ -85,21 +85,19 @@ const DashboardOverview = () => {
     isFetching: statsFetching,
     isError: statsError,
     error: statsErrorObj,
-    refetch: refetchStats
+    refetch: refetchStats,
   } = useDashboardStats(
-    // Only pass params if valid custom range or time range mode. 
+    // Only pass params if valid custom range or time range mode.
     // If invalid custom range, we pass empty obj but 'enabled' will block it.
-    isValidCustomRange ? queryParams : {}
+    isValidCustomRange ? queryParams : {},
   );
 
   const {
     data: userGrowthData,
     isLoading: growthLoading,
     isFetching: growthFetching,
-    refetch: refetchGrowth
-  } = useUserGrowth(
-    isValidCustomRange ? queryParams : {}
-  );
+    refetch: refetchGrowth,
+  } = useUserGrowth(isValidCustomRange ? queryParams : {});
 
   // Handle refresh
   const handleRefresh = () => {
@@ -108,11 +106,11 @@ const DashboardOverview = () => {
   };
 
   const loading = statsFetching || growthFetching;
-  const error = statsError ? (
-    statsErrorObj?.response?.data?.message ||
-    statsErrorObj?.message ||
-    'Failed to load dashboard statistics'
-  ) : null;
+  const error = statsError
+    ? statsErrorObj?.response?.data?.message ||
+      statsErrorObj?.message ||
+      'Failed to load dashboard statistics'
+    : null;
 
   // Handle time range change
   const handleTimeRangeChange = (range) => {
@@ -133,7 +131,7 @@ const DashboardOverview = () => {
   // Apply custom date range
   const applyCustomDateRange = () => {
     if (!startDate || !endDate) {
-      // Logic handled by memoized params & hook enabled check, 
+      // Logic handled by memoized params & hook enabled check,
       // but UI might want to show error if user tries to apply invalid range manually?
       // Actually with auto-fetch on state change, we don't have an "Apply" button usually?
       // The logic in previous code was auto-fetching when date changed.
@@ -159,8 +157,6 @@ const DashboardOverview = () => {
     setShowDatePicker(false);
   };
 
-
-
   // Prepare stat cards data from API response
   const getStatCardsData = () => {
     if (!stats) return [];
@@ -173,56 +169,64 @@ const DashboardOverview = () => {
         count: formatNumber(stats.total_users),
         icon: Users,
         trend: getTrend('total_users_change', trends),
-        description: `${formatNumber(stats.active_users)} active • ${formatNumber(stats.recent_users || 0)} new`
+        description: `${formatNumber(stats.active_users)} active • ${formatNumber(stats.recent_users || 0)} new`,
       },
       {
         title: 'Pro Users',
         count: formatNumber(stats.pro_users),
         icon: Crown,
         trend: getTrend('pro_users_change', trends),
-        description: stats.total_users > 0 ? `${Math.round((stats.pro_users / stats.total_users) * 100)}% of total users` : '0% of total users'
+        description:
+          stats.total_users > 0
+            ? `${Math.round((stats.pro_users / stats.total_users) * 100)}% of total users`
+            : '0% of total users',
       },
       {
         title: 'Communities',
         count: formatNumber(stats.total_communities),
         icon: Globe,
         trend: getTrend('total_communities_change', trends),
-        description: `${formatNumber(stats.active_communities)} active communities`
+        description: `${formatNumber(stats.active_communities)} active communities`,
       },
       {
         title: 'Total Posts',
         count: formatNumber(stats.total_posts),
         icon: FileText,
         trend: getTrend('total_posts_change', trends),
-        description: `${formatNumber(stats.published_posts)} published • ${formatNumber(stats.recent_posts || 0)} new`
+        description: `${formatNumber(stats.published_posts)} published • ${formatNumber(stats.recent_posts || 0)} new`,
       },
       {
         title: 'Comments',
         count: formatNumber(stats.total_comments),
         icon: MessageCircle,
         trend: getTrend('total_comments_change', trends),
-        description: stats.engagement_rate ? `Engagement: ${stats.engagement_rate.toFixed(1)}%` : 'Comments across all posts'
+        description: stats.engagement_rate
+          ? `Engagement: ${stats.engagement_rate.toFixed(1)}%`
+          : 'Comments across all posts',
       },
       {
         title: 'Topics',
         count: formatNumber(stats.total_topics),
         icon: Hash,
         trend: getTrend('total_topics_change', trends),
-        description: `${formatNumber(stats.active_topics)} active topics`
+        description: `${formatNumber(stats.active_topics)} active topics`,
       },
       {
         title: 'Verified Users',
         count: formatNumber(stats.verified_users),
         icon: CheckCircle,
         trend: getTrend('verified_users_change', trends),
-        description: stats.total_users > 0 ? `${Math.round((stats.verified_users / stats.total_users) * 100)}% verification rate` : '0% verification rate'
+        description:
+          stats.total_users > 0
+            ? `${Math.round((stats.verified_users / stats.total_users) * 100)}% verification rate`
+            : '0% verification rate',
       },
       {
         title: 'Published Polls',
         count: formatNumber(stats.published_polls),
         icon: BarChart2,
         trend: getTrend('published_polls_change', trends),
-        description: `${formatNumber(stats.total_polls)} total polls created`
+        description: `${formatNumber(stats.total_polls)} total polls created`,
       },
     ];
   };
@@ -232,7 +236,7 @@ const DashboardOverview = () => {
     // If we have real user growth data, use it
     if (userGrowthData && userGrowthData.data && userGrowthData.data.length > 0) {
       const growthData = userGrowthData.data;
-      const maxCount = Math.max(...growthData.map(item => item.cumulative || item.count), 1);
+      const maxCount = Math.max(...growthData.map((item) => item.cumulative || item.count), 1);
 
       return growthData.map((item, index) => {
         // Calculate height based on cumulative count
@@ -275,7 +279,8 @@ const DashboardOverview = () => {
         }
 
         // Show label for every nth item to avoid crowding
-        const showLabel = index % Math.max(1, Math.floor(growthData.length / 7)) === 0 ||
+        const showLabel =
+          index % Math.max(1, Math.floor(growthData.length / 7)) === 0 ||
           index === growthData.length - 1 ||
           index === 0;
 
@@ -285,7 +290,7 @@ const DashboardOverview = () => {
           cumulative: item.cumulative || 0,
           label: label,
           showLabel: showLabel,
-          date: item.date
+          date: item.date,
         };
       });
     }
@@ -310,7 +315,10 @@ const DashboardOverview = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-purple-100 dark:border-gray-700 animate-pulse transition-colors">
+            <div
+              key={i}
+              className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-purple-100 dark:border-gray-700 animate-pulse transition-colors"
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
@@ -331,8 +339,12 @@ const DashboardOverview = () => {
         <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl border border-purple-100 dark:border-gray-700 transition-colors">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors">Dashboard Overview</h2>
-              <p className="text-gray-500 dark:text-gray-400 transition-colors">Welcome to your daily social analysis.</p>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Dashboard Overview
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 transition-colors">
+                Welcome to your daily social analysis.
+              </p>
             </div>
           </div>
         </div>
@@ -341,7 +353,9 @@ const DashboardOverview = () => {
           <div className="w-16 h-16 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
             <AlertCircle className="text-red-600 dark:text-red-400" size={32} />
           </div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 transition-colors">Error Loading Dashboard</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 transition-colors">
+            Error Loading Dashboard
+          </h3>
           <p className="text-gray-600 dark:text-gray-300 mb-6 transition-colors">{error}</p>
           <button
             onClick={handleRefresh}
@@ -365,8 +379,12 @@ const DashboardOverview = () => {
         <div className="p-4 border-b border-purple-100 dark:border-gray-700 transition-colors">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
             <div>
-              <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">Dashboard Overview</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">Welcome to your daily social analysis.</p>
+              <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Dashboard Overview
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
+                Welcome to your daily social analysis.
+              </p>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
@@ -384,10 +402,11 @@ const DashboardOverview = () => {
                     <button
                       key={range}
                       onClick={() => handleTimeRangeChange(range)}
-                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${timeRange === range
-                        ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
-                        }`}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        timeRange === range
+                          ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'
+                      }`}
                       disabled={loading}
                     >
                       {range.charAt(0).toUpperCase() + range.slice(1)}
@@ -469,33 +488,52 @@ const DashboardOverview = () => {
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-xl border border-purple-100 dark:border-gray-700 transition-colors w-full overflow-hidden">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">User Growth</h3>
+              <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                User Growth
+              </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
                 {filterMode === 'custom' && startDate && endDate
                   ? `${new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                  : timeRange === 'week' ? 'Last 7 days' :
-                    timeRange === 'month' ? 'Last 30 days' :
-                      timeRange === 'year' ? 'Last 365 days' :
-                        'All time'}
+                  : timeRange === 'week'
+                    ? 'Last 7 days'
+                    : timeRange === 'month'
+                      ? 'Last 30 days'
+                      : timeRange === 'year'
+                        ? 'Last 365 days'
+                        : 'All time'}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {(stats?.trends?.total_users_change !== undefined && stats?.trends?.total_users_change !== null && stats.trends.total_users_change !== 0) && (
-                <div className={`flex items-center gap-1 text-sm transition-colors ${stats.trends.total_users_change > 0
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-600 dark:text-red-400'
-                  }`}>
-                  {stats.trends.total_users_change > 0 ? (
-                    <TrendingUp size={16} />
-                  ) : (
-                    <TrendingDown size={16} />
-                  )}
-                  <span>{stats.trends.total_users_change > 0 ? '+' : ''}{stats.trends.total_users_change.toFixed(1)}% growth</span>
-                </div>
-              )}
+              {stats?.trends?.total_users_change !== undefined &&
+                stats?.trends?.total_users_change !== null &&
+                stats.trends.total_users_change !== 0 && (
+                  <div
+                    className={`flex items-center gap-1 text-sm transition-colors ${
+                      stats.trends.total_users_change > 0
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-red-600 dark:text-red-400'
+                    }`}
+                  >
+                    {stats.trends.total_users_change > 0 ? (
+                      <TrendingUp size={16} />
+                    ) : (
+                      <TrendingDown size={16} />
+                    )}
+                    <span>
+                      {stats.trends.total_users_change > 0 ? '+' : ''}
+                      {stats.trends.total_users_change.toFixed(1)}% growth
+                    </span>
+                  </div>
+                )}
 
               <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                <span>Engagement: {stats?.engagement_rate && stats.engagement_rate > 0 && (stats.engagement_rate.toFixed(1))}%</span>
+                <span>
+                  Engagement:{' '}
+                  {stats?.engagement_rate &&
+                    stats.engagement_rate > 0 &&
+                    stats.engagement_rate.toFixed(1)}
+                  %
+                </span>
               </div>
             </div>
           </div>
@@ -520,7 +558,9 @@ const DashboardOverview = () => {
         {/* Trending Topics */}
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-gray-700 transition-colors">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">Trending Topics</h3>
+            <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
+              Trending Topics
+            </h3>
             <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full transition-colors">
               {stats?.trending_topics?.length || 0} topics
             </span>
@@ -528,7 +568,9 @@ const DashboardOverview = () => {
 
           <div className="space-y-3">
             {stats?.trending_topics?.slice(0, 5).map((topic, i) => {
-              const maxUsage = Math.max(...(stats.trending_topics?.map(t => t.usage_count) || [100]));
+              const maxUsage = Math.max(
+                ...(stats.trending_topics?.map((t) => t.usage_count) || [100]),
+              );
               const widthPercentage = (topic.usage_count / maxUsage) * 100;
 
               return (
@@ -541,12 +583,19 @@ const DashboardOverview = () => {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-gray-500 dark:text-gray-400 transition-colors">{formatNumber(topic.usage_count)} uses</span>
+                      <span className="text-gray-500 dark:text-gray-400 transition-colors">
+                        {formatNumber(topic.usage_count)} uses
+                      </span>
                       {i < 3 && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${i === 0 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                          i === 1 ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' :
-                            'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
-                          } transition-colors`}>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            i === 0
+                              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                              : i === 1
+                                ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                                : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+                          } transition-colors`}
+                        >
                           #{i + 1}
                         </span>
                       )}
@@ -571,7 +620,9 @@ const DashboardOverview = () => {
                 <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                   <Hash className="text-gray-400 dark:text-gray-500" size={24} />
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 transition-colors">No trending topics data available</p>
+                <p className="text-gray-500 dark:text-gray-400 transition-colors">
+                  No trending topics data available
+                </p>
               </div>
             )}
           </div>
@@ -592,70 +643,145 @@ const DashboardOverview = () => {
       {/* Additional Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-purple-100 dark:border-gray-700 transition-colors">
-          <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">Content Overview</h4>
+          <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">
+            Content Overview
+          </h4>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Published Posts</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.published_posts && stats.published_posts > 0 && formatNumber(stats.published_posts)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Published Posts
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.published_posts &&
+                  stats.published_posts > 0 &&
+                  formatNumber(stats.published_posts)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Draft Posts</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.draft_posts && stats.draft_posts > 0 && formatNumber(stats.draft_posts)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Draft Posts
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.draft_posts && stats.draft_posts > 0 && formatNumber(stats.draft_posts)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Total Comments</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.total_comments && stats.total_comments > 0 && formatNumber(stats.total_comments)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Total Comments
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.total_comments &&
+                  stats.total_comments > 0 &&
+                  formatNumber(stats.total_comments)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Published Polls</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.published_polls && stats.published_polls > 0 && formatNumber(stats.published_polls)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Published Polls
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.published_polls &&
+                  stats.published_polls > 0 &&
+                  formatNumber(stats.published_polls)}
+              </span>
             </div>
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-purple-100 dark:border-gray-700 transition-colors">
-          <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">User Engagement</h4>
+          <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">
+            User Engagement
+          </h4>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Active Users</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.active_users && stats.active_users > 0 && formatNumber(stats.active_users)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Active Users
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.active_users && stats.active_users > 0 && formatNumber(stats.active_users)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Daily Active</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.daily_active_users && stats.daily_active_users > 0 && formatNumber(stats.daily_active_users)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Daily Active
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.daily_active_users &&
+                  stats.daily_active_users > 0 &&
+                  formatNumber(stats.daily_active_users)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Weekly Active</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.weekly_active_users && stats.weekly_active_users > 0 && formatNumber(stats.weekly_active_users)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Weekly Active
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.weekly_active_users &&
+                  stats.weekly_active_users > 0 &&
+                  formatNumber(stats.weekly_active_users)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Monthly Active</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.monthly_active_users && stats.monthly_active_users > 0 && formatNumber(stats.monthly_active_users)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Monthly Active
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.monthly_active_users &&
+                  stats.monthly_active_users > 0 &&
+                  formatNumber(stats.monthly_active_users)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Engagement Rate</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.engagement_rate && stats.engagement_rate > 0 && (stats.engagement_rate.toFixed(1))}%</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Engagement Rate
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.engagement_rate &&
+                  stats.engagement_rate > 0 &&
+                  stats.engagement_rate.toFixed(1)}
+                %
+              </span>
             </div>
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-purple-100 dark:border-gray-700 transition-colors">
-          <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">Platform Activity</h4>
+          <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">
+            Platform Activity
+          </h4>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Active Communities</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.active_communities && stats.active_communities > 0 && formatNumber(stats.active_communities)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Active Communities
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.active_communities &&
+                  stats.active_communities > 0 &&
+                  formatNumber(stats.active_communities)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Active Topics</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.active_topics && stats.active_topics > 0 && formatNumber(stats.active_topics)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Active Topics
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.active_topics &&
+                  stats.active_topics > 0 &&
+                  formatNumber(stats.active_topics)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Total Polls</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">{stats?.total_polls && stats.total_polls > 0 && formatNumber(stats.total_polls)}</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Total Polls
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
+                {stats?.total_polls && stats.total_polls > 0 && formatNumber(stats.total_polls)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 transition-colors">Content Ratio</span>
+              <span className="text-gray-600 dark:text-gray-400 transition-colors">
+                Content Ratio
+              </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.total_posts && stats?.total_comments
                   ? `1:${Math.round(stats.total_comments / stats.total_posts)}`
@@ -673,7 +799,9 @@ const DashboardOverview = () => {
           {stats?.top_posts?.length > 0 && (
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-gray-700 transition-colors">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">Top Posts</h3>
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                  Top Posts
+                </h3>
                 <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full transition-colors">
                   {stats.top_posts.length} posts
                 </span>
@@ -685,10 +813,15 @@ const DashboardOverview = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           {i < 3 && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${i === 0 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                              i === 1 ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' :
-                                'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
-                              } transition-colors`}>
+                            <span
+                              className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                                i === 0
+                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                                  : i === 1
+                                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                                    : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+                              } transition-colors`}
+                            >
                               #{i + 1}
                             </span>
                           )}
@@ -698,13 +831,13 @@ const DashboardOverview = () => {
                         </div>
                         <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400 transition-colors">
                           <span>@{post.user?.username || 'Unknown'}</span>
-                          {(post.like_count > 0) && (
+                          {post.like_count > 0 && (
                             <span className="flex items-center gap-1">
                               <Heart className="w-3 h-3" />
                               {formatNumber(post.like_count)}
                             </span>
                           )}
-                          {(post.comment_count > 0) && (
+                          {post.comment_count > 0 && (
                             <span className="flex items-center gap-1">
                               <MessageCircle className="w-3 h-3" />
                               {formatNumber(post.comment_count)}
@@ -723,7 +856,9 @@ const DashboardOverview = () => {
           {stats?.top_users?.length > 0 && (
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-gray-700 transition-colors">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">Top Users</h3>
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                  Top Users
+                </h3>
                 <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full transition-colors">
                   {stats.top_users.length} users
                 </span>
@@ -734,10 +869,15 @@ const DashboardOverview = () => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {i < 3 && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${i === 0 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                            i === 1 ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' :
-                              'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
-                            } transition-colors`}>
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                              i === 0
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                                : i === 1
+                                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                                  : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+                            } transition-colors`}
+                          >
                             #{i + 1}
                           </span>
                         )}
@@ -746,13 +886,13 @@ const DashboardOverview = () => {
                             {user.username || user.email}
                           </p>
                           <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
-                            {(user.post_count > 0) && (
+                            {user.post_count > 0 && (
                               <span className="flex items-center gap-1">
                                 <FileText className="w-3 h-3" />
                                 {formatNumber(user.post_count)} posts
                               </span>
                             )}
-                            {(user.comment_count > 0) && (
+                            {user.comment_count > 0 && (
                               <span className="flex items-center gap-1">
                                 <MessageCircle className="w-3 h-3" />
                                 {formatNumber(user.comment_count)} comments
@@ -774,18 +914,26 @@ const DashboardOverview = () => {
       {stats?.recent_activity?.length > 0 && (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-gray-700 mt-4 transition-colors">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">Recent Activity</h3>
+            <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
+              Recent Activity
+            </h3>
             <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full transition-colors">
               {stats.recent_activity.length} activities
             </span>
           </div>
           <div className="space-y-2">
             {stats.recent_activity.slice(0, 10).map((activity, i) => (
-              <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-gray-700/30 transition-colors">
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${activity.type === 'post'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                  } transition-colors`}>
+              <div
+                key={i}
+                className="flex items-start gap-3 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-gray-700/30 transition-colors"
+              >
+                <div
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                    activity.type === 'post'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                  } transition-colors`}
+                >
                   {activity.type === 'post' ? <FileText size={14} /> : <MessageCircle size={14} />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -796,14 +944,18 @@ const DashboardOverview = () => {
                     <span className="text-[10px] text-gray-500 dark:text-gray-400 transition-colors">
                       @{activity.user?.username || 'Unknown'}
                     </span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500 transition-colors">•</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 transition-colors">
+                      •
+                    </span>
                     <span className="text-[10px] text-gray-500 dark:text-gray-400 transition-colors">
-                      {activity.created_at ? new Date(activity.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : 'Recently'}
+                      {activity.created_at
+                        ? new Date(activity.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Recently'}
                     </span>
                   </div>
                 </div>

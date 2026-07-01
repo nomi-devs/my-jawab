@@ -7,7 +7,7 @@ const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
     try {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: currencyCode
+        currency: currencyCode,
       }).format(price);
     } catch (e) {
       return `${currencyCode} ${price}`;
@@ -46,7 +46,10 @@ const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
               {subscription.subscription_name}
             </div>
             {subscription.subscription_description && (
-              <div className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400 leading-snug line-clamp-2" style={{ width: '150px' }}>
+              <div
+                className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400 leading-snug line-clamp-2"
+                style={{ width: '150px' }}
+              >
                 {subscription.subscription_description}
               </div>
             )}
@@ -55,34 +58,45 @@ const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex flex-col space-y-1">
-          <span className={`inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-medium ${getTypeBadgeColor(subscription.subscription_type)}`}>
+          <span
+            className={`inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-medium ${getTypeBadgeColor(subscription.subscription_type)}`}
+          >
             {subscription.subscription_type}
           </span>
           <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-            {formatPrice(subscription.subscription_price, subscription.subscription_currency || subscription.currency?.currency_code)}
+            {formatPrice(
+              subscription.subscription_price,
+              subscription.subscription_currency || subscription.currency?.currency_code,
+            )}
           </span>
         </div>
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="text-xs text-gray-700 dark:text-gray-300">
-          {formatDuration(subscription.subscription_duration, subscription.subscription_duration_type)}
+          {formatDuration(
+            subscription.subscription_duration,
+            subscription.subscription_duration_type,
+          )}
         </div>
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
-        <span className={`inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-medium ${subscription.is_active
-          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-          }`}>
+        <span
+          className={`inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-medium ${
+            subscription.is_active
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+          }`}
+        >
           {subscription.is_active ? 'Active' : 'Inactive'}
         </span>
       </td>
       <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
         {subscription.created_at
           ? new Date(subscription.created_at).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          })
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })
           : 'N/A'}
       </td>
       <td className="px-4 py-2 whitespace-nowrap text-right text-xs font-medium">
@@ -115,4 +129,3 @@ const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
 };
 
 export default SubscriptionRow;
-

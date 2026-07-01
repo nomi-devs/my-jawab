@@ -24,7 +24,7 @@ const TopTopics = () => {
               <span className="text-muted-foreground">{topic.count}</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-primary rounded-full"
                 style={{ width: `${topic.percentage}%` }}
               ></div>

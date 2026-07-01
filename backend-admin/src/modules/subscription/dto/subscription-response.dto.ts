@@ -1,4 +1,7 @@
-import { SubscriptionType, SubscriptionDurationType } from '../entities/subscription.entity';
+import {
+  SubscriptionType,
+  SubscriptionDurationType,
+} from '../entities/subscription.entity';
 
 export class SubscriptionResponseDto {
   id: number;
@@ -17,4 +20,3 @@ export class SubscriptionResponseDto {
   subscription_currency?: string | null;
   currency?: any;
 }
-

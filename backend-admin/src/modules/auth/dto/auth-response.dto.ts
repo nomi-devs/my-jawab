@@ -1,17 +1,23 @@
-import { UserRole, AuthType } from '../entities/user.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class AuthResponseDto {
+  @ApiProperty({ description: 'Authenticated user details', type: Object })
   user: {
     id: number;
     username: string;
     email: string;
-    role: UserRole;
-    auth_type: AuthType;
+    role: string;
+    auth_type: string;
     is_active: boolean;
     is_verified: boolean;
   };
+
+  @ApiProperty({ description: 'JWT access token', example: 'eyJhbGci...' })
   access_token: string;
+
+  @ApiProperty({ description: 'JWT refresh token', example: 'eyJhbGci...' })
   refresh_token: string;
+
+  @ApiProperty({ description: 'Access token expiry in seconds', example: 3600 })
   expires_in: number;
 }
-

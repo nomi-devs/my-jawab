@@ -40,17 +40,21 @@ const SubscriptionsPage = () => {
   const subscriptionsPerPage = 10;
 
   // Memoized params for TanStack Query
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    limit: subscriptionsPerPage,
-    ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
-    sort_by: sortBy,
-    sort_order: sortOrder,
-    ...(typeFilter && typeFilter !== 'all' && { subscription_type: typeFilter }),
-    ...(statusFilter !== 'all' && statusFilter !== null && {
-      is_active: statusFilter
-    })
-  }), [currentPage, searchTerm, sortBy, sortOrder, typeFilter, statusFilter, subscriptionsPerPage]);
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: subscriptionsPerPage,
+      ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      ...(typeFilter && typeFilter !== 'all' && { subscription_type: typeFilter }),
+      ...(statusFilter !== 'all' &&
+        statusFilter !== null && {
+          is_active: statusFilter,
+        }),
+    }),
+    [currentPage, searchTerm, sortBy, sortOrder, typeFilter, statusFilter, subscriptionsPerPage],
+  );
 
   const {
     data,
@@ -58,7 +62,7 @@ const SubscriptionsPage = () => {
     isFetching,
     isError,
     error: queryError,
-    refetch
+    refetch,
   } = useSubscriptionsList(queryParams);
 
   const {
@@ -67,7 +71,7 @@ const SubscriptionsPage = () => {
     deleteSubscription,
     isCreating,
     isUpdating,
-    isDeleting
+    isDeleting,
   } = useSubscriptionActions();
 
   const subscriptions = data?.subscriptions || [];
@@ -77,15 +81,12 @@ const SubscriptionsPage = () => {
   // Use effective loading state for UI (shimmer only on initial load)
   const loading = isInitialLoading;
 
-
   // Fetch subscriptions from API
-
 
   // Track previous values to prevent unnecessary fetches
   const prevFiltersRef = useRef({ searchTerm, typeFilter, statusFilter, sortBy, sortOrder });
 
   // Initial fetch and refetch when filters change
-
 
   // Handlers
   const handleSearch = useCallback((term) => {
@@ -140,11 +141,14 @@ const SubscriptionsPage = () => {
       setShowDeleteConfirm(false);
       setSubscriptionToDelete(null);
 
-      setSuccessMessage(`Subscription "${subscriptionToDelete.subscription_name}" deleted successfully!`);
+      setSuccessMessage(
+        `Subscription "${subscriptionToDelete.subscription_name}" deleted successfully!`,
+      );
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting subscription:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to delete subscription. Please try again.';
+      const errorMsg =
+        err.response?.data?.message || 'Failed to delete subscription. Please try again.';
       setLocalError(errorMsg);
       setTimeout(() => setLocalError(null), 5000);
     }
@@ -181,13 +185,13 @@ const SubscriptionsPage = () => {
         showAvatar={false}
         showActions
         columnWidths={[
-          'w-10',        // #
-          'w-[260px]',   // Subscription
-          'w-[220px]',   // Type
-          'w-[140px]',   // Price
-          'w-[120px]',   // Status
-          'w-[130px]',   // Created
-          'w-[100px]',   // Actions
+          'w-10', // #
+          'w-[260px]', // Subscription
+          'w-[220px]', // Type
+          'w-[140px]', // Price
+          'w-[120px]', // Status
+          'w-[130px]', // Created
+          'w-[100px]', // Actions
         ]}
         containerClassName="min-h-[560px]"
       />
@@ -224,7 +228,11 @@ const SubscriptionsPage = () => {
         onConfirm={handleDeleteConfirm}
         type="danger"
         title="Delete Subscription"
-        message={subscriptionToDelete ? `Are you sure you want to delete "${subscriptionToDelete.subscription_name}"? This action cannot be undone.` : ''}
+        message={
+          subscriptionToDelete
+            ? `Are you sure you want to delete "${subscriptionToDelete.subscription_name}"? This action cannot be undone.`
+            : ''
+        }
         confirmText="Delete"
         cancelText="Cancel"
       />
@@ -285,8 +293,11 @@ const SubscriptionsPage = () => {
         />
 
         {/* Loading Overlay - Smooth transition */}
-        <div className={`relative overflow-hidden transition-all duration-300 ${isFetching && subscriptions.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
-          }`}>
+        <div
+          className={`relative overflow-hidden transition-all duration-300 ${
+            isFetching && subscriptions.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
@@ -295,11 +306,14 @@ const SubscriptionsPage = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto transition-all duration-300 ease-in-out p-2" style={{
-          minHeight: subscriptions.length === 0 ? '400px' : 'auto',
-          opacity: isFetching && subscriptions.length > 0 ? 0.6 : 1,
-          scrollbarGutter: 'stable'
-        }}>
+        <div
+          className="overflow-x-auto transition-all duration-300 ease-in-out p-2"
+          style={{
+            minHeight: subscriptions.length === 0 ? '400px' : 'auto',
+            opacity: isFetching && subscriptions.length > 0 ? 0.6 : 1,
+            scrollbarGutter: 'stable',
+          }}
+        >
           {loading && subscriptions.length === 0 ? (
             <div className="p-12">
               <div className="flex flex-col items-center justify-center">
@@ -312,7 +326,9 @@ const SubscriptionsPage = () => {
               <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                 <Package className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No subscriptions found</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                No subscriptions found
+              </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
                   ? 'Try changing your search or filters'
@@ -354,4 +370,3 @@ const SubscriptionsPage = () => {
 };
 
 export default SubscriptionsPage;
-

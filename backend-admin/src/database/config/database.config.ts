@@ -24,11 +24,11 @@ export const getDatabaseConfig = (
     // SSL Configuration (optional, for production)
     ssl: configService.get<boolean>('DB_SSL', false)
       ? {
-        rejectUnauthorized: configService.get<boolean>(
-          'DB_SSL_REJECT_UNAUTHORIZED',
-          true,
-        ),
-      }
+          rejectUnauthorized: configService.get<boolean>(
+            'DB_SSL_REJECT_UNAUTHORIZED',
+            true,
+          ),
+        }
       : false,
   },
   // Connection retry configuration
@@ -42,4 +42,3 @@ export const getDatabaseConfig = (
     10000,
   ),
 });
-

@@ -4,29 +4,21 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Like, IsNull, Not } from 'typeorm';
 import { Banner, BannerType } from './entities/banner.entity';
-import { UserTopic } from '../user/entities/user-topic.entity';
-import { UserSubscription } from '../subscription/entities/user-subscription.entity';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
 import { ListBannersQueryDto } from './dto/list-banners-query.dto';
 import { GetBannersQueryDto } from './dto/get-banners-query.dto';
 import { ActiveStatus } from '../admin/dto/list-users-query.dto';
 import { MediaClientService } from '../shared/services/media-client.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class BannerService {
   private readonly logger = new Logger(BannerService.name);
 
   constructor(
-    @InjectRepository(Banner)
-    private readonly bannerRepository: Repository<Banner>,
-    @InjectRepository(UserTopic)
-    private readonly userTopicRepository: Repository<UserTopic>,
-    @InjectRepository(UserSubscription)
-    private readonly userSubscriptionRepository: Repository<UserSubscription>,
+    private readonly prisma: PrismaService,
     private readonly mediaClientService: MediaClientService,
   ) {}
 
@@ -49,7 +41,9 @@ export class BannerService {
           optimize: true,
           is_public: true,
         });
-        imageUrl = this.mediaClientService.buildFileUrl(mediaResponse.file_path);
+        imageUrl = this.mediaClientService.buildFileUrl(
+          mediaResponse.file_path,
+        );
       } catch (error) {
         this.logger.error(`Failed to upload banner image: ${error.message}`);
         throw new BadRequestException('Failed to upload banner image');
@@ -57,33 +51,45 @@ export class BannerService {
     }
 
     if (!imageUrl) {
-      throw new BadRequestException('Banner image is required (either file upload or URL)');
+      throw new BadRequestException(
+        'Banner image is required (either file upload or URL)',
+      );
     }
 
     const isActive =
       createDto.is_active === undefined ||
       createDto.is_active === ActiveStatus.ACTIVE;
 
-    const banner = this.bannerRepository.create({
-      banner_title: createDto.banner_title ?? null,
-      banner_description: createDto.banner_description ?? null,
-      banner_image: imageUrl,
-      banner_link: createDto.banner_link ?? null,
-      banner_type: createDto.banner_type ?? BannerType.PROMOTION,
-      target_countries: this.normalizeCsv(createDto.target_countries),
-      target_topic_ids: this.normalizeCsv(createDto.target_topic_ids),
-      target_subscription_ids: this.normalizeCsv(createDto.target_subscription_ids),
-      excluded_countries: this.normalizeCsv(createDto.excluded_countries),
-      excluded_topic_ids: this.normalizeCsv(createDto.excluded_topic_ids),
-      excluded_subscription_ids: this.normalizeCsv(createDto.excluded_subscription_ids),
-      valid_from: createDto.valid_from ? new Date(createDto.valid_from) : null,
-      valid_until: createDto.valid_until ? new Date(createDto.valid_until) : null,
-      display_order: createDto.display_order ?? 0,
-      is_active: isActive,
-      created_by: userId,
+    const banner = await this.prisma.banner.create({
+      data: {
+        banner_title: createDto.banner_title ?? null,
+        banner_description: createDto.banner_description ?? null,
+        banner_image: imageUrl,
+        banner_link: createDto.banner_link ?? null,
+        banner_type: createDto.banner_type ?? 'promotion',
+        target_countries: this.normalizeCsv(createDto.target_countries),
+        target_topic_ids: this.normalizeCsv(createDto.target_topic_ids),
+        target_subscription_ids: this.normalizeCsv(
+          createDto.target_subscription_ids,
+        ),
+        excluded_countries: this.normalizeCsv(createDto.excluded_countries),
+        excluded_topic_ids: this.normalizeCsv(createDto.excluded_topic_ids),
+        excluded_subscription_ids: this.normalizeCsv(
+          createDto.excluded_subscription_ids,
+        ),
+        valid_from: createDto.valid_from
+          ? new Date(createDto.valid_from)
+          : null,
+        valid_until: createDto.valid_until
+          ? new Date(createDto.valid_until)
+          : null,
+        display_order: createDto.display_order ?? 0,
+        is_active: isActive,
+        created_by: userId,
+      },
     });
 
-    return this.bannerRepository.save(banner);
+    return banner as any as Banner;
   }
 
   /**
@@ -95,10 +101,12 @@ export class BannerService {
     userId: number,
     file?: Express.Multer.File,
   ): Promise<Banner> {
-    const banner = await this.bannerRepository.findOne({ where: { id } });
+    const banner = await this.prisma.banner.findUnique({ where: { id } });
     if (!banner) {
       throw new NotFoundException('Banner not found');
     }
+
+    const updateData: any = { updated_by: userId };
 
     // Handle image replacement
     if (file) {
@@ -109,55 +117,82 @@ export class BannerService {
           optimize: true,
           is_public: true,
         });
-        banner.banner_image = this.mediaClientService.buildFileUrl(mediaResponse.file_path);
+        updateData.banner_image = this.mediaClientService.buildFileUrl(
+          mediaResponse.file_path,
+        );
       } catch (error) {
         this.logger.error(`Failed to upload banner image: ${error.message}`);
         throw new BadRequestException('Failed to upload banner image');
       }
     } else if (updateDto.banner_image !== undefined) {
-      banner.banner_image = updateDto.banner_image;
+      updateData.banner_image = updateDto.banner_image;
     }
 
     // Update simple fields
-    if (updateDto.banner_title !== undefined) banner.banner_title = updateDto.banner_title;
-    if (updateDto.banner_description !== undefined) banner.banner_description = updateDto.banner_description;
-    if (updateDto.banner_link !== undefined) banner.banner_link = updateDto.banner_link;
-    if (updateDto.banner_type !== undefined) banner.banner_type = updateDto.banner_type;
+    if (updateDto.banner_title !== undefined)
+      updateData.banner_title = updateDto.banner_title;
+    if (updateDto.banner_description !== undefined)
+      updateData.banner_description = updateDto.banner_description;
+    if (updateDto.banner_link !== undefined)
+      updateData.banner_link = updateDto.banner_link;
+    if (updateDto.banner_type !== undefined)
+      updateData.banner_type = updateDto.banner_type;
     if (updateDto.target_countries !== undefined)
-      banner.target_countries = this.normalizeCsv(updateDto.target_countries);
+      updateData.target_countries = this.normalizeCsv(
+        updateDto.target_countries,
+      );
     if (updateDto.target_topic_ids !== undefined)
-      banner.target_topic_ids = this.normalizeCsv(updateDto.target_topic_ids);
+      updateData.target_topic_ids = this.normalizeCsv(
+        updateDto.target_topic_ids,
+      );
     if (updateDto.target_subscription_ids !== undefined)
-      banner.target_subscription_ids = this.normalizeCsv(updateDto.target_subscription_ids);
+      updateData.target_subscription_ids = this.normalizeCsv(
+        updateDto.target_subscription_ids,
+      );
     if (updateDto.excluded_countries !== undefined)
-      banner.excluded_countries = this.normalizeCsv(updateDto.excluded_countries);
+      updateData.excluded_countries = this.normalizeCsv(
+        updateDto.excluded_countries,
+      );
     if (updateDto.excluded_topic_ids !== undefined)
-      banner.excluded_topic_ids = this.normalizeCsv(updateDto.excluded_topic_ids);
+      updateData.excluded_topic_ids = this.normalizeCsv(
+        updateDto.excluded_topic_ids,
+      );
     if (updateDto.excluded_subscription_ids !== undefined)
-      banner.excluded_subscription_ids = this.normalizeCsv(updateDto.excluded_subscription_ids);
+      updateData.excluded_subscription_ids = this.normalizeCsv(
+        updateDto.excluded_subscription_ids,
+      );
     if (updateDto.valid_from !== undefined)
-      banner.valid_from = updateDto.valid_from ? new Date(updateDto.valid_from) : null;
+      updateData.valid_from = updateDto.valid_from
+        ? new Date(updateDto.valid_from)
+        : null;
     if (updateDto.valid_until !== undefined)
-      banner.valid_until = updateDto.valid_until ? new Date(updateDto.valid_until) : null;
-    if (updateDto.display_order !== undefined) banner.display_order = updateDto.display_order;
+      updateData.valid_until = updateDto.valid_until
+        ? new Date(updateDto.valid_until)
+        : null;
+    if (updateDto.display_order !== undefined)
+      updateData.display_order = updateDto.display_order;
     if (updateDto.is_active !== undefined) {
-      banner.is_active =
-        updateDto.is_active === 'active' || (updateDto.is_active as any) === ActiveStatus.ACTIVE;
+      updateData.is_active =
+        updateDto.is_active === 'active' ||
+        (updateDto.is_active as any) === ActiveStatus.ACTIVE;
     }
-    banner.updated_by = userId;
 
-    return this.bannerRepository.save(banner);
+    const updated = await this.prisma.banner.update({
+      where: { id },
+      data: updateData,
+    });
+    return updated as any as Banner;
   }
 
   /**
    * Delete a banner.
    */
   async delete(id: number): Promise<{ message: string }> {
-    const banner = await this.bannerRepository.findOne({ where: { id } });
+    const banner = await this.prisma.banner.findUnique({ where: { id } });
     if (!banner) {
       throw new NotFoundException('Banner not found');
     }
-    await this.bannerRepository.remove(banner);
+    await this.prisma.banner.delete({ where: { id: banner.id } });
     return { message: 'Banner deleted successfully' };
   }
 
@@ -179,23 +214,23 @@ export class BannerService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<Banner> = {};
+    const where: any = {};
     if (banner_type !== undefined) where.banner_type = banner_type;
     if (is_active !== undefined) where.is_active = is_active;
-    if (search) where.banner_title = Like(`%${search}%`);
+    if (search) where.banner_title = { contains: search };
 
-    const [data, total] = await this.bannerRepository.findAndCount({
-      where,
-      skip,
-      take: limit,
-      order: {
-        [sort_by]: sort_order,
-        created_at: 'DESC',
-      },
-    });
+    const orderBy: any = [
+      { [sort_by]: sort_order.toLowerCase() as any },
+      { created_at: 'desc' },
+    ];
+
+    const [data, total] = await Promise.all([
+      this.prisma.banner.findMany({ where, skip, take: limit, orderBy }),
+      this.prisma.banner.count({ where }),
+    ]);
 
     return {
-      data,
+      data: data as any as Banner[],
       meta: {
         total,
         page,
@@ -209,39 +244,35 @@ export class BannerService {
    * Admin: get a single banner by ID.
    */
   async findById(id: number): Promise<Banner> {
-    const banner = await this.bannerRepository.findOne({ where: { id } });
+    const banner = await this.prisma.banner.findUnique({ where: { id } });
     if (!banner) {
       throw new NotFoundException('Banner not found');
     }
-    return banner;
+    return banner as any as Banner;
   }
 
   /**
    * Public/User: get banners visible to the current user based on targeting conditions.
-   * - Filters by is_active, valid_from/valid_until
-   * - Filters by country (target / excluded)
-   * - Filters by user's subscribed topics (target / excluded)
-   * - Filters by user's active subscription (target / excluded)
-   * - Sorted by display_order DESC, then created_at DESC
    */
   async getForUser(
     userId: number | null,
     query: GetBannersQueryDto,
   ): Promise<Banner[]> {
     const now = new Date();
-    const qb = this.bannerRepository
-      .createQueryBuilder('banner')
-      .where('banner.is_active = :active', { active: true })
-      .andWhere('(banner.valid_from IS NULL OR banner.valid_from <= :now)', { now })
-      .andWhere('(banner.valid_until IS NULL OR banner.valid_until >= :now)', { now });
 
-    if (query.banner_type) {
-      qb.andWhere('banner.banner_type = :type', { type: query.banner_type });
-    }
+    const where: any = {
+      is_active: true,
+      AND: [
+        { OR: [{ valid_from: null }, { valid_from: { lte: now } }] },
+        { OR: [{ valid_until: null }, { valid_until: { gte: now } }] },
+      ],
+      ...(query.banner_type ? { banner_type: query.banner_type } : {}),
+    };
 
-    qb.orderBy('banner.display_order', 'DESC').addOrderBy('banner.created_at', 'DESC');
-
-    const banners = await qb.getMany();
+    const banners = await this.prisma.banner.findMany({
+      where,
+      orderBy: [{ display_order: 'desc' }, { created_at: 'desc' }],
+    });
 
     // Gather user context
     const userCountry = (query.country || '').toUpperCase() || null;
@@ -250,32 +281,41 @@ export class BannerService {
     let userSubscriptionIds: number[] = [];
 
     if (userId) {
-      const userTopics = await this.userTopicRepository.find({
+      const userTopics = await this.prisma.userTopic.findMany({
         where: { user_id: userId, is_active: true },
-        select: ['topic_id'],
+        select: { topic_id: true },
       });
       userTopicIds = userTopics.map((t) => t.topic_id);
 
-      const userSubs = await this.userSubscriptionRepository.find({
+      const userSubs = await this.prisma.userSubscription.findMany({
         where: { user_id: userId, is_active: true },
-        select: ['subscription_id'],
+        select: { subscription_id: true },
       });
       userSubscriptionIds = userSubs.map((s) => s.subscription_id);
     }
 
     // Apply targeting + exclusion rules in memory
-    return banners.filter((b) => this.matchesUser(b, userCountry, userTopicIds, userSubscriptionIds));
+    return banners.filter((b) =>
+      this.matchesUser(
+        b as any,
+        userCountry,
+        userTopicIds,
+        userSubscriptionIds,
+      ),
+    ) as any as Banner[];
   }
 
   // ─── Helpers ─────────────────────────────────────────────────
 
   private normalizeCsv(value?: string | null): string | null {
     if (!value || !value.trim()) return null;
-    return value
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean)
-      .join(',') || null;
+    return (
+      value
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+        .join(',') || null
+    );
   }
 
   private csvToArray(value: string | null): string[] {
@@ -297,31 +337,46 @@ export class BannerService {
     userSubscriptionIds: number[],
   ): boolean {
     // Country
-    const targetCountries = this.csvToArray(banner.target_countries).map((c) => c.toUpperCase());
-    const excludedCountries = this.csvToArray(banner.excluded_countries).map((c) => c.toUpperCase());
+    const targetCountries = this.csvToArray(banner.target_countries).map((c) =>
+      c.toUpperCase(),
+    );
+    const excludedCountries = this.csvToArray(banner.excluded_countries).map(
+      (c) => c.toUpperCase(),
+    );
     if (targetCountries.length > 0) {
       if (!country || !targetCountries.includes(country)) return false;
     }
     if (country && excludedCountries.includes(country)) return false;
 
     // Topics
-    const targetTopicIds = this.csvToArray(banner.target_topic_ids).map(Number).filter(Number.isInteger);
-    const excludedTopicIds = this.csvToArray(banner.excluded_topic_ids).map(Number).filter(Number.isInteger);
+    const targetTopicIds = this.csvToArray(banner.target_topic_ids)
+      .map(Number)
+      .filter(Number.isInteger);
+    const excludedTopicIds = this.csvToArray(banner.excluded_topic_ids)
+      .map(Number)
+      .filter(Number.isInteger);
     if (targetTopicIds.length > 0) {
       if (!userTopicIds.some((id) => targetTopicIds.includes(id))) return false;
     }
     if (excludedTopicIds.length > 0) {
-      if (userTopicIds.some((id) => excludedTopicIds.includes(id))) return false;
+      if (userTopicIds.some((id) => excludedTopicIds.includes(id)))
+        return false;
     }
 
     // Subscriptions
-    const targetSubIds = this.csvToArray(banner.target_subscription_ids).map(Number).filter(Number.isInteger);
-    const excludedSubIds = this.csvToArray(banner.excluded_subscription_ids).map(Number).filter(Number.isInteger);
+    const targetSubIds = this.csvToArray(banner.target_subscription_ids)
+      .map(Number)
+      .filter(Number.isInteger);
+    const excludedSubIds = this.csvToArray(banner.excluded_subscription_ids)
+      .map(Number)
+      .filter(Number.isInteger);
     if (targetSubIds.length > 0) {
-      if (!userSubscriptionIds.some((id) => targetSubIds.includes(id))) return false;
+      if (!userSubscriptionIds.some((id) => targetSubIds.includes(id)))
+        return false;
     }
     if (excludedSubIds.length > 0) {
-      if (userSubscriptionIds.some((id) => excludedSubIds.includes(id))) return false;
+      if (userSubscriptionIds.some((id) => excludedSubIds.includes(id)))
+        return false;
     }
 
     return true;

@@ -1,15 +1,15 @@
 // src/api/notificationApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const notificationApi = {
   /**
    * Get Subscription and Payment Notifications
-   * 
+   *
    * According to API_ADMIN_MODULE.md:
    * - Endpoint: GET /api/admin/notifications/subscription-payment
    * - Returns notifications related to subscriptions and payments
    * - Filters by notification_type and data JSON field
-   * 
+   *
    * @param {Object} [params={}] - Query parameters
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Items per page (max 100)
@@ -27,16 +27,16 @@ const notificationApi = {
       ...(params.is_read && { is_read: params.is_read }),
       ...(params.user_id && { user_id: params.user_id }),
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
 
     // Remove undefined/null values
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/notifications/subscription-payment", { params: cleanedParams });
+    return axiosClient.get('/admin/notifications/subscription-payment', { params: cleanedParams });
   },
 
   /**
@@ -53,7 +53,7 @@ const notificationApi = {
    * @returns {Promise} Response with success message
    */
   markAllAsRead() {
-    return axiosClient.put("/admin/notifications/read-all");
+    return axiosClient.put('/admin/notifications/read-all');
   },
 
   /**

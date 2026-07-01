@@ -92,4 +92,3 @@ export class UserDevice {
   })
   updated_at: Date;
 }
-

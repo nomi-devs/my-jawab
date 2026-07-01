@@ -121,4 +121,3 @@ export class UserProfile {
   })
   updated_at: Date;
 }
-

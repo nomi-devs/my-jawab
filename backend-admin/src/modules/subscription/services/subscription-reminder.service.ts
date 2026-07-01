@@ -1,11 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThan } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { UserSubscription, SubscriptionStatus } from '../entities/user-subscription.entity';
-import { User } from '../../auth/entities/user.entity';
-import { Subscription } from '../entities/subscription.entity';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { EmailTemplatesService } from '../../email/services/email-templates.service';
 
 @Injectable()
@@ -13,12 +9,7 @@ export class SubscriptionReminderService {
   private readonly logger = new Logger(SubscriptionReminderService.name);
 
   constructor(
-    @InjectRepository(UserSubscription)
-    private userSubscriptionRepository: Repository<UserSubscription>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>,
+    private prisma: PrismaService,
     private emailTemplatesService: EmailTemplatesService,
     private configService: ConfigService,
   ) {}
@@ -29,47 +20,64 @@ export class SubscriptionReminderService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async checkPendingSubscriptions() {
-    this.logger.log('Checking for pending subscriptions that need reminders...');
+    this.logger.log(
+      'Checking for pending subscriptions that need reminders...',
+    );
 
     try {
-      const reminderHours = this.configService.get<number>('app.subscription.pendingReminderHours', 24);
-      const reminderTime = new Date();
-      reminderTime.setHours(reminderTime.getHours() + reminderHours);
+      const reminderHours = this.configService.get<number>(
+        'app.subscription.pendingReminderHours',
+        24,
+      );
 
       // Find pending subscriptions that need reminders
-      const pendingSubscriptions = await this.userSubscriptionRepository.find({
+      const pendingSubscriptions = await this.prisma.userSubscription.findMany({
         where: {
-          subscription_status: SubscriptionStatus.PENDING,
+          subscription_status: 'pending',
           is_active: true,
         },
-        relations: ['subscription'],
+        include: { subscription: true },
       });
 
       for (const userSubscription of pendingSubscriptions) {
-        const createdHoursAgo = (Date.now() - userSubscription.created_at.getTime()) / (1000 * 60 * 60);
-        
+        const createdHoursAgo =
+          (Date.now() - userSubscription.created_at.getTime()) /
+          (1000 * 60 * 60);
+
         // Send reminder if subscription is pending for more than reminderHours
         if (createdHoursAgo >= reminderHours) {
           try {
-            const user = await this.userRepository.findOne({
+            const user = await this.prisma.user.findUnique({
               where: { id: userSubscription.user_id },
-              select: ['id', 'email', 'username'],
+              select: { id: true, email: true, username: true },
             });
 
             if (user && user.email) {
               await this.emailTemplatesService.sendSubscriptionReminderEmail({
                 recipientEmail: user.email,
                 recipientName: user.username,
-                subscriptionName: userSubscription.subscription?.subscription_name || 'Subscription',
-                amount: userSubscription.subscription_renewal_amount || userSubscription.subscription?.subscription_price || 0,
-                currency: userSubscription.subscription_renewal_currency || 'USD',
+                subscriptionName:
+                  userSubscription.subscription?.subscription_name ||
+                  'Subscription',
+                amount:
+                  (userSubscription.subscription_renewal_amount?.toNumber() ??
+                    0) ||
+                  (userSubscription.subscription?.subscription_price?.toNumber() ??
+                    0),
+                currency:
+                  userSubscription.subscription_renewal_currency || 'USD',
                 hoursRemaining: Math.max(0, reminderHours - createdHoursAgo),
               });
 
-              this.logger.log(`Sent reminder email for pending subscription ${userSubscription.id}`);
+              this.logger.log(
+                `Sent reminder email for pending subscription ${userSubscription.id}`,
+              );
             }
           } catch (error) {
-            this.logger.error(`Failed to send reminder for subscription ${userSubscription.id}:`, error);
+            this.logger.error(
+              `Failed to send reminder for subscription ${userSubscription.id}:`,
+              error,
+            );
           }
         }
       }
@@ -90,44 +98,54 @@ export class SubscriptionReminderService {
       const now = new Date();
 
       // Find active subscriptions that have expired
-      const expiredSubscriptions = await this.userSubscriptionRepository.find({
+      const expiredSubscriptions = await this.prisma.userSubscription.findMany({
         where: {
-          subscription_status: SubscriptionStatus.ACTIVE,
+          subscription_status: 'active',
           is_active: true,
-          subscription_end_date: LessThan(now),
+          subscription_end_date: { lt: now },
         },
-        relations: ['subscription'],
+        include: { subscription: true },
       });
 
       for (const userSubscription of expiredSubscriptions) {
         // Mark as expired
-        userSubscription.subscription_status = SubscriptionStatus.EXPIRED;
-        userSubscription.is_active = false;
-        await this.userSubscriptionRepository.save(userSubscription);
+        await this.prisma.userSubscription.update({
+          where: { id: userSubscription.id },
+          data: { subscription_status: 'expired', is_active: false },
+        });
 
         // Send expiration email
         try {
-          const user = await this.userRepository.findOne({
+          const user = await this.prisma.user.findUnique({
             where: { id: userSubscription.user_id },
-            select: ['id', 'email', 'username'],
+            select: { id: true, email: true, username: true },
           });
 
           if (user && user.email && userSubscription.subscription_end_date) {
             await this.emailTemplatesService.sendSubscriptionExpiredEmail({
               recipientEmail: user.email,
               recipientName: user.username,
-              subscriptionName: userSubscription.subscription?.subscription_name || 'Subscription',
+              subscriptionName:
+                userSubscription.subscription?.subscription_name ||
+                'Subscription',
               expiredDate: userSubscription.subscription_end_date,
             });
 
-            this.logger.log(`Sent expiration email for subscription ${userSubscription.id}`);
+            this.logger.log(
+              `Sent expiration email for subscription ${userSubscription.id}`,
+            );
           }
         } catch (error) {
-          this.logger.error(`Failed to send expiration email for subscription ${userSubscription.id}:`, error);
+          this.logger.error(
+            `Failed to send expiration email for subscription ${userSubscription.id}:`,
+            error,
+          );
         }
       }
 
-      this.logger.log(`Processed ${expiredSubscriptions.length} expired subscriptions`);
+      this.logger.log(
+        `Processed ${expiredSubscriptions.length} expired subscriptions`,
+      );
     } catch (error) {
       this.logger.error('Error checking expired subscriptions:', error);
     }
@@ -142,33 +160,38 @@ export class SubscriptionReminderService {
     this.logger.log('Checking for subscriptions expiring soon...');
 
     try {
-      const reminderDays = this.configService.get<number>('app.subscription.reminderDaysBeforeExpiry', 3);
-      const reminderDate = new Date();
-      reminderDate.setDate(reminderDate.getDate() + reminderDays);
+      const reminderDays = this.configService.get<number>(
+        'app.subscription.reminderDaysBeforeExpiry',
+        3,
+      );
+      const now = new Date();
 
       // Find active subscriptions expiring within reminderDays
-      const expiringSubscriptions = await this.userSubscriptionRepository.find({
-        where: {
-          subscription_status: SubscriptionStatus.ACTIVE,
-          is_active: true,
-          subscription_end_date: MoreThan(new Date()),
+      const expiringSubscriptions = await this.prisma.userSubscription.findMany(
+        {
+          where: {
+            subscription_status: 'active',
+            is_active: true,
+            subscription_end_date: { gt: now },
+          },
+          include: { subscription: true },
         },
-        relations: ['subscription'],
-      });
+      );
 
       for (const userSubscription of expiringSubscriptions) {
         if (!userSubscription.subscription_end_date) continue;
-        
+
         const daysUntilExpiry = Math.ceil(
-          (userSubscription.subscription_end_date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          (userSubscription.subscription_end_date.getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24),
         );
 
         // Send reminder if expiring within reminderDays
         if (daysUntilExpiry <= reminderDays && daysUntilExpiry > 0) {
           try {
-            const user = await this.userRepository.findOne({
+            const user = await this.prisma.user.findUnique({
               where: { id: userSubscription.user_id },
-              select: ['id', 'email', 'username'],
+              select: { id: true, email: true, username: true },
             });
 
             if (user && user.email) {
@@ -181,10 +204,15 @@ export class SubscriptionReminderService {
                 actionText: 'Renew Subscription',
               });
 
-              this.logger.log(`Sent expiry reminder for subscription ${userSubscription.id}`);
+              this.logger.log(
+                `Sent expiry reminder for subscription ${userSubscription.id}`,
+              );
             }
           } catch (error) {
-            this.logger.error(`Failed to send expiry reminder for subscription ${userSubscription.id}:`, error);
+            this.logger.error(
+              `Failed to send expiry reminder for subscription ${userSubscription.id}:`,
+              error,
+            );
           }
         }
       }

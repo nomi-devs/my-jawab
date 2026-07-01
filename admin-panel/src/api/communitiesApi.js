@@ -1,16 +1,16 @@
 // src/api/communitiesApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const communitiesApi = {
   /**
    * Get paginated list of all communities with member and topic counts
-   * 
+   *
    * According to API_ADMIN_MODULE.md, the API only supports:
    * - page, limit, search, sort_by, sort_order
-   * 
+   *
    * Status and privacy filters are NOT supported server-side
    * and must be handled client-side.
-   * 
+   *
    * @param {Object} [params={}] - Query parameters
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Items per page (max 100)
@@ -25,23 +25,25 @@ const communitiesApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
-      ...(params.is_active !== undefined && params.is_active !== null && { is_active: params.is_active }),
-      ...(params.is_private !== undefined && params.is_private !== null && { is_private: params.is_private }),
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
+      ...(params.is_active !== undefined &&
+        params.is_active !== null && { is_active: params.is_active }),
+      ...(params.is_private !== undefined &&
+        params.is_private !== null && { is_private: params.is_private }),
       ...(params.category_id && { category_id: params.category_id }),
       ...(params.min_members && { min_members: params.min_members }),
       ...(params.max_members && { max_members: params.max_members }),
       ...(params.created_from && { created_from: params.created_from }),
-      ...(params.created_to && { created_to: params.created_to })
+      ...(params.created_to && { created_to: params.created_to }),
     };
 
     // Remove undefined/null values
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/communities", { params: cleanedParams });
+    return axiosClient.get('/admin/communities', { params: cleanedParams });
   },
 
   /**
@@ -70,13 +72,13 @@ const communitiesApi = {
   createCommunity(data) {
     const isFormData = data instanceof FormData;
     if (isFormData) {
-      return axiosClient.post("/admin/communities", data, {
+      return axiosClient.post('/admin/communities', data, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
     }
-    return axiosClient.post("/admin/communities", data);
+    return axiosClient.post('/admin/communities', data);
   },
 
   /**
@@ -90,8 +92,8 @@ const communitiesApi = {
     if (isFormData) {
       return axiosClient.put(`/admin/communities/${id}`, data, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
     }
     return axiosClient.put(`/admin/communities/${id}`, data);
@@ -127,9 +129,7 @@ const communitiesApi = {
    * @returns {Promise} Response with success message
    */
   removeTopicFromCommunity(communityId, topicId) {
-    return axiosClient.delete(
-      `/admin/communities/${communityId}/topics/${topicId}`
-    );
+    return axiosClient.delete(`/admin/communities/${communityId}/topics/${topicId}`);
   },
 
   /**
@@ -140,16 +140,17 @@ const communitiesApi = {
   exportCommunities(params = {}) {
     const queryParams = {
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
-      ...(params.is_active !== undefined && params.is_active !== null && { is_active: params.is_active })
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
+      ...(params.is_active !== undefined &&
+        params.is_active !== null && { is_active: params.is_active }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/communities/export", { params: cleanedParams });
+    return axiosClient.get('/admin/communities/export', { params: cleanedParams });
   },
 
   /**
@@ -163,11 +164,11 @@ const communitiesApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/communities/${communityId}/posts`, { params: cleanedParams });
   },
@@ -181,10 +182,10 @@ const communitiesApi = {
   getCommunityActivity(communityId, params = {}) {
     const queryParams = {
       page: params.page || 1,
-      limit: params.limit || 20
+      limit: params.limit || 20,
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/communities/${communityId}/activity`, { params: cleanedParams });
   },
@@ -200,11 +201,11 @@ const communitiesApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/communities/${communityId}/members`, { params: cleanedParams });
   },
@@ -225,7 +226,7 @@ const communitiesApi = {
    */
   deleteCommunity(id) {
     return axiosClient.delete(`/admin/communities/${id}`);
-  }
+  },
 };
 
 export default communitiesApi;

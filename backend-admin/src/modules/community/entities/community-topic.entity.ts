@@ -73,4 +73,3 @@ export class CommunityTopic {
   })
   updated_at: Date;
 }
-

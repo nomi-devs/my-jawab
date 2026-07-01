@@ -19,4 +19,3 @@ export class PaymentResponseDto {
   currency?: any;
   user_subscription?: UserSubscriptionResponseDto;
 }
-

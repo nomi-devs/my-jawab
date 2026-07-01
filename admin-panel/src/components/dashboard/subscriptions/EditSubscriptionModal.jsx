@@ -32,7 +32,7 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
     try {
       setLoadingCurrencies(true);
       const response = await currenciesApi.getCurrencies();
-      setCurrencies((response.data || []).filter(c => c.is_active));
+      setCurrencies((response.data || []).filter((c) => c.is_active));
     } catch (err) {
       console.error('Error fetching currencies:', err);
     } finally {
@@ -49,9 +49,13 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
         subscription_price: subscription.subscription_price || '',
         subscription_duration: subscription.subscription_duration || '',
         subscription_duration_type: subscription.subscription_duration_type || 'days',
-        subscription_currency: subscription.subscription_currency || (subscription.currency?.currency_code) || '',
+        subscription_currency:
+          subscription.subscription_currency || subscription.currency?.currency_code || '',
         is_active: subscription.is_active !== undefined ? subscription.is_active : true,
-        features: subscription.features && typeof subscription.features === 'object' ? { ...subscription.features } : {},
+        features:
+          subscription.features && typeof subscription.features === 'object'
+            ? { ...subscription.features }
+            : {},
       });
     }
   }, [subscription]);
@@ -60,14 +64,14 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleFeaturesChange = (features) => {
-    setFormData(prev => ({ ...prev, features }));
+    setFormData((prev) => ({ ...prev, features }));
   };
 
   const handleSubmit = async (e) => {
@@ -82,9 +86,10 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
         subscription_price: parseFloat(formData.subscription_price),
         subscription_duration: parseInt(formData.subscription_duration),
         subscription_currency: formData.subscription_currency || null,
-        features: formData.features && Object.keys(formData.features).length > 0
-          ? formData.features
-          : undefined,
+        features:
+          formData.features && Object.keys(formData.features).length > 0
+            ? formData.features
+            : undefined,
       };
 
       await updateSubscription({ id: subscription.id, data: submitData });
@@ -104,7 +109,9 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
           <div className="flex items-center space-x-2">
             <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Subscription</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Edit Subscription
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -115,7 +122,11 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarGutter: 'stable' }}>
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto px-6 py-5"
+          style={{ scrollbarGutter: 'stable' }}
+        >
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-xs rounded-lg">
               {error}
@@ -262,7 +273,9 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
                   <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
                     Active Status
                   </label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Enable or disable this subscription</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                    Enable or disable this subscription
+                  </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -315,4 +328,3 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
 };
 
 export default EditSubscriptionModal;
-

@@ -24,22 +24,22 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
     poll_expires_at: '',
     poll_status: 'draft',
     is_featured: false,
-    community_ids: []
+    community_ids: [],
   });
 
   // Set default expiry date to tomorrow when modal opens
   useEffect(() => {
     if (isOpen) {
       // Always set to tomorrow (start of day) when modal opens
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        poll_expires_at: getDefaultExpiryDate()
+        poll_expires_at: getDefaultExpiryDate(),
       }));
     }
   }, [isOpen]);
   const [options, setOptions] = useState([
     { option_text: '', display_order: 0 },
-    { option_text: '', display_order: 1 }
+    { option_text: '', display_order: 1 },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
@@ -49,10 +49,10 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
     const newValue = type === 'checkbox' ? checked : value;
 
     setValidationError('');
-    setFormData(prev => {
+    setFormData((prev) => {
       const updated = {
         ...prev,
-        [name]: newValue
+        [name]: newValue,
       };
 
       // Auto-generate slug from poll_title (always regenerate)
@@ -100,7 +100,7 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
 
     try {
       // Validate options
-      const validOptions = options.filter(opt => opt.option_text.trim() !== '');
+      const validOptions = options.filter((opt) => opt.option_text.trim() !== '');
       if (validOptions.length < 2) {
         setValidationError('Please add at least 2 options before creating the poll.');
         setIsSubmitting(false);
@@ -120,7 +120,9 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
         tomorrow.setHours(0, 0, 0, 0); // Start of tomorrow
 
         if (expiresAtDate < tomorrow) {
-          setValidationError('Poll expiration date must be at least tomorrow. Polls cannot expire on the same day they are created.');
+          setValidationError(
+            'Poll expiration date must be at least tomorrow. Polls cannot expire on the same day they are created.',
+          );
           setIsSubmitting(false);
           return;
         }
@@ -141,7 +143,7 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
         poll_expires_at: pollExpiresAt,
         poll_status: formData.poll_status,
         is_featured: formData.is_featured ? 'featured' : 'not_featured',
-        options: validOptions
+        options: validOptions,
       };
 
       await onAddPoll(pollData);
@@ -166,11 +168,11 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
       poll_expires_at: getDefaultExpiryDate(),
       poll_status: 'draft',
       is_featured: false,
-      community_ids: []
+      community_ids: [],
     });
     setOptions([
       { option_text: '', display_order: 0 },
-      { option_text: '', display_order: 1 }
+      { option_text: '', display_order: 1 },
     ]);
     setValidationError('');
   };
@@ -206,8 +208,12 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
               <BarChart3 className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">Add New Poll</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Create a new poll with multiple options</p>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Add New Poll
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                Create a new poll with multiple options
+              </p>
             </div>
           </div>
           <button
@@ -220,7 +226,11 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
         </div>
 
         {/* Scrollable Modal Body */}
-        <form id="add-poll-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form
+          id="add-poll-form"
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <div className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarGutter: 'stable' }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Poll Title - Full width */}
@@ -312,7 +322,9 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
                       Featured Poll
                     </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Mark this poll as featured</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                      Mark this poll as featured
+                    </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -372,7 +384,8 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
                 ))}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                At least 2 options are required. Add more options using the &quot;Add Option&quot; button.
+                At least 2 options are required. Add more options using the &quot;Add Option&quot;
+                button.
               </p>
               {validationError && (
                 <div className="mt-2 inline-flex items-start gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-[11px] text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-200 dark:border-red-700">
@@ -420,4 +433,3 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
 
 AddPollModal.displayName = 'AddPollModal';
 export default AddPollModal;
-

@@ -6,17 +6,14 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, LessThan } from 'typeorm';
 import { createHash } from 'crypto';
-import { UserPoll, PollStatus } from './entities/user-poll.entity';
-import { PollOption } from './entities/poll-option.entity';
-import { PollVote } from './entities/poll-vote.entity';
-import { PollLike, LikeStatus } from './entities/poll-like.entity';
-import { User } from '../auth/entities/user.entity';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePollDto } from './dto/create-poll.dto';
 import { UpdatePollDto } from './dto/update-poll.dto';
-import { PollResponseDto, PollOptionResponseDto } from './dto/poll-response.dto';
+import {
+  PollResponseDto,
+  PollOptionResponseDto,
+} from './dto/poll-response.dto';
 import { ListPollsQueryDto } from './dto/list-polls-query.dto';
 import { VotePollDto } from './dto/vote-poll.dto';
 import { LikePollDto } from './dto/like-poll.dto';
@@ -26,6 +23,7 @@ import { NotificationType } from '../notification/entities/notification.entity';
 @Injectable()
 export class PollService {
   private readonly logger = new Logger(PollService.name);
+
   // Helper: Generate a short hash from ID for slug uniqueness
   private generateIdHash(id: number): string {
     const hash = createHash('md5').update(id.toString()).digest('hex');
@@ -42,18 +40,9 @@ export class PollService {
   }
 
   constructor(
-    @InjectRepository(UserPoll)
-    private pollRepository: Repository<UserPoll>,
-    @InjectRepository(PollOption)
-    private pollOptionRepository: Repository<PollOption>,
-    @InjectRepository(PollVote)
-    private pollVoteRepository: Repository<PollVote>,
-    @InjectRepository(PollLike)
-    private pollLikeRepository: Repository<PollLike>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prisma: PrismaService,
     private notificationService: NotificationService,
-  ) { }
+  ) {}
 
   /**
    * Helper: send a notification without breaking the main flow.
@@ -92,12 +81,17 @@ export class PollService {
   private isAtLeastTomorrow(date: Date): boolean {
     // Get tomorrow at 00:00:00 UTC for consistent comparison
     const now = new Date();
-    const tomorrow = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() + 1,
-      0, 0, 0, 0
-    ));
+    const tomorrow = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + 1,
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
     return date >= tomorrow;
   }
 
@@ -134,10 +128,14 @@ export class PollService {
       // Then convert to UTC by subtracting the offset
       // Example: If server is UTC+3 and user selects 10:00 AM, we store 7:00 AM UTC
       // Create date components in UTC, adjusting for the offset
-      const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds, 0));
+      const utcDate = new Date(
+        Date.UTC(year, month - 1, day, hours, minutes, seconds, 0),
+      );
       // Subtract the offset to convert from local to UTC
       // If offset is +3 (UTC+3), subtract 3 hours to get UTC
-      const adjustedUtcDate = new Date(utcDate.getTime() - (serverOffsetHours * 60 * 60 * 1000));
+      const adjustedUtcDate = new Date(
+        utcDate.getTime() - serverOffsetHours * 60 * 60 * 1000,
+      );
       return adjustedUtcDate;
     }
 
@@ -157,7 +155,7 @@ export class PollService {
     // Convert UTC to local time by adding the offset
     // Example: If server is UTC+3 and we have 7:00 AM UTC, return 10:00 AM local
     // If offset is +3 (UTC+3), add 3 hours to get local time
-    const localTimeMs = utcDate.getTime() + (serverOffsetHours * 60 * 60 * 1000);
+    const localTimeMs = utcDate.getTime() + serverOffsetHours * 60 * 60 * 1000;
     const localDate = new Date(localTimeMs);
 
     // Format as YYYY-MM-DDTHH:mm:ss using UTC methods (since we've already adjusted the time)
@@ -195,41 +193,44 @@ export class PollService {
       ? createPollDto.community_ids.join(',')
       : null;
 
-    // Create poll with initial slug (will be updated with hash after save)
-    const poll = this.pollRepository.create({
-      user_id: userId,
-      community_ids: communityIdsString,
-      poll_slug: createPollDto.poll_slug, // Temporary slug, will be updated with hash
-      poll_title: createPollDto.poll_title,
-      poll_description: createPollDto.poll_description,
-      poll_expires_at: expiresAt,
-      poll_status: createPollDto.poll_status || PollStatus.DRAFT,
-      vote_count: 0,
-      view_count: 0,
-      is_featured: createPollDto.is_featured === 'featured',
-      created_by: userId,
+    // Save to get the ID (with initial slug; will be updated with hash)
+    const savedPoll = await this.prisma.userPoll.create({
+      data: {
+        user_id: userId,
+        community_ids: communityIdsString,
+        poll_slug: createPollDto.poll_slug,
+        poll_title: createPollDto.poll_title,
+        poll_description: createPollDto.poll_description,
+        poll_expires_at: expiresAt,
+        poll_status: createPollDto.poll_status || 'draft',
+        vote_count: 0,
+        view_count: 0,
+        is_featured: createPollDto.is_featured === 'featured',
+        created_by: userId,
+      },
     });
 
-    // Save to get the ID
-    const savedPoll = await this.pollRepository.save(poll);
-
     // Generate slug with ID hash and update
-    savedPoll.poll_slug = this.generateSlugWithHash(createPollDto.poll_slug, savedPoll.id);
-    const finalPoll = await this.pollRepository.save(savedPoll);
+    const finalSlug = this.generateSlugWithHash(
+      createPollDto.poll_slug,
+      savedPoll.id,
+    );
+    const finalPoll = await this.prisma.userPoll.update({
+      where: { id: savedPoll.id },
+      data: { poll_slug: finalSlug },
+    });
 
     // Create poll options
-    const options = createPollDto.options.map((optionDto, index) => {
-      return this.pollOptionRepository.create({
+    await this.prisma.pollOption.createMany({
+      data: createPollDto.options.map((optionDto, index) => ({
         poll_id: savedPoll.id,
         option_text: optionDto.option_text,
         display_order: optionDto.display_order ?? index,
         vote_count: 0,
         is_active: true,
         created_by: userId,
-      });
+      })),
     });
-
-    await this.pollOptionRepository.save(options);
 
     return this.mapToResponseDto(finalPoll);
   }
@@ -252,7 +253,7 @@ export class PollService {
     const skip = (page - 1) * limit;
 
     // Build where condition
-    const where: FindOptionsWhere<UserPoll> = {};
+    const where: any = {};
 
     if (listQueryDto.user_id) {
       where.user_id = listQueryDto.user_id;
@@ -261,92 +262,82 @@ export class PollService {
     if (listQueryDto.poll_status) {
       where.poll_status = listQueryDto.poll_status;
     } else {
-      // By default, only show published polls
-      where.poll_status = PollStatus.PUBLISHED;
+      where.poll_status = 'published';
     }
 
     if (listQueryDto.is_featured !== undefined) {
       where.is_featured = listQueryDto.is_featured;
     }
 
-    // Build relations array
-    const relations: string[] = [];
-    if (listQueryDto.include_user) {
-      relations.push('user');
-    }
-    // Always include options for logged users (userId provided)
-    if (listQueryDto.include_options || userId) {
-      relations.push('options');
-    }
-
-    // Build query
-    const queryBuilder = this.pollRepository
-      .createQueryBuilder('poll')
-      .where(where);
-
-    // Filter by community if provided
+    // Filter by community if provided (CSV matching)
     if (listQueryDto.community_id) {
-      queryBuilder.andWhere(
-        `(poll.community_ids LIKE :communityId OR poll.community_ids LIKE :communityIdStart OR poll.community_ids LIKE :communityIdEnd OR poll.community_ids LIKE :communityIdMiddle)`,
-        {
-          communityId: `${listQueryDto.community_id}`,
-          communityIdStart: `${listQueryDto.community_id},%`,
-          communityIdEnd: `%,${listQueryDto.community_id}`,
-          communityIdMiddle: `%,${listQueryDto.community_id},%`,
-        },
-      );
+      const cid = `${listQueryDto.community_id}`;
+      where.OR = [
+        { community_ids: cid },
+        { community_ids: { startsWith: `${cid},` } },
+        { community_ids: { endsWith: `,${cid}` } },
+        { community_ids: { contains: `,${cid},` } },
+      ];
     }
 
     // Add search if provided
     if (listQueryDto.search) {
-      queryBuilder.andWhere(
-        '(poll.poll_title LIKE :search OR poll.poll_description LIKE :search)',
-        {
-          search: `%${listQueryDto.search}%`,
-        },
-      );
+      const searchCondition = {
+        OR: [
+          { poll_title: { contains: listQueryDto.search } },
+          { poll_description: { contains: listQueryDto.search } },
+        ],
+      };
+      // Merge with existing where conditions
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, searchCondition];
+        delete where.OR;
+      } else {
+        Object.assign(where, searchCondition);
+      }
     }
 
-    // Add relations
-    if (relations.length > 0) {
-      relations.forEach((rel) => {
-        queryBuilder.leftJoinAndSelect(`poll.${rel}`, rel);
-      });
-    }
-
-    // Add sorting with special sort options
+    // Build orderBy
     const sortBy = listQueryDto.sort_by || 'created_at';
-    const sortOrder = listQueryDto.sort_order || 'DESC';
+    const sortOrder = (listQueryDto.sort_order || 'DESC').toLowerCase() as
+      | 'asc'
+      | 'desc';
+    let orderBy: any = {};
 
-    // Handle special sort options: top, hot, new, rising
     if (sortBy === 'top') {
-      // Sort by vote_count (most votes first) - Top polls
-      queryBuilder.orderBy('poll.vote_count', 'DESC');
-      queryBuilder.addOrderBy('poll.created_at', 'DESC'); // Secondary sort by date
+      orderBy = [{ vote_count: 'desc' }, { created_at: 'desc' }];
     } else if (sortBy === 'hot') {
-      // Sort by recent activity: polls created in last 7 days, then by vote_count
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      queryBuilder.andWhere('poll.created_at >= :sevenDaysAgo', { sevenDaysAgo });
-      queryBuilder.orderBy('poll.vote_count', 'DESC');
-      queryBuilder.addOrderBy('poll.created_at', 'DESC');
+      where.created_at = { gte: sevenDaysAgo };
+      orderBy = [{ vote_count: 'desc' }, { created_at: 'desc' }];
     } else if (sortBy === 'new') {
-      // Sort by created_at (newest first)
-      queryBuilder.orderBy('poll.created_at', 'DESC');
+      orderBy = { created_at: 'desc' };
     } else if (sortBy === 'rising') {
-      // Sort by vote_count per day (rising polls with good engagement)
-      // For now, sort by vote_count with recent creation date preference
-      queryBuilder.orderBy('poll.vote_count', 'DESC');
-      queryBuilder.addOrderBy('poll.created_at', 'DESC');
+      orderBy = [{ vote_count: 'desc' }, { created_at: 'desc' }];
     } else {
-      // Default: sort by the specified field (vote_count, view_count, created_at, etc.)
-      queryBuilder.orderBy(`poll.${sortBy}`, sortOrder);
+      orderBy = { [sortBy]: sortOrder };
     }
 
-    // Add pagination
-    queryBuilder.skip(skip).take(limit);
+    // Build include
+    const include: any = {};
+    if (listQueryDto.include_user) {
+      include.user = true;
+    }
+    if (listQueryDto.include_options || userId) {
+      include.options = true;
+    }
 
-    const [polls, total] = await queryBuilder.getManyAndCount();
+    const [polls, total] = await Promise.all([
+      this.prisma.userPoll.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: Object.keys(include).length > 0 ? include : undefined,
+      }),
+      this.prisma.userPoll.count({ where }),
+    ]);
 
     // Get user vote and like status for each poll if userId provided
     const pollsWithUserData = await Promise.all(
@@ -354,28 +345,21 @@ export class PollService {
         const response: any = { ...poll };
 
         // Calculate like and dislike counts
-        const likeCount = await this.pollLikeRepository.count({
-          where: {
-            poll_id: poll.id,
-            like_status: LikeStatus.LIKE,
-          },
-        });
-        const dislikeCount = await this.pollLikeRepository.count({
-          where: {
-            poll_id: poll.id,
-            like_status: LikeStatus.DISLIKE,
-          },
-        });
+        const [likeCount, dislikeCount] = await Promise.all([
+          this.prisma.pollLike.count({
+            where: { poll_id: poll.id, like_status: 'like' },
+          }),
+          this.prisma.pollLike.count({
+            where: { poll_id: poll.id, like_status: 'dislike' },
+          }),
+        ]);
         response.like_count = likeCount;
         response.dislike_count = dislikeCount;
 
         if (userId) {
           // Get user vote (always include for logged users)
-          const userVote = await this.pollVoteRepository.findOne({
-            where: {
-              poll_id: poll.id,
-              user_id: userId,
-            },
+          const userVote = await this.prisma.pollVote.findFirst({
+            where: { poll_id: poll.id, user_id: userId },
           });
           if (userVote) {
             response.user_vote = {
@@ -388,33 +372,34 @@ export class PollService {
           }
 
           // Get user like status
-          const userLike = await this.pollLikeRepository.findOne({
-            where: {
-              poll_id: poll.id,
-              user_id: userId,
-            },
+          const userLike = await this.prisma.pollLike.findFirst({
+            where: { poll_id: poll.id, user_id: userId },
           });
           response.user_like_status = userLike?.like_status || null;
-          response.is_liked = userLike?.like_status === LikeStatus.LIKE;
-          response.is_disliked = userLike?.like_status === LikeStatus.DISLIKE;
+          response.is_liked = userLike?.like_status === 'like';
+          response.is_disliked = userLike?.like_status === 'dislike';
         }
 
         // Check if poll is expired (only if expiration date is set)
-        response.is_expired = poll.poll_expires_at ? new Date(poll.poll_expires_at) < new Date() : false;
+        response.is_expired = poll.poll_expires_at
+          ? new Date(poll.poll_expires_at) < new Date()
+          : false;
 
         // Calculate option percentages and mark user's voted option if options included
-        if (poll.options && poll.options.length > 0) {
+        if ((response as any).options && (response as any).options.length > 0) {
           const totalVotes = poll.vote_count || 0;
           const userVotedOptionId = response.user_vote?.vote_option_id;
 
-          response.options = poll.options.map((option: any) => ({
+          response.options = (response as any).options.map((option: any) => ({
             ...option,
             percentage:
               totalVotes > 0
-                ? Math.round((option.vote_count / totalVotes) * 100 * 100) /
-                100
+                ? Math.round((option.vote_count / totalVotes) * 100 * 100) / 100
                 : 0,
-            is_voted: userId && userVotedOptionId ? option.id === userVotedOptionId : false,
+            is_voted:
+              userId && userVotedOptionId
+                ? option.id === userVotedOptionId
+                : false,
           }));
         }
 
@@ -434,10 +419,14 @@ export class PollService {
   }
 
   // Get Poll by ID
-  async getPollById(pollId: number, userId?: number, skipViewCount?: boolean): Promise<PollResponseDto> {
-    const poll = await this.pollRepository.findOne({
+  async getPollById(
+    pollId: number,
+    userId?: number,
+    skipViewCount?: boolean,
+  ): Promise<PollResponseDto> {
+    const poll = await this.prisma.userPoll.findUnique({
       where: { id: pollId },
-      relations: ['user', 'options'],
+      include: { user: true, options: true },
     });
 
     if (!poll) {
@@ -446,19 +435,18 @@ export class PollService {
 
     // Increment view count only if not skipped (skip for admin views)
     if (!skipViewCount) {
-      poll.view_count += 1;
-      await this.pollRepository.save(poll);
+      await this.prisma.userPoll.update({
+        where: { id: pollId },
+        data: { view_count: { increment: 1 } },
+      });
     }
 
     const response: any = { ...poll };
 
     // Get user vote if userId provided
     if (userId) {
-      const userVote = await this.pollVoteRepository.findOne({
-        where: {
-          poll_id: pollId,
-          user_id: userId,
-        },
+      const userVote = await this.prisma.pollVote.findFirst({
+        where: { poll_id: pollId, user_id: userId },
       });
       if (userVote) {
         response.user_vote = {
@@ -471,35 +459,30 @@ export class PollService {
       }
 
       // Get user like status
-      const userLike = await this.pollLikeRepository.findOne({
-        where: {
-          poll_id: pollId,
-          user_id: userId,
-        },
+      const userLike = await this.prisma.pollLike.findFirst({
+        where: { poll_id: pollId, user_id: userId },
       });
       response.user_like_status = userLike?.like_status || null;
-      response.is_liked = userLike?.like_status === LikeStatus.LIKE;
-      response.is_disliked = userLike?.like_status === LikeStatus.DISLIKE;
+      response.is_liked = userLike?.like_status === 'like';
+      response.is_disliked = userLike?.like_status === 'dislike';
     }
 
     // Calculate like and dislike counts
-    const likeCount = await this.pollLikeRepository.count({
-      where: {
-        poll_id: pollId,
-        like_status: LikeStatus.LIKE,
-      },
-    });
-    const dislikeCount = await this.pollLikeRepository.count({
-      where: {
-        poll_id: pollId,
-        like_status: LikeStatus.DISLIKE,
-      },
-    });
+    const [likeCount, dislikeCount] = await Promise.all([
+      this.prisma.pollLike.count({
+        where: { poll_id: pollId, like_status: 'like' },
+      }),
+      this.prisma.pollLike.count({
+        where: { poll_id: pollId, like_status: 'dislike' },
+      }),
+    ]);
     response.like_count = likeCount;
     response.dislike_count = dislikeCount;
 
     // Check if poll is expired (only if expiration date is set)
-    response.is_expired = poll.poll_expires_at ? new Date(poll.poll_expires_at) < new Date() : false;
+    response.is_expired = poll.poll_expires_at
+      ? new Date(poll.poll_expires_at) < new Date()
+      : false;
 
     // Calculate option percentages and mark user's voted option
     if (poll.options && poll.options.length > 0) {
@@ -512,7 +495,8 @@ export class PollService {
           totalVotes > 0
             ? Math.round((option.vote_count / totalVotes) * 100 * 100) / 100
             : 0,
-        is_voted: userId && userVotedOptionId ? option.id === userVotedOptionId : false,
+        is_voted:
+          userId && userVotedOptionId ? option.id === userVotedOptionId : false,
       }));
     }
 
@@ -520,13 +504,9 @@ export class PollService {
   }
 
   // Get Poll by Slug
-  async getPollBySlug(
-    slug: string,
-    userId?: number,
-  ): Promise<PollResponseDto> {
-    const poll = await this.pollRepository.findOne({
+  async getPollBySlug(slug: string, userId?: number): Promise<PollResponseDto> {
+    const poll = await this.prisma.userPoll.findFirst({
       where: { poll_slug: slug },
-      relations: ['user', 'options'],
     });
 
     if (!poll) {
@@ -542,7 +522,7 @@ export class PollService {
     updatePollDto: UpdatePollDto,
     userId: number,
   ): Promise<PollResponseDto> {
-    const poll = await this.pollRepository.findOne({
+    const poll = await this.prisma.userPoll.findUnique({
       where: { id: pollId },
     });
 
@@ -555,114 +535,133 @@ export class PollService {
       throw new ForbiddenException('You can only update your own polls');
     }
 
+    const updateData: any = { updated_by: userId };
+
     // If slug is being updated, generate new slug with ID hash
     if (updatePollDto.poll_slug && updatePollDto.poll_slug !== poll.poll_slug) {
-      // Remove any existing hash and generate new one with current ID
-      updatePollDto.poll_slug = this.generateSlugWithHash(updatePollDto.poll_slug, poll.id);
+      updateData.poll_slug = this.generateSlugWithHash(
+        updatePollDto.poll_slug,
+        poll.id,
+      );
+    } else if (updatePollDto.poll_slug) {
+      updateData.poll_slug = updatePollDto.poll_slug;
     }
 
     // Validate expiration date if being updated - must be at least tomorrow
-    // Allow null/empty to clear expiration date
     if ('poll_expires_at' in updatePollDto) {
-      if (updatePollDto.poll_expires_at && typeof updatePollDto.poll_expires_at === 'string' && updatePollDto.poll_expires_at.trim() !== '') {
+      if (
+        updatePollDto.poll_expires_at &&
+        typeof updatePollDto.poll_expires_at === 'string' &&
+        updatePollDto.poll_expires_at.trim() !== ''
+      ) {
         const expiresAt = this.parseDateString(updatePollDto.poll_expires_at);
         if (!this.isAtLeastTomorrow(expiresAt)) {
           throw new BadRequestException(
             'Poll expiration date must be at least tomorrow. Polls cannot expire on the same day they are created.',
           );
         }
-        (poll as any).poll_expires_at = expiresAt;
+        updateData.poll_expires_at = expiresAt;
       } else {
-        // Clear expiration date if null or empty string provided
-        (poll as any).poll_expires_at = null;
+        updateData.poll_expires_at = null;
       }
-      delete (updatePollDto as any).poll_expires_at;
     }
 
     // Convert community_ids array to comma-separated string if provided
     if (updatePollDto.community_ids !== undefined) {
-      const communityIdsString = updatePollDto.community_ids.length
+      updateData.community_ids = updatePollDto.community_ids.length
         ? updatePollDto.community_ids.join(',')
         : null;
-      (poll as any).community_ids = communityIdsString;
-      delete (updatePollDto as any).community_ids;
     }
 
     // Convert is_featured string to boolean if provided
     if (updatePollDto.is_featured !== undefined) {
-      poll.is_featured = updatePollDto.is_featured === 'featured';
-      delete (updatePollDto as any).is_featured;
+      updateData.is_featured = updatePollDto.is_featured === 'featured';
     }
 
+    // Copy remaining scalar fields (exclude already-handled ones)
+    const {
+      poll_slug,
+      poll_expires_at,
+      community_ids,
+      is_featured,
+      options,
+      ...restDto
+    } = updatePollDto as any;
+    Object.assign(updateData, restDto);
+
     // Handle options update if provided
-    let optionsToSave: PollOption[] = [];
     if (updatePollDto.options) {
-      const existingOptions = await this.pollOptionRepository.find({
+      const existingOptions = await this.prisma.pollOption.findMany({
         where: { poll_id: pollId },
       });
 
       const newOptionsDto = updatePollDto.options;
       const keepOptionIds: number[] = [];
 
-      // Process provided options
       for (const optionDto of newOptionsDto) {
         if (optionDto.id) {
-          // Update existing option
-          const existingOption = existingOptions.find(o => o.id == optionDto.id);
+          const existingOption = existingOptions.find(
+            (o) => o.id == optionDto.id,
+          );
           if (existingOption) {
-            existingOption.option_text = optionDto.option_text;
-            existingOption.display_order = optionDto.display_order ?? existingOption.display_order;
-            optionsToSave.push(existingOption);
+            await this.prisma.pollOption.update({
+              where: { id: existingOption.id },
+              data: {
+                option_text: optionDto.option_text,
+                display_order:
+                  optionDto.display_order ?? existingOption.display_order,
+              },
+            });
             keepOptionIds.push(existingOption.id);
           }
         } else {
           // Create new option
-          const newOption = this.pollOptionRepository.create({
-            poll_id: pollId,
-            option_text: optionDto.option_text,
-            display_order: optionDto.display_order ?? 0,
-            vote_count: 0,
-            is_active: true,
-            created_by: userId,
+          const newOption = await this.prisma.pollOption.create({
+            data: {
+              poll_id: pollId,
+              option_text: optionDto.option_text,
+              display_order: optionDto.display_order ?? 0,
+              vote_count: 0,
+              is_active: true,
+              created_by: userId,
+            },
           });
-          optionsToSave.push(newOption);
+          keepOptionIds.push(newOption.id);
         }
       }
 
-      // Delete removed options (those present in DB but not in payload)
-      // Only delete if we are actually updating options, otherwise we'd wipe them out
-      const optionsToDelete = existingOptions.filter(o => !keepOptionIds.includes(o.id));
-      if (optionsToDelete.length > 0) {
-        await this.pollOptionRepository.remove(optionsToDelete);
-      }
+      // Delete removed options
+      const optionIdsToDelete = existingOptions
+        .filter((o) => !keepOptionIds.includes(o.id))
+        .map((o) => o.id);
 
-      // Save updated/new options
-      if (optionsToSave.length > 0) {
-        await this.pollOptionRepository.save(optionsToSave);
+      if (optionIdsToDelete.length > 0) {
+        await this.prisma.pollOption.deleteMany({
+          where: { id: { in: optionIdsToDelete } },
+        });
       }
-
-      // Remove options from DTO so Object.assign doesn't overwrite with plain objects
-      delete (updatePollDto as any).options;
     }
 
-    // Update poll
-    Object.assign(poll, updatePollDto);
-    poll.updated_by = userId;
-
-    const updatedPoll = await this.pollRepository.save(poll);
-
-    // Re-fetch with options and user relations to ensure response includes updated data
-    const pollWithRelations = await this.pollRepository.findOne({
+    await this.prisma.userPoll.update({
       where: { id: pollId },
-      relations: ['user', 'options'],
+      data: updateData,
+    });
+
+    // Re-fetch with options and user relations
+    const pollWithRelations = await this.prisma.userPoll.findUnique({
+      where: { id: pollId },
+      include: { user: true, options: true },
     });
 
     return this.mapToResponseDto(pollWithRelations);
   }
 
   // Delete Poll
-  async deletePoll(pollId: number, userId: number): Promise<{ message: string }> {
-    const poll = await this.pollRepository.findOne({
+  async deletePoll(
+    pollId: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const poll = await this.prisma.userPoll.findUnique({
       where: { id: pollId },
     });
 
@@ -676,9 +675,10 @@ export class PollService {
     }
 
     // Soft delete by changing status to ended
-    poll.poll_status = PollStatus.ENDED;
-    poll.updated_by = userId;
-    await this.pollRepository.save(poll);
+    await this.prisma.userPoll.update({
+      where: { id: pollId },
+      data: { poll_status: 'ended', updated_by: userId },
+    });
 
     return { message: 'Poll deleted successfully' };
   }
@@ -693,9 +693,9 @@ export class PollService {
     vote_count: number;
     option_vote_counts: Record<number, number>;
   }> {
-    const poll = await this.pollRepository.findOne({
+    const poll = await this.prisma.userPoll.findUnique({
       where: { id: pollId },
-      relations: ['options'],
+      include: { options: true },
     });
 
     if (!poll) {
@@ -703,7 +703,7 @@ export class PollService {
     }
 
     // Check if poll is published
-    if (poll.poll_status !== PollStatus.PUBLISHED) {
+    if (poll.poll_status !== 'published') {
       throw new BadRequestException('Poll is not published');
     }
 
@@ -722,11 +722,8 @@ export class PollService {
     }
 
     // Check if user already voted
-    const existingVote = await this.pollVoteRepository.findOne({
-      where: {
-        poll_id: pollId,
-        user_id: userId,
-      },
+    const existingVote = await this.prisma.pollVote.findFirst({
+      where: { poll_id: pollId, user_id: userId },
     });
 
     if (existingVote) {
@@ -734,46 +731,50 @@ export class PollService {
       const oldOptionId = existingVote.vote_option_id;
 
       // Decrement old option vote count
-      await this.pollOptionRepository.decrement(
-        { id: oldOptionId },
-        'vote_count',
-        1,
-      );
-
-      // Update vote
-      existingVote.vote_option_id = votePollDto.vote_option_id;
-      existingVote.updated_by = userId;
-      await this.pollVoteRepository.save(existingVote);
-
-      // Increment new option vote count
-      await this.pollOptionRepository.increment(
-        { id: votePollDto.vote_option_id },
-        'vote_count',
-        1,
-      );
-    } else {
-      // Create new vote
-      const vote = this.pollVoteRepository.create({
-        poll_id: pollId,
-        user_id: userId,
-        vote_option_id: votePollDto.vote_option_id,
-        created_by: userId,
+      await this.prisma.pollOption.update({
+        where: { id: oldOptionId },
+        data: { vote_count: { decrement: 1 } },
       });
 
-      await this.pollVoteRepository.save(vote);
+      // Update vote
+      await this.prisma.pollVote.update({
+        where: { id: existingVote.id },
+        data: {
+          vote_option_id: votePollDto.vote_option_id,
+          updated_by: userId,
+        },
+      });
+
+      // Increment new option vote count
+      await this.prisma.pollOption.update({
+        where: { id: votePollDto.vote_option_id },
+        data: { vote_count: { increment: 1 } },
+      });
+    } else {
+      // Create new vote
+      await this.prisma.pollVote.create({
+        data: {
+          poll_id: pollId,
+          user_id: userId,
+          vote_option_id: votePollDto.vote_option_id,
+          created_by: userId,
+        },
+      });
 
       // Increment option and poll vote counts
-      await this.pollOptionRepository.increment(
-        { id: votePollDto.vote_option_id },
-        'vote_count',
-        1,
-      );
-      await this.pollRepository.increment({ id: pollId }, 'vote_count', 1);
+      await this.prisma.pollOption.update({
+        where: { id: votePollDto.vote_option_id },
+        data: { vote_count: { increment: 1 } },
+      });
+      await this.prisma.userPoll.update({
+        where: { id: pollId },
+        data: { vote_count: { increment: 1 } },
+      });
 
       // Notify poll owner about the new vote
-      const actor = await this.userRepository.findOne({
+      const actor = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: ['id', 'username'],
+        select: { id: true, username: true },
       });
       const actorName = actor?.username || 'Someone';
       await this.safeNotify({
@@ -789,9 +790,9 @@ export class PollService {
     }
 
     // Get updated vote counts
-    const updatedOptions = await this.pollOptionRepository.find({
+    const updatedOptions = await this.prisma.pollOption.findMany({
       where: { poll_id: pollId },
-      select: ['id', 'vote_count'],
+      select: { id: true, vote_count: true },
     });
 
     const optionVoteCounts: Record<number, number> = {};
@@ -799,9 +800,9 @@ export class PollService {
       optionVoteCounts[opt.id] = opt.vote_count;
     });
 
-    const updatedPoll = await this.pollRepository.findOne({
+    const updatedPoll = await this.prisma.userPoll.findUnique({
       where: { id: pollId },
-      select: ['vote_count'],
+      select: { vote_count: true },
     });
 
     return {
@@ -824,9 +825,7 @@ export class PollService {
     dislike_count: number;
     like_status: 'like' | 'dislike' | null;
   }> {
-    // Note: This is a simplified version - polls may not have like/dislike counts in the schema
-    // Adjust based on actual requirements
-    const poll = await this.pollRepository.findOne({
+    const poll = await this.prisma.userPoll.findUnique({
       where: { id: pollId },
     });
 
@@ -835,25 +834,23 @@ export class PollService {
     }
 
     // Check if user already liked/disliked
-    const existingLike = await this.pollLikeRepository.findOne({
-      where: {
-        poll_id: pollId,
-        user_id: userId,
-      },
+    const existingLike = await this.prisma.pollLike.findFirst({
+      where: { poll_id: pollId, user_id: userId },
     });
 
     if (existingLike) {
       // If same status, remove like/dislike
       if (existingLike.like_status === likePollDto.like_status) {
-        await this.pollLikeRepository.remove(existingLike);
+        await this.prisma.pollLike.delete({ where: { id: existingLike.id } });
 
-        // Get updated counts
-        const likeCount = await this.pollLikeRepository.count({
-          where: { poll_id: pollId, like_status: LikeStatus.LIKE },
-        });
-        const dislikeCount = await this.pollLikeRepository.count({
-          where: { poll_id: pollId, like_status: LikeStatus.DISLIKE },
-        });
+        const [likeCount, dislikeCount] = await Promise.all([
+          this.prisma.pollLike.count({
+            where: { poll_id: pollId, like_status: 'like' },
+          }),
+          this.prisma.pollLike.count({
+            where: { poll_id: pollId, like_status: 'dislike' },
+          }),
+        ]);
 
         return {
           message: 'Poll like/dislike removed successfully',
@@ -863,18 +860,19 @@ export class PollService {
         };
       } else {
         // Update existing like/dislike
-        const oldStatus = existingLike.like_status;
-        existingLike.like_status = likePollDto.like_status;
-        existingLike.updated_by = userId;
-        await this.pollLikeRepository.save(existingLike);
+        await this.prisma.pollLike.update({
+          where: { id: existingLike.id },
+          data: { like_status: likePollDto.like_status, updated_by: userId },
+        });
 
-        // Get updated counts
-        const likeCount = await this.pollLikeRepository.count({
-          where: { poll_id: pollId, like_status: LikeStatus.LIKE },
-        });
-        const dislikeCount = await this.pollLikeRepository.count({
-          where: { poll_id: pollId, like_status: LikeStatus.DISLIKE },
-        });
+        const [likeCount, dislikeCount] = await Promise.all([
+          this.prisma.pollLike.count({
+            where: { poll_id: pollId, like_status: 'like' },
+          }),
+          this.prisma.pollLike.count({
+            where: { poll_id: pollId, like_status: 'dislike' },
+          }),
+        ]);
 
         return {
           message: `Poll ${likePollDto.like_status}d successfully`,
@@ -886,28 +884,29 @@ export class PollService {
     }
 
     // Create new like/dislike
-    const pollLike = this.pollLikeRepository.create({
-      poll_id: pollId,
-      user_id: userId,
-      like_status: likePollDto.like_status,
-      created_by: userId,
+    await this.prisma.pollLike.create({
+      data: {
+        poll_id: pollId,
+        user_id: userId,
+        like_status: likePollDto.like_status,
+        created_by: userId,
+      },
     });
 
-    await this.pollLikeRepository.save(pollLike);
-
-    // Get updated counts
-    const likeCount = await this.pollLikeRepository.count({
-      where: { poll_id: pollId, like_status: LikeStatus.LIKE },
-    });
-    const dislikeCount = await this.pollLikeRepository.count({
-      where: { poll_id: pollId, like_status: LikeStatus.DISLIKE },
-    });
+    const [likeCount, dislikeCount] = await Promise.all([
+      this.prisma.pollLike.count({
+        where: { poll_id: pollId, like_status: 'like' },
+      }),
+      this.prisma.pollLike.count({
+        where: { poll_id: pollId, like_status: 'dislike' },
+      }),
+    ]);
 
     // Notify poll owner — only on a new LIKE (not dislike)
-    if (likePollDto.like_status === LikeStatus.LIKE) {
-      const actor = await this.userRepository.findOne({
+    if (likePollDto.like_status === 'like') {
+      const actor = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: ['id', 'username'],
+        select: { id: true, username: true },
       });
       const actorName = actor?.username || 'Someone';
       await this.safeNotify({
@@ -1033,4 +1032,3 @@ export class PollService {
     };
   }
 }
-

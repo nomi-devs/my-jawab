@@ -1,16 +1,26 @@
 import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 import { JobService } from './job.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/entities/user.entity';
 
+@ApiTags('Jobs')
+@ApiBearerAuth('JWT-auth')
 @Controller('jobs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class JobController {
   constructor(private readonly jobService: JobService) {}
 
+  @ApiOperation({ summary: 'Get job by ID' })
+  @ApiParam({ name: 'id', type: String })
   @Get(':id')
   async getJob(@Param('id') id: string) {
     const job = await this.jobService.findById(parseInt(id));
@@ -28,6 +38,7 @@ export class JobController {
     };
   }
 
+  @ApiOperation({ summary: 'List pending jobs' })
   @Get('pending/list')
   async getPendingJobs(@Request() req: any) {
     const jobs = await this.jobService.findPendingJobs(50);
@@ -38,4 +49,3 @@ export class JobController {
     };
   }
 }
-

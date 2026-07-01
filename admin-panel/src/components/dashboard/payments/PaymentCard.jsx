@@ -6,7 +6,7 @@ const PaymentCard = ({ payment, onViewDetails }) => {
   const formatAmount = (amount, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency
+      currency: currency,
     }).format(amount);
   };
 
@@ -37,7 +37,9 @@ const PaymentCard = ({ payment, onViewDetails }) => {
             </p>
           </div>
         </div>
-        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(payment.payment_status)}`}>
+        <span
+          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(payment.payment_status)}`}
+        >
           {payment.payment_status || 'N/A'}
         </span>
       </div>
@@ -57,9 +59,7 @@ const PaymentCard = ({ payment, onViewDetails }) => {
         </div>
         <div className="flex justify-between items-center">
           <span className="text-[10px] text-gray-500 dark:text-gray-400">User ID</span>
-          <span className="text-xs text-gray-700 dark:text-gray-300">
-            {payment.user_id}
-          </span>
+          <span className="text-xs text-gray-700 dark:text-gray-300">{payment.user_id}</span>
         </div>
         {payment.user_subscription?.subscription?.subscription_name && (
           <div className="flex justify-between items-center">
@@ -73,11 +73,11 @@ const PaymentCard = ({ payment, onViewDetails }) => {
 
       <div className="flex items-center justify-between pt-3 border-t border-purple-100 dark:border-gray-700">
         <span className="text-[10px] text-gray-500 dark:text-gray-400">
-          {payment.created_at 
+          {payment.created_at
             ? new Date(payment.created_at).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
-                year: 'numeric'
+                year: 'numeric',
               })
             : 'N/A'}
         </span>
@@ -94,4 +94,3 @@ const PaymentCard = ({ payment, onViewDetails }) => {
 };
 
 export default PaymentCard;
-

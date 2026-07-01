@@ -39,11 +39,20 @@ export class MediaProcessingService {
     private storageService: StorageService,
   ) {
     this.maxImageSize = this.configService.get<number>('MAX_IMAGE_SIZE', 2048);
-    this.maxThumbnailSize = this.configService.get<number>('MAX_THUMBNAIL_SIZE', 300);
-    this.thumbnailQuality = this.configService.get<number>('THUMBNAIL_QUALITY', 80);
+    this.maxThumbnailSize = this.configService.get<number>(
+      'MAX_THUMBNAIL_SIZE',
+      300,
+    );
+    this.thumbnailQuality = this.configService.get<number>(
+      'THUMBNAIL_QUALITY',
+      80,
+    );
   }
 
-  async processImage(buffer: Buffer, options: OptimizeImageDto = {}): Promise<ProcessedImage> {
+  async processImage(
+    buffer: Buffer,
+    options: OptimizeImageDto = {},
+  ): Promise<ProcessedImage> {
     try {
       const image = sharp(buffer);
       const metadata = await image.metadata();
@@ -52,7 +61,8 @@ export class MediaProcessingService {
         throw new BadRequestException('Invalid image format');
       }
 
-      const outputFormat = options.format || this.getBestFormat(metadata.format);
+      const outputFormat =
+        options.format || this.getBestFormat(metadata.format);
 
       let processedImage = image;
       if (options.width || options.height) {
@@ -60,7 +70,10 @@ export class MediaProcessingService {
           fit: 'inside',
           withoutEnlargement: true,
         });
-      } else if (metadata.width > this.maxImageSize || metadata.height > this.maxImageSize) {
+      } else if (
+        metadata.width > this.maxImageSize ||
+        metadata.height > this.maxImageSize
+      ) {
         processedImage = image.resize(this.maxImageSize, this.maxImageSize, {
           fit: 'inside',
           withoutEnlargement: true,
@@ -72,17 +85,25 @@ export class MediaProcessingService {
 
       switch (outputFormat) {
         case 'webp':
-          optimizedBuffer = await processedImage.webp({ quality, effort: 6 }).toBuffer();
+          optimizedBuffer = await processedImage
+            .webp({ quality, effort: 6 })
+            .toBuffer();
           break;
         case 'avif':
-          optimizedBuffer = await processedImage.avif({ quality, effort: 4 }).toBuffer();
+          optimizedBuffer = await processedImage
+            .avif({ quality, effort: 4 })
+            .toBuffer();
           break;
         case 'png':
-          optimizedBuffer = await processedImage.png({ quality, compressionLevel: 9 }).toBuffer();
+          optimizedBuffer = await processedImage
+            .png({ quality, compressionLevel: 9 })
+            .toBuffer();
           break;
         case 'jpeg':
         default:
-          optimizedBuffer = await processedImage.jpeg({ quality, mozjpeg: true }).toBuffer();
+          optimizedBuffer = await processedImage
+            .jpeg({ quality, mozjpeg: true })
+            .toBuffer();
           break;
       }
 
@@ -100,15 +121,23 @@ export class MediaProcessingService {
         thumbnail,
       };
     } catch (error) {
-      this.logger.error(`Image processing failed: ${error.message}`, error.stack);
-      throw new BadRequestException(`Image processing failed: ${error.message}`);
+      this.logger.error(
+        `Image processing failed: ${error.message}`,
+        error.stack,
+      );
+      throw new BadRequestException(
+        `Image processing failed: ${error.message}`,
+      );
     }
   }
 
   private async generateThumbnail(buffer: Buffer): Promise<Buffer> {
     try {
       return await sharp(buffer)
-        .resize(this.maxThumbnailSize, this.maxThumbnailSize, { fit: 'cover', position: 'center' })
+        .resize(this.maxThumbnailSize, this.maxThumbnailSize, {
+          fit: 'cover',
+          position: 'center',
+        })
         .jpeg({ quality: this.thumbnailQuality, mozjpeg: true })
         .toBuffer();
     } catch (error) {
@@ -127,7 +156,9 @@ export class MediaProcessingService {
         size: buffer.length,
       };
     } catch (error) {
-      throw new BadRequestException(`Failed to extract image metadata: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to extract image metadata: ${error.message}`,
+      );
     }
   }
 
@@ -185,7 +216,9 @@ export class MediaProcessingService {
     return { optimizedPath, thumbnailPath: thumbnailPath || '' };
   }
 
-  private getBestFormat(originalFormat?: string): 'jpeg' | 'png' | 'webp' | 'avif' {
+  private getBestFormat(
+    originalFormat?: string,
+  ): 'jpeg' | 'png' | 'webp' | 'avif' {
     const supportsWebP = this.configService.get<boolean>('SUPPORT_WEBP', true);
     const supportsAVIF = this.configService.get<boolean>('SUPPORT_AVIF', false);
     if (originalFormat === 'png' && supportsAVIF) return 'avif';
@@ -205,7 +238,10 @@ export class MediaProcessingService {
     return mimeTypes[format.toLowerCase()] || 'image/jpeg';
   }
 
-  async detectMediaType(mimeType: string, fileName: string): Promise<MediaType> {
+  async detectMediaType(
+    mimeType: string,
+    fileName: string,
+  ): Promise<MediaType> {
     if (mimeType.startsWith('image/')) return MediaType.IMAGE;
     if (mimeType.startsWith('video/')) return MediaType.VIDEO;
     if (mimeType.startsWith('audio/')) return MediaType.AUDIO;
@@ -221,7 +257,10 @@ export class MediaProcessingService {
   }
 
   async validateFile(file: Express.Multer.File): Promise<void> {
-    const maxFileSize = this.configService.get<number>('MAX_FILE_SIZE', 50 * 1024 * 1024);
+    const maxFileSize = this.configService.get<number>(
+      'MAX_FILE_SIZE',
+      50 * 1024 * 1024,
+    );
     const allowedMimeTypes = this.configService
       .get<string>('ALLOWED_MIME_TYPES', 'image/*,video/*,application/pdf')
       .split(',');
@@ -241,7 +280,9 @@ export class MediaProcessingService {
     });
 
     if (!isAllowed) {
-      throw new BadRequestException(`File type ${file.mimetype} is not allowed`);
+      throw new BadRequestException(
+        `File type ${file.mimetype} is not allowed`,
+      );
     }
   }
 
@@ -250,7 +291,12 @@ export class MediaProcessingService {
     originalFileName: string,
     folder: string = '',
     storageType: StorageType,
-  ): Promise<{ thumbnailPath: string; duration: number | null; width: number | null; height: number | null }> {
+  ): Promise<{
+    thumbnailPath: string;
+    duration: number | null;
+    width: number | null;
+    height: number | null;
+  }> {
     const tempDir = os.tmpdir();
     const tempVideoPath = path.join(tempDir, `video_${Date.now()}.mp4`);
     const tempThumbnailPath = path.join(tempDir, `thumb_${Date.now()}.jpg`);
@@ -273,7 +319,10 @@ export class MediaProcessingService {
 
       const thumbnailBuffer = await fs.readFile(tempThumbnailPath);
       const processedThumbnail = await sharp(thumbnailBuffer)
-        .resize(this.maxThumbnailSize, this.maxThumbnailSize, { fit: 'cover', position: 'center' })
+        .resize(this.maxThumbnailSize, this.maxThumbnailSize, {
+          fit: 'cover',
+          position: 'center',
+        })
         .jpeg({ quality: this.thumbnailQuality, mozjpeg: true })
         .toBuffer();
 
@@ -299,10 +348,20 @@ export class MediaProcessingService {
         storageType,
       );
 
-      return { thumbnailPath, duration: metadata.duration, width: metadata.width, height: metadata.height };
+      return {
+        thumbnailPath,
+        duration: metadata.duration,
+        width: metadata.width,
+        height: metadata.height,
+      };
     } catch (error) {
-      this.logger.error(`Video thumbnail generation error: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to generate video thumbnail: ${error.message}`);
+      this.logger.error(
+        `Video thumbnail generation error: ${error.message}`,
+        error.stack,
+      );
+      throw new BadRequestException(
+        `Failed to generate video thumbnail: ${error.message}`,
+      );
     } finally {
       await fs.unlink(tempVideoPath).catch(() => {});
       await fs.unlink(tempThumbnailPath).catch(() => {});
@@ -317,12 +376,20 @@ export class MediaProcessingService {
     return new Promise((resolve, reject) => {
       ffmpeg.ffprobe(videoPath, (err, metadata) => {
         if (err) {
-          reject(new BadRequestException(`Failed to extract video metadata: ${err.message}`));
+          reject(
+            new BadRequestException(
+              `Failed to extract video metadata: ${err.message}`,
+            ),
+          );
           return;
         }
-        const videoStream = metadata.streams.find((s) => s.codec_type === 'video');
+        const videoStream = metadata.streams.find(
+          (s) => s.codec_type === 'video',
+        );
         resolve({
-          duration: metadata.format.duration ? Math.floor(metadata.format.duration) : 0,
+          duration: metadata.format.duration
+            ? Math.floor(metadata.format.duration)
+            : 0,
           width: videoStream?.width || null,
           height: videoStream?.height || null,
         });

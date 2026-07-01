@@ -9,16 +9,16 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
     password: '',
     role: 'user',
     status: 'Active',
-    is_verified: false
+    is_verified: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -47,7 +47,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
       password: '',
       role: 'user',
       status: 'Active',
-      is_verified: false
+      is_verified: false,
     });
   };
 
@@ -63,8 +63,12 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               <UserPlus className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">Add New User</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Fill in the user details</p>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Add New User
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                Fill in the user details
+              </p>
             </div>
           </div>
           <button
@@ -77,7 +81,11 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
         </div>
 
         {/* Scrollable Modal Body */}
-        <form id="add-user-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form
+          id="add-user-form"
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarGutter: 'stable' }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Email */}
@@ -130,7 +138,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                 </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
@@ -213,7 +221,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        is_verified: e.target.checked
+                        is_verified: e.target.checked,
                       }))
                     }
                     className="sr-only peer"
@@ -258,8 +266,8 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
             </button>
           </div>
         </form>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 };
 

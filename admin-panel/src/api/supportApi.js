@@ -1,5 +1,5 @@
 // src/api/supportApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const supportApi = {
   /**
@@ -7,7 +7,7 @@ const supportApi = {
    * @returns {Promise} Response with active support data
    */
   getActive() {
-    return axiosClient.get("/support");
+    return axiosClient.get('/support');
   },
 
   /**
@@ -15,7 +15,7 @@ const supportApi = {
    * @returns {Promise} Response with support data
    */
   getAdmin() {
-    return axiosClient.get("/admin/support");
+    return axiosClient.get('/admin/support');
   },
 
   /**
@@ -24,7 +24,7 @@ const supportApi = {
    * @returns {Promise} Response with created support data
    */
   create(data) {
-    return axiosClient.post("/admin/support", data);
+    return axiosClient.post('/admin/support', data);
   },
 
   /**

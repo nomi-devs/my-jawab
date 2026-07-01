@@ -22,6 +22,15 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response, Request } from 'express';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiConsumes,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { MediaService } from './media.service';
 import { ListMediaDto } from './dto/list-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
@@ -30,12 +39,32 @@ import { OptimizeImageDto } from './dto/optimize-image.dto';
 import { MediaResponseDto } from './dto/media-response.dto';
 import { OptionalParseIntPipe } from './pipes/optional-parse-int.pipe';
 
+@ApiTags('Media')
 @Controller('media')
 export class MediaController {
   private readonly logger = new Logger(MediaController.name);
 
   constructor(private readonly mediaService: MediaService) {}
 
+  @ApiOperation({ summary: 'Upload a file' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        folder: { type: 'string', example: 'posts' },
+        media_type: {
+          type: 'string',
+          enum: ['image', 'video', 'document', 'audio', 'other'],
+        },
+        storage_type: { type: 'string', enum: ['local', 's3', 'cloudinary'] },
+        is_public: { type: 'boolean', example: true },
+        optimize: { type: 'boolean', example: false },
+      },
+    },
+  })
   @Post('upload')
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('file'))
@@ -48,6 +77,8 @@ export class MediaController {
     return this.mediaService.uploadFile(file, uploadDto, userId);
   }
 
+  @ApiOperation({ summary: 'List media files' })
+  @ApiBearerAuth('JWT-auth')
   @Get()
   @HttpCode(HttpStatus.OK)
   async listMedia(
@@ -59,16 +90,23 @@ export class MediaController {
 
   @Options('files/*')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async serveFileOptions(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async serveFileOptions(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization',
+    );
     res.setHeader('Access-Control-Max-Age', '86400');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.send();
   }
 
   // Must be before :id route
+  @ApiOperation({ summary: 'Serve/download a file' })
   @Get('files/*')
   async serveFile(
     @Req() req: Request,
@@ -88,7 +126,8 @@ export class MediaController {
       }
       if (!filePath) {
         const filesIndex = fullPath.indexOf('files/');
-        if (filesIndex !== -1) filePath = fullPath.substring(filesIndex + 'files/'.length);
+        if (filesIndex !== -1)
+          filePath = fullPath.substring(filesIndex + 'files/'.length);
       }
       if (filePath) {
         const queryIndex = filePath.indexOf('?');
@@ -109,7 +148,9 @@ export class MediaController {
 
       const isOwner = userId && media.uploaded_by === userId;
       if (!media.is_public && !isOwner) {
-        res.status(403).json({ message: 'File is not public and you are not the owner' });
+        res
+          .status(403)
+          .json({ message: 'File is not public and you are not the owner' });
         return;
       }
 
@@ -128,7 +169,10 @@ export class MediaController {
         };
         mimeType = mimeTypes[ext || ''] || media.mime_type;
       } else if (media.thumbnail_path === filePath) {
-        buffer = await this.mediaService.getFileBufferByPath(filePath, media.storage_type);
+        buffer = await this.mediaService.getFileBufferByPath(
+          filePath,
+          media.storage_type,
+        );
         mimeType = 'image/jpeg';
       } else {
         buffer = await this.mediaService.getFileBuffer(media.id, false);
@@ -137,8 +181,14 @@ export class MediaController {
 
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-      res.setHeader('Access-Control-Expose-Headers', 'Content-Type, Content-Length');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With',
+      );
+      res.setHeader(
+        'Access-Control-Expose-Headers',
+        'Content-Type, Content-Length',
+      );
       res.setHeader('Access-Control-Max-Age', '86400');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       res.setHeader('Content-Type', mimeType);
@@ -147,11 +197,17 @@ export class MediaController {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.send(buffer);
     } catch (error) {
-      this.logger.error(`Error serving file ${filePath}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error serving file ${filePath}: ${error.message}`,
+        error.stack,
+      );
       res.status(404).json({ message: 'File not found' });
     }
   }
 
+  @ApiOperation({ summary: 'Get media by ID' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', type: Number })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getMediaById(
@@ -161,6 +217,9 @@ export class MediaController {
     return this.mediaService.getMediaById(id, userId);
   }
 
+  @ApiOperation({ summary: 'Get media by UUID' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'uuid', type: String })
   @Get('uuid/:uuid')
   @HttpCode(HttpStatus.OK)
   async getMediaByUuid(
@@ -170,6 +229,9 @@ export class MediaController {
     return this.mediaService.getMediaByUuid(uuid, userId);
   }
 
+  @ApiOperation({ summary: 'Update media metadata' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', type: Number })
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async updateMedia(
@@ -180,6 +242,9 @@ export class MediaController {
     return this.mediaService.updateMedia(id, updateDto, userId);
   }
 
+  @ApiOperation({ summary: 'Delete media' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', type: Number })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deleteMedia(
@@ -189,6 +254,9 @@ export class MediaController {
     return this.mediaService.deleteMedia(id, userId);
   }
 
+  @ApiOperation({ summary: 'Optimize image' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', type: Number })
   @Post(':id/optimize')
   @HttpCode(HttpStatus.OK)
   async optimizeImage(
@@ -199,28 +267,43 @@ export class MediaController {
     return this.mediaService.optimizeImage(id, optimizeDto, userId);
   }
 
+  @ApiOperation({ summary: 'Get file URL' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', type: Number })
+  @ApiQuery({ name: 'optimized', required: false, type: Boolean })
+  @ApiQuery({ name: 'expiresIn', required: false, type: Number })
   @Get(':id/url')
   @HttpCode(HttpStatus.OK)
   async getFileUrl(
     @Param('id', ParseIntPipe) id: number,
-    @Query('optimized', new DefaultValuePipe(false), ParseBoolPipe) optimized: boolean,
-    @Query('expiresIn', new DefaultValuePipe(3600), ParseIntPipe) expiresIn: number,
+    @Query('optimized', new DefaultValuePipe(false), ParseBoolPipe)
+    optimized: boolean,
+    @Query('expiresIn', new DefaultValuePipe(3600), ParseIntPipe)
+    expiresIn: number,
   ): Promise<{ url: string }> {
     const url = await this.mediaService.getFileUrl(id, optimized, expiresIn);
     return { url };
   }
 
+  @ApiOperation({ summary: 'Download file' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', type: Number })
+  @ApiQuery({ name: 'optimized', required: false, type: Boolean })
   @Get(':id/download')
   async downloadFile(
     @Param('id', ParseIntPipe) id: number,
-    @Query('optimized', new DefaultValuePipe(false), ParseBoolPipe) optimized: boolean,
+    @Query('optimized', new DefaultValuePipe(false), ParseBoolPipe)
+    optimized: boolean,
     @Res() res: Response,
   ): Promise<void> {
     const media = await this.mediaService.getMediaById(id);
     const buffer = await this.mediaService.getFileBuffer(id, optimized);
     await this.mediaService.incrementDownloadCount(id);
     res.setHeader('Content-Type', media.mime_type);
-    res.setHeader('Content-Disposition', `attachment; filename="${media.original_filename}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${media.original_filename}"`,
+    );
     res.setHeader('Content-Length', buffer.length);
     res.send(buffer);
   }

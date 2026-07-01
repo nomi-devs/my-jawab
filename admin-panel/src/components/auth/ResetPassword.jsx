@@ -7,15 +7,15 @@ import authApi from '../../api/authApi';
 const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get email from location state (if coming from forgot password)
   const emailFromState = location.state?.email || '';
-  
+
   const [formData, setFormData] = useState({
     email: emailFromState,
     reset_code: '',
     new_password: '',
-    confirm_password: ''
+    confirm_password: '',
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -25,9 +25,9 @@ const ResetPassword = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     if (error) setError('');
   };
@@ -74,7 +74,7 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -86,30 +86,29 @@ const ResetPassword = () => {
       const resetData = {
         email: formData.email,
         reset_code: formData.reset_code,
-        new_password: formData.new_password
+        new_password: formData.new_password,
       };
 
       const response = await authApi.resetPassword(resetData);
       console.log('Reset password response:', response);
-      
+
       if (response.status >= 200 && response.status < 300) {
         setSuccess(true);
-        
+
         // Auto redirect to login after 3 seconds
         setTimeout(() => {
-          navigate('/login', { 
-            state: { message: 'Password reset successfully! Please login with your new password.' }
+          navigate('/login', {
+            state: { message: 'Password reset successfully! Please login with your new password.' },
           });
         }, 3000);
       } else {
         throw new Error('Failed to reset password');
       }
-      
     } catch (err) {
       console.error('Reset password error:', err);
-      
+
       let errorMessage = 'Failed to reset password. Please try again.';
-      
+
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.response?.data?.error) {
@@ -117,7 +116,7 @@ const ResetPassword = () => {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -133,7 +132,7 @@ const ResetPassword = () => {
       email: emailFromState,
       reset_code: '',
       new_password: '',
-      confirm_password: ''
+      confirm_password: '',
     });
     setError('');
     setSuccess(false);
@@ -143,7 +142,7 @@ const ResetPassword = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 transition-colors duration-300">
       <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-sm overflow-hidden border border-purple-100 dark:border-gray-700 relative transition-colors duration-300">
         {/* Back Button */}
-        <button 
+        <button
           onClick={handleBack}
           className="absolute top-4 left-4 p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors z-10"
           disabled={loading}
@@ -158,7 +157,9 @@ const ResetPassword = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 mb-4 text-green-600 dark:text-green-400">
                 <CheckCircle className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Password Reset Successful!</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                Password Reset Successful!
+              </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
                 Your password has been reset successfully.
               </p>
@@ -188,7 +189,7 @@ const ResetPassword = () => {
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
                 Enter the reset code from your email and set a new password.
               </p>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4 text-left">
                 {error && (
                   <div className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm animate-in slide-in-from-top duration-200 flex items-start gap-2">
@@ -202,8 +203,8 @@ const ResetPassword = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
                     Email Address
                   </label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
@@ -219,8 +220,8 @@ const ResetPassword = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
                     6-Digit Reset Code
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     name="reset_code"
                     value={formData.reset_code}
                     onChange={handleInputChange}
@@ -240,8 +241,8 @@ const ResetPassword = () => {
                       New Password
                     </label>
                     <div className="relative">
-                      <input 
-                        type={showPassword ? "text" : "password"}
+                      <input
+                        type={showPassword ? 'text' : 'password'}
                         name="new_password"
                         value={formData.new_password}
                         onChange={handleInputChange}
@@ -267,8 +268,8 @@ const ResetPassword = () => {
                       Confirm New Password
                     </label>
                     <div className="relative">
-                      <input 
-                        type={showConfirmPassword ? "text" : "password"}
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
                         name="confirm_password"
                         value={formData.confirm_password}
                         onChange={handleInputChange}
@@ -289,7 +290,7 @@ const ResetPassword = () => {
                   </div>
                 </div>
 
-                <button 
+                <button
                   type="submit"
                   disabled={loading}
                   className="w-full purple-gradient text-white font-semibold py-2.5 rounded-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] text-sm flex items-center justify-center gap-2"
@@ -310,8 +311,8 @@ const ResetPassword = () => {
                 <div className="text-center pt-3 border-t border-gray-100 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Don't have a reset code?{' '}
-                    <Link 
-                      to="/forgot-password" 
+                    <Link
+                      to="/forgot-password"
                       className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
                     >
                       Request Reset Code
@@ -319,8 +320,8 @@ const ResetPassword = () => {
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                     Remember your password?{' '}
-                    <Link 
-                      to="/login" 
+                    <Link
+                      to="/login"
                       className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
                     >
                       Back to Login
@@ -331,7 +332,6 @@ const ResetPassword = () => {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

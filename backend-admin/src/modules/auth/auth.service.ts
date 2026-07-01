@@ -7,8 +7,6 @@ import {
   Inject,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -16,10 +14,8 @@ import type { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import appleSignin from 'apple-signin-auth';
-import { User, AuthType } from './entities/user.entity';
-import { UserVerification } from './entities/user-verification.entity';
-import { UserPasswordReset } from './entities/user-password-reset.entity';
-import { UserDevice, DeviceType } from './entities/user-device.entity';
+import { PrismaService } from '../../prisma/prisma.service';
+import { DeviceType as PrismaDeviceType } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyDto } from './dto/verify.dto';
@@ -34,14 +30,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(UserVerification)
-    private verificationRepository: Repository<UserVerification>,
-    @InjectRepository(UserPasswordReset)
-    private passwordResetRepository: Repository<UserPasswordReset>,
-    @InjectRepository(UserDevice)
-    private deviceRepository: Repository<UserDevice>,
+    private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -62,7 +51,11 @@ export class AuthService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  private async generateTokens(user: User) {
+  private async generateTokens(user: {
+    id: number;
+    username: string;
+    role: string;
+  }) {
     const payload = { sub: user.id, username: user.username, role: user.role };
 
     // Access token: 1 month (30 days)
@@ -79,9 +72,13 @@ export class AuthService {
       expiresIn: refreshTokenExpiresIn,
     });
 
-    user.access_token = accessToken;
-    user.refresh_token = refreshToken;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      },
+    });
 
     // Invalidate cache when user data changes
     await this.invalidateUserCache(user.id);
@@ -103,8 +100,12 @@ export class AuthService {
       const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
 
       if (!clientId) {
-        this.logger.error('GOOGLE_CLIENT_ID is not configured in environment variables');
-        throw new UnauthorizedException('Google OAuth is not properly configured');
+        this.logger.error(
+          'GOOGLE_CLIENT_ID is not configured in environment variables',
+        );
+        throw new UnauthorizedException(
+          'Google OAuth is not properly configured',
+        );
       }
 
       const ticket = await this.googleClient.verifyIdToken({
@@ -121,7 +122,8 @@ export class AuthService {
       this.logger.error('Google token verification failed:', {
         error: error.message,
         stack: error.stack,
-        clientIdConfigured: !!this.configService.get<string>('GOOGLE_CLIENT_ID'),
+        clientIdConfigured:
+          !!this.configService.get<string>('GOOGLE_CLIENT_ID'),
       });
       throw new UnauthorizedException('Invalid Google token');
     }
@@ -132,8 +134,12 @@ export class AuthService {
       const clientId = this.configService.get<string>('APPLE_CLIENT_ID');
 
       if (!clientId) {
-        this.logger.error('APPLE_CLIENT_ID is not configured in environment variables');
-        throw new UnauthorizedException('Apple OAuth is not properly configured');
+        this.logger.error(
+          'APPLE_CLIENT_ID is not configured in environment variables',
+        );
+        throw new UnauthorizedException(
+          'Apple OAuth is not properly configured',
+        );
       }
 
       const { email } = await appleSignin.verifyIdToken(token, {
@@ -159,30 +165,30 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    // Check if user already exists (optimized: select only id for existence check)
     // Validate OAuth token first
     if (this.isOAuth(registerDto.auth_type)) {
       if (!registerDto.oauth_token) {
         throw new BadRequestException('OAuth token is required');
       }
       let email: string;
-      if (registerDto.auth_type === AuthType.GOOGLE) {
+      if (registerDto.auth_type === 'google') {
         email = await this.verifyGoogleToken(registerDto.oauth_token);
       } else {
         email = await this.verifyAppleToken(registerDto.oauth_token);
       }
 
       if (email !== registerDto.email) {
-        throw new UnauthorizedException('Token email does not match provided email');
+        throw new UnauthorizedException(
+          'Token email does not match provided email',
+        );
       }
     }
 
-    const existingUser = await this.userRepository.findOne({
-      where: [
-        { email: registerDto.email },
-        { username: registerDto.username },
-      ],
-      select: ['id', 'is_deleted'],
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: registerDto.email }, { username: registerDto.username }],
+      },
+      select: { id: true, is_deleted: true },
     });
 
     if (existingUser) {
@@ -193,56 +199,77 @@ export class AuthService {
           'You cannot create an account with this email or username. Please contact support.',
         );
       }
-      throw new ConflictException('User with this email or username already exists');
+      throw new ConflictException(
+        'User with this email or username already exists',
+      );
     }
 
     // Hash password if provided
     let passwordHash: string | null = null;
-    if (registerDto.password && (registerDto.auth_type === AuthType.EMAIL || registerDto.auth_type === AuthType.PHONE)) {
+    if (
+      registerDto.password &&
+      (registerDto.auth_type === 'email' || registerDto.auth_type === 'phone')
+    ) {
       passwordHash = await bcrypt.hash(registerDto.password, 10);
     }
 
+    const isOAuthUser =
+      registerDto.auth_type === 'google' || registerDto.auth_type === 'apple';
+
     // Create user
-    const user = this.userRepository.create({
-      username: registerDto.username,
-      email: registerDto.email,
-      password_hash: passwordHash,
-      auth_type: registerDto.auth_type,
-      is_active: registerDto.auth_type === AuthType.GOOGLE || registerDto.auth_type === AuthType.APPLE ? true : false,
-      is_verified: registerDto.auth_type === AuthType.GOOGLE || registerDto.auth_type === AuthType.APPLE ? true : false,
+    const savedUser = await this.prisma.user.create({
+      data: {
+        username: registerDto.username,
+        email: registerDto.email,
+        password_hash: passwordHash,
+        auth_type: registerDto.auth_type,
+        is_active: isOAuthUser,
+        is_verified: isOAuthUser,
+      },
     });
 
-    const savedUser = await this.userRepository.save(user);
-
     // Generate verification code for email/phone auth
-    if (registerDto.auth_type === AuthType.EMAIL || registerDto.auth_type === AuthType.PHONE) {
+    if (
+      registerDto.auth_type === 'email' ||
+      registerDto.auth_type === 'phone'
+    ) {
       const verificationCode = this.generateVerificationCode();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minutes expiry
 
-      await this.verificationRepository.save({
-        user_id: savedUser.id,
-        verification_code: verificationCode,
-        expires_at: expiresAt,
-        is_used: false,
+      await this.prisma.userVerification.create({
+        data: {
+          user_id: savedUser.id,
+          verification_code: verificationCode,
+          expires_at: expiresAt,
+          is_used: false,
+        },
       });
 
       // Send verification email with template
       try {
-        const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+        const appUrl = this.configService.get<string>(
+          'app.url',
+          'https://demo.jantrah.com/jawaab',
+        );
         const verificationUrl = `${appUrl}/verify?code=${verificationCode}&email=${encodeURIComponent(savedUser.email)}`;
 
-        const emailSent = await this.emailTemplatesService.sendVerificationEmail({
-          recipientEmail: savedUser.email,
-          recipientName: savedUser.username,
-          verificationCode,
-          verificationUrl,
-        });
+        const emailSent =
+          await this.emailTemplatesService.sendVerificationEmail({
+            recipientEmail: savedUser.email,
+            recipientName: savedUser.username,
+            verificationCode,
+            verificationUrl,
+          });
 
         if (emailSent) {
-          this.logger.log(`Verification email sent successfully to ${savedUser.email}`);
+          this.logger.log(
+            `Verification email sent successfully to ${savedUser.email}`,
+          );
         } else {
-          this.logger.warn(`Verification email failed to send to ${savedUser.email} - check email service configuration`);
+          this.logger.warn(
+            `Verification email failed to send to ${savedUser.email} - check email service configuration`,
+          );
         }
       } catch (error) {
         this.logger.error('Failed to send verification email:', {
@@ -253,7 +280,9 @@ export class AuthService {
         });
         // Log code for development (remove in production)
         if (this.configService.get<string>('NODE_ENV') === 'development') {
-          console.log(`Verification code for ${savedUser.email}: ${verificationCode}`);
+          console.log(
+            `Verification code for ${savedUser.email}: ${verificationCode}`,
+          );
         }
       }
 
@@ -274,7 +303,7 @@ export class AuthService {
     if (registerDto.device_id) {
       await this.registerDevice(savedUser.id, {
         device_id: registerDto.device_id,
-        device_type: registerDto.device_type as DeviceType || DeviceType.WEB,
+        device_type: registerDto.device_type || 'web',
         device_token: registerDto.device_token,
       });
     }
@@ -287,8 +316,8 @@ export class AuthService {
         id: savedUser.id,
         username: savedUser.username,
         email: savedUser.email,
-        role: savedUser.role,
-        auth_type: savedUser.auth_type,
+        role: savedUser.role as any,
+        auth_type: savedUser.auth_type as any,
         is_active: savedUser.is_active,
         is_verified: savedUser.is_verified,
       },
@@ -297,30 +326,26 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    // Find user by identifier (email, username, or phone)
-    // Optimized: select only needed fields
-    const user = await this.userRepository.findOne({
-      where: [
-        { email: loginDto.identifier },
-        { username: loginDto.identifier },
-      ],
-      select: [
-        'id',
-        'username',
-        'email',
-        'password_hash',
-        'role',
-        'auth_type',
-        'is_active',
-        'is_verified',
-        'is_deleted',
-        'expires_in',
-      ],
+    // Find user by identifier (email or username)
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: loginDto.identifier }, { username: loginDto.identifier }],
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        password_hash: true,
+        role: true,
+        auth_type: true,
+        is_active: true,
+        is_verified: true,
+        is_deleted: true,
+        expires_in: true,
+      },
     });
 
     if (!user) {
-      // If OAuth, and user doesn't exist, we might want to throw specific error or handle differently?
-      // Standard flow says invalid credentials.
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -338,7 +363,7 @@ export class AuthService {
       }
 
       let email: string;
-      if (loginDto.auth_type === AuthType.GOOGLE) {
+      if (loginDto.auth_type === 'google') {
         email = await this.verifyGoogleToken(loginDto.oauth_token);
       } else {
         email = await this.verifyAppleToken(loginDto.oauth_token);
@@ -350,7 +375,7 @@ export class AuthService {
     }
 
     // Verify password for email/phone auth
-    if (loginDto.auth_type === AuthType.EMAIL || loginDto.auth_type === AuthType.PHONE) {
+    if (loginDto.auth_type === 'email' || loginDto.auth_type === 'phone') {
       if (!loginDto.password || !user.password_hash) {
         throw new UnauthorizedException('Password is required');
       }
@@ -367,11 +392,16 @@ export class AuthService {
 
     // Check if user is active
     if (!user.is_active) {
-      throw new UnauthorizedException('Your account has been inactive.. If you want to reactivate it, please contact support.');
+      throw new UnauthorizedException(
+        'Your account has been inactive.. If you want to reactivate it, please contact support.',
+      );
     }
 
     // Check if user is verified (for email/phone auth)
-    if ((loginDto.auth_type === AuthType.EMAIL || loginDto.auth_type === AuthType.PHONE) && !user.is_verified) {
+    if (
+      (loginDto.auth_type === 'email' || loginDto.auth_type === 'phone') &&
+      !user.is_verified
+    ) {
       throw new UnauthorizedException('Please verify your account first');
     }
 
@@ -379,7 +409,7 @@ export class AuthService {
     if (loginDto.device_id) {
       await this.registerDevice(user.id, {
         device_id: loginDto.device_id,
-        device_type: loginDto.device_type as DeviceType || DeviceType.WEB,
+        device_type: loginDto.device_type || 'web',
         device_token: loginDto.device_token,
       });
     }
@@ -392,8 +422,8 @@ export class AuthService {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role,
-        auth_type: user.auth_type,
+        role: user.role as any,
+        auth_type: user.auth_type as any,
         is_active: user.is_active,
         is_verified: user.is_verified,
       },
@@ -402,10 +432,9 @@ export class AuthService {
   }
 
   async verify(verifyDto: VerifyDto): Promise<{ message: string }> {
-    // Optimized: select only needed fields
-    const user = await this.userRepository.findOne({
+    const user = await this.prisma.user.findFirst({
       where: { email: verifyDto.email },
-      select: ['id', 'is_verified', 'is_active'],
+      select: { id: true, is_verified: true, is_active: true },
     });
 
     if (!user) {
@@ -416,12 +445,12 @@ export class AuthService {
       throw new BadRequestException('User is already verified');
     }
 
-    const verification = await this.verificationRepository.findOne({
+    const verification = await this.prisma.userVerification.findFirst({
       where: {
         user_id: user.id,
         verification_code: verifyDto.verification_code,
         is_used: false,
-        expires_at: MoreThan(new Date()),
+        expires_at: { gt: new Date() },
       },
     });
 
@@ -430,13 +459,16 @@ export class AuthService {
     }
 
     // Mark verification as used
-    verification.is_used = true;
-    await this.verificationRepository.save(verification);
+    await this.prisma.userVerification.update({
+      where: { id: verification.id },
+      data: { is_used: true },
+    });
 
     // Mark user as verified and active
-    user.is_verified = true;
-    user.is_active = true;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { is_verified: true, is_active: true },
+    });
 
     // Invalidate cache when user status changes
     await this.invalidateUserCache(user.id);
@@ -445,10 +477,9 @@ export class AuthService {
   }
 
   async resendVerification(email: string): Promise<{ message: string }> {
-    // Optimized: select only needed fields
-    const user = await this.userRepository.findOne({
+    const user = await this.prisma.user.findFirst({
       where: { email },
-      select: ['id', 'is_verified', 'email'],
+      select: { id: true, is_verified: true, email: true },
     });
 
     if (!user) {
@@ -463,16 +494,21 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
-    await this.verificationRepository.save({
-      user_id: user.id,
-      verification_code: verificationCode,
-      expires_at: expiresAt,
-      is_used: false,
+    await this.prisma.userVerification.create({
+      data: {
+        user_id: user.id,
+        verification_code: verificationCode,
+        expires_at: expiresAt,
+        is_used: false,
+      },
     });
 
     // Send verification email with template
     try {
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
       const verificationUrl = `${appUrl}/verify?code=${verificationCode}&email=${encodeURIComponent(user.email)}`;
 
       await this.emailTemplatesService.sendVerificationEmail({
@@ -492,18 +528,25 @@ export class AuthService {
     return { message: 'Verification code sent successfully' };
   }
 
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
     // Validate at least one identifier is provided
     // Values are already trimmed by @Transform decorator
-    const email = forgotPasswordDto.email && forgotPasswordDto.email.length > 0
-      ? forgotPasswordDto.email
-      : null;
-    const phone = forgotPasswordDto.phone_number && forgotPasswordDto.phone_number.length > 0
-      ? forgotPasswordDto.phone_number
-      : null;
+    const email =
+      forgotPasswordDto.email && forgotPasswordDto.email.length > 0
+        ? forgotPasswordDto.email
+        : null;
+    const phone =
+      forgotPasswordDto.phone_number &&
+      forgotPasswordDto.phone_number.length > 0
+        ? forgotPasswordDto.phone_number
+        : null;
 
     if (!email && !phone) {
-      throw new BadRequestException('Either email or phone_number must be provided');
+      throw new BadRequestException(
+        'Either email or phone_number must be provided',
+      );
     }
 
     // Build where condition - prioritize email, then phone (by username)
@@ -515,33 +558,41 @@ export class AuthService {
     }
 
     // Find user by email or username (phone)
-    const user = await this.userRepository.findOne({
+    const user = await this.prisma.user.findFirst({
       where: whereCondition,
-      select: ['id', 'email'],
+      select: { id: true, email: true },
     });
 
     if (!user) {
       // Don't reveal if user exists or not for security (matching admin pattern)
-      return { message: 'If the email or phone exists, a password reset code has been sent' };
+      return {
+        message:
+          'If the email or phone exists, a password reset code has been sent',
+      };
     }
 
     const resetCode = this.generateResetCode();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
 
-    await this.passwordResetRepository.save({
-      user_id: user.id,
-      email: email || null,
-      phone_number: phone || null,
-      reset_code: resetCode,
-      expires_at: expiresAt,
-      is_used: false,
+    await this.prisma.userPasswordReset.create({
+      data: {
+        user_id: user.id,
+        email: email || null,
+        phone_number: phone || null,
+        reset_code: resetCode,
+        expires_at: expiresAt,
+        is_used: false,
+      },
     });
 
     // Send password reset email with template (only if email is provided)
     if (email && user.email) {
       try {
-        const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+        const appUrl = this.configService.get<string>(
+          'app.url',
+          'https://demo.jantrah.com/jawaab',
+        );
         const resetUrl = `${appUrl}/reset-password?code=${resetCode}&email=${encodeURIComponent(user.email)}`;
 
         await this.emailTemplatesService.sendPasswordResetEmail({
@@ -564,21 +615,30 @@ export class AuthService {
       }
     }
 
-    return { message: 'If the email or phone exists, a password reset code has been sent' };
+    return {
+      message:
+        'If the email or phone exists, a password reset code has been sent',
+    };
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
     // Validate at least one identifier is provided
     // Values are already trimmed by @Transform decorator
-    const email = resetPasswordDto.email && resetPasswordDto.email.length > 0
-      ? resetPasswordDto.email
-      : null;
-    const phone = resetPasswordDto.phone_number && resetPasswordDto.phone_number.length > 0
-      ? resetPasswordDto.phone_number
-      : null;
+    const email =
+      resetPasswordDto.email && resetPasswordDto.email.length > 0
+        ? resetPasswordDto.email
+        : null;
+    const phone =
+      resetPasswordDto.phone_number && resetPasswordDto.phone_number.length > 0
+        ? resetPasswordDto.phone_number
+        : null;
 
     if (!email && !phone) {
-      throw new BadRequestException('Either email or phone_number must be provided');
+      throw new BadRequestException(
+        'Either email or phone_number must be provided',
+      );
     }
 
     // Build where condition - prioritize email, then phone (by username)
@@ -590,21 +650,21 @@ export class AuthService {
     }
 
     // Find user by email or username (phone)
-    const user = await this.userRepository.findOne({
+    const user = await this.prisma.user.findFirst({
       where: whereCondition,
-      select: ['id', 'password_hash'],
+      select: { id: true, password_hash: true },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const passwordReset = await this.passwordResetRepository.findOne({
+    const passwordReset = await this.prisma.userPasswordReset.findFirst({
       where: {
         user_id: user.id,
         reset_code: resetPasswordDto.reset_code,
         is_used: false,
-        expires_at: MoreThan(new Date()),
+        expires_at: { gt: new Date() },
       },
     });
 
@@ -613,13 +673,17 @@ export class AuthService {
     }
 
     // Mark reset code as used
-    passwordReset.is_used = true;
-    await this.passwordResetRepository.save(passwordReset);
+    await this.prisma.userPasswordReset.update({
+      where: { id: passwordReset.id },
+      data: { is_used: true },
+    });
 
     // Update password
     const passwordHash = await bcrypt.hash(resetPasswordDto.new_password, 10);
-    user.password_hash = passwordHash;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password_hash: passwordHash },
+    });
 
     // Invalidate cache when password changes
     await this.invalidateUserCache(user.id);
@@ -628,9 +692,9 @@ export class AuthService {
   }
 
   async logout(userId: number): Promise<{ message: string }> {
-    const user = await this.userRepository.findOne({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: ['id', 'access_token', 'refresh_token'],
+      select: { id: true, access_token: true, refresh_token: true },
     });
 
     if (!user) {
@@ -638,9 +702,10 @@ export class AuthService {
     }
 
     // Clear tokens
-    user.access_token = null;
-    user.refresh_token = null;
-    await this.userRepository.save(user);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { access_token: null, refresh_token: null },
+    });
 
     // Invalidate cache
     await this.invalidateUserCache(userId);
@@ -648,23 +713,24 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
-  async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponseDto> {
+  async refreshToken(
+    refreshTokenDto: RefreshTokenDto,
+  ): Promise<AuthResponseDto> {
     try {
       const payload = this.jwtService.verify(refreshTokenDto.refresh_token);
-      // Optimized: select only needed fields
-      const user = await this.userRepository.findOne({
+      const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: [
-          'id',
-          'username',
-          'email',
-          'role',
-          'auth_type',
-          'is_active',
-          'is_verified',
-          'refresh_token',
-          'expires_in',
-        ],
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          auth_type: true,
+          is_active: true,
+          is_verified: true,
+          refresh_token: true,
+          expires_in: true,
+        },
       });
 
       if (!user || user.refresh_token !== refreshTokenDto.refresh_token) {
@@ -672,7 +738,9 @@ export class AuthService {
       }
 
       if (!user.is_active) {
-        throw new UnauthorizedException('Your account has been inactive.. If you want to reactivate it, please contact support.');
+        throw new UnauthorizedException(
+          'Your account has been inactive.. If you want to reactivate it, please contact support.',
+        );
       }
 
       const tokens = await this.generateTokens(user);
@@ -682,8 +750,8 @@ export class AuthService {
           id: user.id,
           username: user.username,
           email: user.email,
-          role: user.role,
-          auth_type: user.auth_type,
+          role: user.role as any,
+          auth_type: user.auth_type as any,
           is_active: user.is_active,
           is_verified: user.is_verified,
         },
@@ -694,42 +762,40 @@ export class AuthService {
     }
   }
 
-  async registerDevice(userId: number, deviceData: {
-    device_id: string;
-    device_type: DeviceType;
-    device_token?: string;
-  }): Promise<UserDevice> {
-    // Optimized: use upsert pattern for better performance
-    let device = await this.deviceRepository.findOne({
+  async registerDevice(
+    userId: number,
+    deviceData: {
+      device_id: string;
+      device_type: string;
+      device_token?: string;
+    },
+  ): Promise<any> {
+    const deviceType = deviceData.device_type as PrismaDeviceType;
+    return await this.prisma.userDevice.upsert({
       where: {
+        user_id_device_id: {
+          user_id: userId,
+          device_id: deviceData.device_id,
+        },
+      },
+      create: {
         user_id: userId,
         device_id: deviceData.device_id,
+        device_type: deviceType,
+        device_token: deviceData.device_token ?? null,
+        is_active: true,
+        last_active_at: new Date(),
       },
-      select: ['id', 'device_token', 'device_type', 'is_active'],
+      update: {
+        device_token: deviceData.device_token ?? undefined,
+        device_type: deviceType,
+        is_active: true,
+        last_active_at: new Date(),
+      },
     });
-
-    if (device) {
-      device.device_token = deviceData.device_token || device.device_token;
-      device.device_type = deviceData.device_type;
-      device.is_active = true;
-      device.last_active_at = new Date();
-      return await this.deviceRepository.save(device);
-    }
-
-    device = this.deviceRepository.create({
-      user_id: userId,
-      device_id: deviceData.device_id,
-      device_type: deviceData.device_type,
-      device_token: deviceData.device_token,
-      is_active: true,
-      last_active_at: new Date(),
-    });
-
-    return await this.deviceRepository.save(device);
   }
 
-  private isOAuth(authType: AuthType): boolean {
-    return authType === AuthType.GOOGLE || authType === AuthType.APPLE;
+  private isOAuth(authType: string): boolean {
+    return authType === 'google' || authType === 'apple';
   }
 }
-

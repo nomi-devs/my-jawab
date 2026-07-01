@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { getRedisConfig } from '../../../config/services.config';
@@ -8,17 +13,22 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private client: Redis | undefined;
 
-  constructor(private configService: ConfigService) { }
+  constructor(private configService: ConfigService) {}
 
   async onModuleInit() {
-    const redisConfig = getRedisConfig(this.configService) || { host: "redis_container", port: 6379 };
+    const redisConfig = getRedisConfig(this.configService) || {
+      host: 'redis_container',
+      port: 6379,
+    };
 
     if (!redisConfig) {
       this.logger.warn('Redis not configured, Redis features will be disabled');
       return;
     }
 
-    this.logger.log(`Connecting to Redis at ${redisConfig.host}:${redisConfig.port} (db: ${redisConfig.db})`);
+    this.logger.log(
+      `Connecting to Redis at ${redisConfig.host}:${redisConfig.port} (db: ${redisConfig.db})`,
+    );
 
     try {
       this.client = new Redis({

@@ -7,7 +7,7 @@ const PaymentRow = ({ payment, onViewDetails }) => {
     try {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: currencyCode
+        currency: currencyCode,
       }).format(amount);
     } catch (e) {
       return `${currencyCode} ${amount}`;
@@ -56,7 +56,10 @@ const PaymentRow = ({ payment, onViewDetails }) => {
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex flex-col space-y-1">
           <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-            {formatAmount(payment.payment_amount, payment.currency?.currency_code || payment.payment_currency)}
+            {formatAmount(
+              payment.payment_amount,
+              payment.currency?.currency_code || payment.payment_currency,
+            )}
           </span>
           <span className="text-[10px] text-gray-500 dark:text-gray-400 capitalize">
             {payment.payment_method?.replace('_', ' ') || 'N/A'}
@@ -64,17 +67,19 @@ const PaymentRow = ({ payment, onViewDetails }) => {
         </div>
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
-        <span className={`inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(payment.payment_status)}`}>
+        <span
+          className={`inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(payment.payment_status)}`}
+        >
           {payment.payment_status || 'N/A'}
         </span>
       </td>
       <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
         {payment.created_at
           ? new Date(payment.created_at).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          })
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })
           : 'N/A'}
       </td>
       <td className="px-4 py-2 whitespace-nowrap text-right text-xs font-medium">
@@ -91,4 +96,3 @@ const PaymentRow = ({ payment, onViewDetails }) => {
 };
 
 export default PaymentRow;
-

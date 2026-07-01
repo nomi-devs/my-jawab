@@ -6,12 +6,15 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SearchService } from './search.service';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SearchResponseDto } from './dto/search-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
+@ApiTags('Search')
+@ApiBearerAuth('JWT-auth')
 @Controller('search')
 @UseGuards(JwtAuthGuard)
 export class SearchController {
@@ -23,6 +26,9 @@ export class SearchController {
    * @param user - Current authenticated user
    * @returns Search results
    */
+  @ApiOperation({
+    summary: 'Search across users, posts, communities, topics, and polls',
+  })
   @Get()
   @HttpCode(HttpStatus.OK)
   async search(

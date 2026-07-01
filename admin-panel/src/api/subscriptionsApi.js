@@ -1,5 +1,5 @@
 // src/api/subscriptionsApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const subscriptionsApi = {
   /**
@@ -19,17 +19,18 @@ const subscriptionsApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
       ...(params.subscription_type && { subscription_type: params.subscription_type }),
-      ...(params.is_active !== undefined && params.is_active !== null && { is_active: params.is_active })
+      ...(params.is_active !== undefined &&
+        params.is_active !== null && { is_active: params.is_active }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/subscriptions", { params: cleanedParams });
+    return axiosClient.get('/admin/subscriptions', { params: cleanedParams });
   },
 
   /**
@@ -54,7 +55,7 @@ const subscriptionsApi = {
    * @returns {Promise} Response with created subscription data
    */
   createSubscription(data) {
-    return axiosClient.post("/admin/subscriptions", data);
+    return axiosClient.post('/admin/subscriptions', data);
   },
 
   /**
@@ -95,19 +96,20 @@ const subscriptionsApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
       ...(params.user_id && { user_id: params.user_id }),
       ...(params.subscription_id && { subscription_id: params.subscription_id }),
       ...(params.subscription_status && { subscription_status: params.subscription_status }),
-      ...(params.is_active !== undefined && params.is_active !== null && { is_active: params.is_active })
+      ...(params.is_active !== undefined &&
+        params.is_active !== null && { is_active: params.is_active }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/user-subscriptions", { params: cleanedParams });
+    return axiosClient.get('/admin/user-subscriptions', { params: cleanedParams });
   },
 
   /**
@@ -138,19 +140,18 @@ const subscriptionsApi = {
   exportSubscriptions(params = {}) {
     const queryParams = {
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
       ...(params.subscription_status && { subscription_status: params.subscription_status }),
-      ...(params.subscription_type && { subscription_type: params.subscription_type })
+      ...(params.subscription_type && { subscription_type: params.subscription_type }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/subscriptions/export", { params: cleanedParams });
-  }
+    return axiosClient.get('/admin/subscriptions/export', { params: cleanedParams });
+  },
 };
 
 export default subscriptionsApi;
-

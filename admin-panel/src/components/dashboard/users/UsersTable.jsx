@@ -43,20 +43,34 @@ const UsersTable = () => {
   const searchIdRef = useRef(null); // Store search ID for filtering
 
   // Memoized params for TanStack Query
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    limit: usersPerPage,
-    ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
-    sort_by: sortBy,
-    sort_order: sortOrder,
-    ...(roleFilter && roleFilter !== 'all' && { role: roleFilter }),
-    ...(statusFilter !== 'all' && statusFilter !== null && {
-      is_active: statusFilter
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: usersPerPage,
+      ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      ...(roleFilter && roleFilter !== 'all' && { role: roleFilter }),
+      ...(statusFilter !== 'all' &&
+        statusFilter !== null && {
+          is_active: statusFilter,
+        }),
+      ...(verifiedFilter !== 'all' &&
+        verifiedFilter !== null && {
+          is_verified: verifiedFilter,
+        }),
     }),
-    ...(verifiedFilter !== 'all' && verifiedFilter !== null && {
-      is_verified: verifiedFilter
-    })
-  }), [currentPage, searchTerm, roleFilter, statusFilter, verifiedFilter, sortBy, sortOrder, usersPerPage]);
+    [
+      currentPage,
+      searchTerm,
+      roleFilter,
+      statusFilter,
+      verifiedFilter,
+      sortBy,
+      sortOrder,
+      usersPerPage,
+    ],
+  );
 
   // Use TanStack Query Hook
   const {
@@ -66,10 +80,11 @@ const UsersTable = () => {
     isError,
     error: queryError,
     isPlaceholderData,
-    refetch
+    refetch,
   } = useUsersList(queryParams);
 
-  const { createUser, updateUser, deleteUser, isUpdating, isCreating, isDeleting } = useUserActions();
+  const { createUser, updateUser, deleteUser, isUpdating, isCreating, isDeleting } =
+    useUserActions();
 
   const users = data?.users || [];
   const totalUsers = data?.total || 0;
@@ -96,33 +111,36 @@ const UsersTable = () => {
   // Specific filter by ID logic (if navigated from search results)
   const displayUsers = useMemo(() => {
     if (searchIdRef.current && users.length > 0) {
-      const filtered = users.filter(user => user.id === searchIdRef.current);
+      const filtered = users.filter((user) => user.id === searchIdRef.current);
       if (filtered.length > 0) return filtered;
     }
     return users;
   }, [users]);
 
   // Handle adding new user
-  const handleAddUser = useCallback(async (userData) => {
-    try {
-      const apiData = {
-        username: userData.handle || userData.username,
-        email: userData.email,
-        password: userData.password || `TempPassword${Date.now()}`,
-        auth_type: userData.email ? 'email' : 'phone',
-        role: userData.role ? userData.role.toLowerCase().replace(' ', '_') : 'user',
-        is_active: userData.status === 'Active' ? true : false
-      };
+  const handleAddUser = useCallback(
+    async (userData) => {
+      try {
+        const apiData = {
+          username: userData.handle || userData.username,
+          email: userData.email,
+          password: userData.password || `TempPassword${Date.now()}`,
+          auth_type: userData.email ? 'email' : 'phone',
+          role: userData.role ? userData.role.toLowerCase().replace(' ', '_') : 'user',
+          is_active: userData.status === 'Active' ? true : false,
+        };
 
-      await createUser(apiData);
-      setSuccessMessage('User created successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      setShowAddUserModal(false);
-    } catch (err) {
-      console.error('Error creating user:', err);
-      throw err;
-    }
-  }, [createUser]);
+        await createUser(apiData);
+        setSuccessMessage('User created successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setShowAddUserModal(false);
+      } catch (err) {
+        console.error('Error creating user:', err);
+        throw err;
+      }
+    },
+    [createUser],
+  );
 
   // Handle editing user
   const handleEditUser = useCallback((user) => {
@@ -135,56 +153,77 @@ const UsersTable = () => {
     setShowUserDetailsModal(true);
   }, []);
 
-  const handleSaveEdit = useCallback(async (userId, updatedData) => {
-    try {
-      let dataToUpdate = updatedData;
+  const handleSaveEdit = useCallback(
+    async (userId, updatedData) => {
+      try {
+        let dataToUpdate = updatedData;
 
-      if (!(updatedData instanceof FormData)) {
-        dataToUpdate = {};
-        if (updatedData.handle !== undefined && updatedData.handle !== '') dataToUpdate.username = updatedData.handle;
-        if (updatedData.email !== undefined && updatedData.email !== '') dataToUpdate.email = updatedData.email;
-        if (updatedData.password !== undefined && updatedData.password !== '') dataToUpdate.password = updatedData.password;
-        if (updatedData.role !== undefined) dataToUpdate.role = updatedData.role.toLowerCase().replace(' ', '_');
-        if (updatedData.status !== undefined) dataToUpdate.is_active = updatedData.status === 'Active' ? 'active' : 'inactive';
-        if (updatedData.is_verified !== undefined) dataToUpdate.is_verified = updatedData.is_verified ? 'verified' : 'unverified';
+        if (!(updatedData instanceof FormData)) {
+          dataToUpdate = {};
+          if (updatedData.handle !== undefined && updatedData.handle !== '')
+            dataToUpdate.username = updatedData.handle;
+          if (updatedData.email !== undefined && updatedData.email !== '')
+            dataToUpdate.email = updatedData.email;
+          if (updatedData.password !== undefined && updatedData.password !== '')
+            dataToUpdate.password = updatedData.password;
+          if (updatedData.role !== undefined)
+            dataToUpdate.role = updatedData.role.toLowerCase().replace(' ', '_');
+          if (updatedData.status !== undefined)
+            dataToUpdate.is_active = updatedData.status === 'Active' ? 'active' : 'inactive';
+          if (updatedData.is_verified !== undefined)
+            dataToUpdate.is_verified = updatedData.is_verified ? 'verified' : 'unverified';
 
-        // Map profile fields
-        const profileFields = [
-          'full_name', 'profile_picture', 'profile_background', 'tagline',
-          'profile_bio', 'profile_gender', 'profile_birthday', 'profile_website', 'profile_location'
-        ];
-        profileFields.forEach(field => {
-          if (updatedData[field] !== undefined) dataToUpdate[field] = updatedData[field] || null;
-        });
+          // Map profile fields
+          const profileFields = [
+            'full_name',
+            'profile_picture',
+            'profile_background',
+            'tagline',
+            'profile_bio',
+            'profile_gender',
+            'profile_birthday',
+            'profile_website',
+            'profile_location',
+          ];
+          profileFields.forEach((field) => {
+            if (updatedData[field] !== undefined) dataToUpdate[field] = updatedData[field] || null;
+          });
 
-        if (Object.keys(dataToUpdate).length === 0) {
-          setSuccessMessage('No changes to save.');
-          setShowEditUserModal(false);
-          return;
+          if (Object.keys(dataToUpdate).length === 0) {
+            setSuccessMessage('No changes to save.');
+            setShowEditUserModal(false);
+            return;
+          }
         }
+
+        await updateUser({ id: userId, data: dataToUpdate });
+        setSuccessMessage('User updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setShowEditUserModal(false);
+        setSelectedUser(null);
+      } catch (err) {
+        console.error('Error updating user:', err);
       }
+    },
+    [updateUser],
+  );
 
-      await updateUser({ id: userId, data: dataToUpdate });
-      setSuccessMessage('User updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      setShowEditUserModal(false);
-      setSelectedUser(null);
-    } catch (err) {
-      console.error('Error updating user:', err);
-    }
-  }, [updateUser]);
-
-  const handleDeleteUser = useCallback((userId) => {
-    const user = users.find(user => user.id === userId);
-    setUserToDelete(user);
-    setShowDeleteConfirm(true);
-  }, [users]);
+  const handleDeleteUser = useCallback(
+    (userId) => {
+      const user = users.find((user) => user.id === userId);
+      setUserToDelete(user);
+      setShowDeleteConfirm(true);
+    },
+    [users],
+  );
 
   const confirmDeleteUser = useCallback(async () => {
     if (!userToDelete) return;
     try {
       await deleteUser(userToDelete.id);
-      setSuccessMessage(`User "${userToDelete.name || userToDelete.username}" deleted successfully!`);
+      setSuccessMessage(
+        `User "${userToDelete.name || userToDelete.username}" deleted successfully!`,
+      );
       setShowDeleteConfirm(false);
       setUserToDelete(null);
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -193,11 +232,14 @@ const UsersTable = () => {
     }
   }, [userToDelete, deleteUser]);
 
-  const handlePageChange = useCallback((page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  }, [totalPages]);
+  const handlePageChange = useCallback(
+    (page) => {
+      if (page >= 1 && page <= totalPages) {
+        setCurrentPage(page);
+      }
+    },
+    [totalPages],
+  );
 
   const handleSearch = useCallback((term) => {
     setSearchTerm(term || '');
@@ -235,7 +277,15 @@ const UsersTable = () => {
         showAvatar
         showActions
         avatarColumnIndex={1}
-        columnWidths={['w-10', 'w-[220px]', 'w-[220px]', 'w-[120px]', 'w-[120px]', 'w-[130px]', 'w-[100px]']}
+        columnWidths={[
+          'w-10',
+          'w-[220px]',
+          'w-[220px]',
+          'w-[120px]',
+          'w-[120px]',
+          'w-[130px]',
+          'w-[100px]',
+        ]}
         containerClassName="min-h-[560px]"
       />
     );
@@ -248,7 +298,9 @@ const UsersTable = () => {
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
             <span className="text-red-600 dark:text-red-400 text-2xl">!</span>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{queryError?.message || 'Failed to load users'}</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            {queryError?.message || 'Failed to load users'}
+          </p>
           <button
             onClick={() => refetch()}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
@@ -281,7 +333,11 @@ const UsersTable = () => {
         onConfirm={confirmDeleteUser}
         type="danger"
         title="Delete User"
-        message={userToDelete ? `Are you sure you want to delete "${userToDelete.name || userToDelete.username}"? This action cannot be undone.` : ''}
+        message={
+          userToDelete
+            ? `Are you sure you want to delete "${userToDelete.name || userToDelete.username}"? This action cannot be undone.`
+            : ''
+        }
         confirmText="Delete"
         cancelText="Cancel"
         isLoading={isDeleting}
@@ -339,7 +395,9 @@ const UsersTable = () => {
         />
 
         {/* Loading Overlay - Smooth transition */}
-        <div className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div
+          className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}
+        >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
@@ -348,17 +406,22 @@ const UsersTable = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto transition-all duration-300 ease-in-out" style={{
-          minHeight: displayUsers.length === 0 ? '400px' : 'auto',
-          opacity: isRefreshing ? 0.6 : 1,
-          scrollbarGutter: 'stable'
-        }}>
+        <div
+          className="overflow-x-auto transition-all duration-300 ease-in-out"
+          style={{
+            minHeight: displayUsers.length === 0 ? '400px' : 'auto',
+            opacity: isRefreshing ? 0.6 : 1,
+            scrollbarGutter: 'stable',
+          }}
+        >
           {displayUsers.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                 <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No users found</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                No users found
+              </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
                   ? 'Try changing your search or filters'

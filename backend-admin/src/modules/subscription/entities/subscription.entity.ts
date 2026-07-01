@@ -141,7 +141,9 @@ export class Subscription {
   })
   updated_at: Date;
 
-  @OneToMany(() => UserSubscription, (userSubscription) => userSubscription.subscription)
+  @OneToMany(
+    () => UserSubscription,
+    (userSubscription) => userSubscription.subscription,
+  )
   user_subscriptions: UserSubscription[];
 }
-

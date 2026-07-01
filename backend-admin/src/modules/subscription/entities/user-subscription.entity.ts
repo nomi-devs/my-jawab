@@ -44,7 +44,10 @@ export class UserSubscription {
   @Index()
   subscription_id: number;
 
-  @ManyToOne(() => Subscription, (subscription) => subscription.user_subscriptions)
+  @ManyToOne(
+    () => Subscription,
+    (subscription) => subscription.user_subscriptions,
+  )
   @JoinColumn({ name: 'subscription_id' })
   subscription: Subscription;
 
@@ -143,4 +146,3 @@ export class UserSubscription {
   @OneToMany(() => Payment, (payment) => payment.user_subscription)
   payments: Payment[];
 }
-

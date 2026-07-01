@@ -17,11 +17,10 @@ import {
   AlertCircle,
   Trash2,
   CheckCircle,
-  Eye
+  Eye,
 } from 'lucide-react';
 
 const CommentsView = () => {
-
   const [successMessage, setSuccessMessage] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
@@ -40,15 +39,22 @@ const CommentsView = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Prepare query parameters
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    limit: commentsPerPage,
-    ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
-    sort_by: sortBy,
-    sort_order: sortOrder,
-    is_approved: statusFilter === 'approved' ? 'approved' :
-      statusFilter === 'pending' ? 'not_approved' : undefined // statusFilter 'all' maps to undefined
-  }), [currentPage, commentsPerPage, searchTerm, sortBy, sortOrder, statusFilter]);
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: commentsPerPage,
+      ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      is_approved:
+        statusFilter === 'approved'
+          ? 'approved'
+          : statusFilter === 'pending'
+            ? 'not_approved'
+            : undefined, // statusFilter 'all' maps to undefined
+    }),
+    [currentPage, commentsPerPage, searchTerm, sortBy, sortOrder, statusFilter],
+  );
 
   // Use TanStack Query
   const {
@@ -57,13 +63,10 @@ const CommentsView = () => {
     isFetching,
     isError,
     error: queryError,
-    refetch
+    refetch,
   } = useCommentsList(queryParams);
 
-  const {
-    deleteComment,
-    updateComment
-  } = useCommentActions();
+  const { deleteComment, updateComment } = useCommentActions();
 
   const comments = data?.comments || [];
   const totalComments = data?.total || 0;
@@ -71,7 +74,7 @@ const CommentsView = () => {
 
   // Use effective loading state for UI (shimmer only on initial load)
   const loading = isInitialLoading;
-  const error = isError ? (queryError?.message || 'Failed to load comments') : null;
+  const error = isError ? queryError?.message || 'Failed to load comments' : null;
 
   // Filter handlers
   const handleSearch = useCallback((term) => {
@@ -94,14 +97,15 @@ const CommentsView = () => {
     setCurrentPage(newPage);
   }, []);
 
-
-
   // Handle delete comment
-  const handleDeleteComment = useCallback((commentId, commentContent) => {
-    const comment = comments.find(c => c.id === commentId);
-    setCommentToDelete({ id: commentId, content: commentContent });
-    setShowDeleteConfirm(true);
-  }, [comments]);
+  const handleDeleteComment = useCallback(
+    (commentId, commentContent) => {
+      const comment = comments.find((c) => c.id === commentId);
+      setCommentToDelete({ id: commentId, content: commentContent });
+      setShowDeleteConfirm(true);
+    },
+    [comments],
+  );
 
   const confirmDeleteComment = useCallback(async () => {
     if (!commentToDelete) return;
@@ -128,30 +132,36 @@ const CommentsView = () => {
   }, []);
 
   // Handle approve comment
-  const handleApproveComment = useCallback(async (commentId) => {
-    try {
-      // Use updateComment API to approve comment
-      await updateComment({ id: commentId, data: { is_approved: true } });
-      setSuccessMessage('Comment approved successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error approving comment:', err);
-      alert(`Failed to approve comment: ${err.message}`);
-    }
-  }, [updateComment]);
+  const handleApproveComment = useCallback(
+    async (commentId) => {
+      try {
+        // Use updateComment API to approve comment
+        await updateComment({ id: commentId, data: { is_approved: true } });
+        setSuccessMessage('Comment approved successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error approving comment:', err);
+        alert(`Failed to approve comment: ${err.message}`);
+      }
+    },
+    [updateComment],
+  );
 
   // Handle unapprove comment
-  const handleUnapproveComment = useCallback(async (commentId) => {
-    try {
-      // Use updateComment API to unapprove comment
-      await updateComment({ id: commentId, data: { is_approved: false } });
-      setSuccessMessage('Comment unapproved successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error unapproving comment:', err);
-      alert(`Failed to unapprove comment: ${err.message}`);
-    }
-  }, [updateComment]);
+  const handleUnapproveComment = useCallback(
+    async (commentId) => {
+      try {
+        // Use updateComment API to unapprove comment
+        await updateComment({ id: commentId, data: { is_approved: false } });
+        setSuccessMessage('Comment unapproved successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error unapproving comment:', err);
+        alert(`Failed to unapprove comment: ${err.message}`);
+      }
+    },
+    [updateComment],
+  );
 
   // Format time ago
   const formatTimeAgo = (dateString) => {
@@ -212,12 +222,12 @@ const CommentsView = () => {
         showAvatar
         showActions
         columnWidths={[
-          'w-[260px]',   // User & Content
-          'w-[260px]',   // Content
-          'w-[120px]',   // Status
-          'w-[160px]',   // Post & Stats
-          'w-[130px]',   // Date
-          'w-[100px]',   // Actions
+          'w-[260px]', // User & Content
+          'w-[260px]', // Content
+          'w-[120px]', // Status
+          'w-[160px]', // Post & Stats
+          'w-[130px]', // Date
+          'w-[100px]', // Actions
         ]}
         containerClassName="min-h-[560px]"
       />
@@ -259,7 +269,11 @@ const CommentsView = () => {
         onConfirm={confirmDeleteComment}
         type="danger"
         title="Delete Comment"
-        message={commentToDelete ? "Are you sure you want to delete this comment? This action cannot be undone." : ''}
+        message={
+          commentToDelete
+            ? 'Are you sure you want to delete this comment? This action cannot be undone.'
+            : ''
+        }
         confirmText="Delete"
         cancelText="Cancel"
       />
@@ -275,7 +289,7 @@ const CommentsView = () => {
         commentData={selectedCommentForDetails}
         onApprove={handleApproveComment}
         onDelete={(commentId) => {
-          const comment = comments.find(c => c.id === commentId);
+          const comment = comments.find((c) => c.id === commentId);
           handleDeleteComment(commentId, comment?.content);
           setShowCommentDetailsModal(false);
         }}
@@ -298,8 +312,11 @@ const CommentsView = () => {
       />
 
       {/* Loading Overlay - Smooth transition */}
-      <div className={`relative overflow-hidden transition-all duration-300 ${loading && comments.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
-        }`}>
+      <div
+        className={`relative overflow-hidden transition-all duration-300 ${
+          loading && comments.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
         <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
@@ -308,11 +325,14 @@ const CommentsView = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto transition-all duration-300 ease-in-out" style={{
-        minHeight: comments.length === 0 ? '400px' : 'auto',
-        opacity: loading && comments.length > 0 ? 0.6 : 1,
-        scrollbarGutter: 'stable'
-      }}>
+      <div
+        className="overflow-x-auto transition-all duration-300 ease-in-out"
+        style={{
+          minHeight: comments.length === 0 ? '400px' : 'auto',
+          opacity: loading && comments.length > 0 ? 0.6 : 1,
+          scrollbarGutter: 'stable',
+        }}
+      >
         {loading && comments.length === 0 ? (
           <div className="p-12">
             <div className="flex flex-col items-center justify-center">
@@ -325,7 +345,9 @@ const CommentsView = () => {
             <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
               <MessageSquare className="text-gray-400 dark:text-gray-500" size={24} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No comments found</h3>
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              No comments found
+            </h3>
             <p className="text-gray-500 dark:text-gray-400">
               {searchTerm || statusFilter !== 'all'
                 ? 'Try changing your search or filters'
@@ -367,22 +389,31 @@ const CommentsView = () => {
                 key={comment.id}
                 className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 p-4 hover:shadow-lg transition-all animate-fadeIn"
                 style={{
-                  animationDelay: `${index * 50}ms`
+                  animationDelay: `${index * 50}ms`,
                 }}
               >
                 <div className="flex items-start gap-3 mb-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-colors flex-shrink-0 ${comment.user.role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
-                    comment.user.role === 'moderator' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                      'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                    }`}>
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-colors flex-shrink-0 ${
+                      comment.user.role === 'admin'
+                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                        : comment.user.role === 'moderator'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                    }`}
+                  >
                     {getUserInitials(comment.user.name)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">{comment.user.name}</span>
+                      <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">
+                        {comment.user.name}
+                      </span>
                       {getStatusBadge(comment)}
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{comment.content}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                      {comment.content}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
@@ -440,20 +471,18 @@ const CommentsView = () => {
       </div>
 
       {/* Pagination Footer */}
-      {
-        viewMode === 'list' && (
-          <PaginationFooter
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            totalItems={totalComments}
-            itemsPerPage={commentsPerPage}
-            itemName="comments"
-          />
-        )
-      }
-    </div >
+      {viewMode === 'list' && (
+        <PaginationFooter
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalItems={totalComments}
+          itemsPerPage={commentsPerPage}
+          itemName="comments"
+        />
+      )}
+    </div>
   );
-}
+};
 
 export default CommentsView;

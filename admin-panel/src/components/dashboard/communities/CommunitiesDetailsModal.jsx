@@ -1,6 +1,21 @@
 // src/components/dashboard/communities/CommunitiesDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, Users, Globe, Lock, Calendar, User, FileText, TrendingUp, Edit, Trash2, CheckCircle, XCircle, Loader2, Settings } from 'lucide-react';
+import {
+  X,
+  Users,
+  Globe,
+  Lock,
+  Calendar,
+  User,
+  FileText,
+  TrendingUp,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Settings,
+} from 'lucide-react';
 import communitiesApi from '../../../api/communitiesApi';
 
 const CommunitiesDetailsModal = ({
@@ -11,7 +26,7 @@ const CommunitiesDetailsModal = ({
   onUpdateStatus,
   onEdit,
   onDelete,
-  initialTab = 'details'
+  initialTab = 'details',
 }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
@@ -67,7 +82,7 @@ const CommunitiesDetailsModal = ({
       // Normalize is_active to boolean
       setCommunityDetails({
         ...communityData,
-        is_active: normalizeIsActive(communityData.is_active)
+        is_active: normalizeIsActive(communityData.is_active),
       });
     } catch (err) {
       console.error('Error fetching community details:', err);
@@ -75,14 +90,15 @@ const CommunitiesDetailsModal = ({
       // Use provided communityData as fallback
       if (communityData) {
         setCommunityDetails({
-          ...communityData.raw || communityData,
+          ...(communityData.raw || communityData),
           community_name: communityData.name || communityData.community_name,
           community_description: communityData.description || communityData.community_description,
-          community_image: communityData.community_image || communityData.raw?.community_image || null,
+          community_image:
+            communityData.community_image || communityData.raw?.community_image || null,
           is_active: normalizeIsActive(communityData.is_active),
           member_count: communityData.members_count || 0,
           moderator_count: communityData.moderator_count || 0,
-          topic_count: communityData.topic_count || 0
+          topic_count: communityData.topic_count || 0,
         });
       }
     } finally {
@@ -99,9 +115,9 @@ const CommunitiesDetailsModal = ({
       await communitiesApi.updateCommunityStatus(communityId, updateData);
 
       // Update local state
-      setCommunityDetails(prev => ({
+      setCommunityDetails((prev) => ({
         ...prev,
-        is_active: newStatus // Store as boolean for consistency
+        is_active: newStatus, // Store as boolean for consistency
       }));
 
       // Call parent callback if provided
@@ -124,7 +140,7 @@ const CommunitiesDetailsModal = ({
       setMembersLoading(true);
       const response = await communitiesApi.getCommunityMembers(communityId, {
         page,
-        limit: membersLimit
+        limit: membersLimit,
       });
 
       if (response && response.data) {
@@ -148,7 +164,7 @@ const CommunitiesDetailsModal = ({
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -176,25 +192,39 @@ const CommunitiesDetailsModal = ({
                     />
                   </div>
                 ) : (
-                  <div className={`w-12 h-12 rounded-lg ${community.color || 'bg-blue-500'} flex items-center justify-center text-white flex-shrink-0`}>
+                  <div
+                    className={`w-12 h-12 rounded-lg ${community.color || 'bg-blue-500'} flex items-center justify-center text-white flex-shrink-0`}
+                  >
                     {community.icon || <Globe size={18} className="text-white" />}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
-                    {loading ? 'Loading...' : (community.community_name || community.name || 'Community Details')}
+                    {loading
+                      ? 'Loading...'
+                      : community.community_name || community.name || 'Community Details'}
                   </h2>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${isActive
-                      ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
-                      : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'
-                      }`}>
-                      <span className={`w-1 h-1 rounded-full mr-1 ${isActive ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-500 dark:bg-gray-400'
-                        }`}></span>
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                        isActive
+                          ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
+                          : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`w-1 h-1 rounded-full mr-1 ${
+                          isActive
+                            ? 'bg-green-500 dark:bg-green-400'
+                            : 'bg-gray-500 dark:bg-gray-400'
+                        }`}
+                      ></span>
                       {isActive ? 'Active' : 'Inactive'}
                     </span>
                     <span className="text-[10px] text-gray-400 dark:text-gray-500">•</span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">ID: {communityId}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                      ID: {communityId}
+                    </span>
                   </div>
                 </div>
               </>
@@ -212,24 +242,31 @@ const CommunitiesDetailsModal = ({
         <div className="flex px-6 border-b border-purple-100 dark:border-gray-700 bg-white dark:bg-gray-800">
           <button
             onClick={() => setActiveTab('details')}
-            className={`px-4 py-3 text-xs font-semibold transition-all border-b-2 ${activeTab === 'details'
-              ? 'text-purple-600 border-purple-600'
-              : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
+            className={`px-4 py-3 text-xs font-semibold transition-all border-b-2 ${
+              activeTab === 'details'
+                ? 'text-purple-600 border-purple-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
           >
             Details
           </button>
           <button
             onClick={() => setActiveTab('members')}
-            className={`px-4 py-3 text-xs font-semibold transition-all border-b-2 flex items-center gap-2 ${activeTab === 'members'
-              ? 'text-purple-600 border-purple-600'
-              : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
+            className={`px-4 py-3 text-xs font-semibold transition-all border-b-2 flex items-center gap-2 ${
+              activeTab === 'members'
+                ? 'text-purple-600 border-purple-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
           >
             Members
             {community && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'members' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'
-                }`}>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                  activeTab === 'members'
+                    ? 'bg-purple-100 text-purple-600'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
                 {community.member_count || community.members_count || 0}
               </span>
             )}
@@ -255,7 +292,9 @@ const CommunitiesDetailsModal = ({
                   {/* Community Image */}
                   {(community.community_image || communityData?.community_image) && !imageError && (
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Community Image</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Community Image
+                      </h3>
                       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                         <div className="relative w-full max-w-md mx-auto">
                           <img
@@ -271,10 +310,14 @@ const CommunitiesDetailsModal = ({
 
                   {/* Description */}
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Description</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                      Description
+                    </h3>
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                       <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                        {community.community_description || community.description || 'No description'}
+                        {community.community_description ||
+                          community.description ||
+                          'No description'}
                       </p>
                     </div>
                   </div>
@@ -285,7 +328,9 @@ const CommunitiesDetailsModal = ({
                       <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-1">
                           <Users size={18} className="text-purple-500" />
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Members</span>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            Members
+                          </span>
                         </div>
                         <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                           {community.member_count || community.members_count || 0}
@@ -296,7 +341,9 @@ const CommunitiesDetailsModal = ({
                       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-1">
                           <FileText size={18} className="text-blue-500" />
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Topics</span>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            Topics
+                          </span>
                         </div>
                         <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                           {community.topic_count}
@@ -307,7 +354,9 @@ const CommunitiesDetailsModal = ({
                       <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-1">
                           <User size={18} className="text-green-500" />
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Moderators</span>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            Moderators
+                          </span>
                         </div>
                         <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                           {community.moderator_count}
@@ -317,7 +366,9 @@ const CommunitiesDetailsModal = ({
                     <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-1">
                         <TrendingUp size={18} className="text-amber-500" />
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Activity</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Activity
+                        </span>
                       </div>
                       <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                         {community.posts_per_day ? `${community.posts_per_day}/day` : '0/day'}
@@ -328,13 +379,17 @@ const CommunitiesDetailsModal = ({
                   {/* Metadata */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Category</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Category
+                      </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <span className="capitalize">{community.category || 'General'}</span>
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Created</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Created
+                      </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Calendar size={18} />
                         <span>{formatDate(community.created_at)}</span>
@@ -345,11 +400,15 @@ const CommunitiesDetailsModal = ({
                   {/* Owner Info */}
                   {community.owner && (
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Owner</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Owner
+                      </h3>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center border-2 border-purple-200 dark:border-purple-700">
                           <span className="text-purple-600 dark:text-purple-400 font-semibold">
-                            {community.owner.name?.charAt(0) || community.owner.username?.charAt(0) || 'A'}
+                            {community.owner.name?.charAt(0) ||
+                              community.owner.username?.charAt(0) ||
+                              'A'}
                           </span>
                         </div>
                         <div>
@@ -378,8 +437,12 @@ const CommunitiesDetailsModal = ({
                     ) : members.length === 0 ? (
                       <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600">
                         <Users size={48} className="mx-auto text-gray-300 mb-4" />
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">No members found</h3>
-                        <p className="text-xs text-gray-500 mt-1">This community doesn't have any members yet.</p>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          No members found
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          This community doesn't have any members yet.
+                        </p>
                       </div>
                     ) : (
                       <>
@@ -387,73 +450,94 @@ const CommunitiesDetailsModal = ({
                           <table className="w-full text-left">
                             <thead>
                               <tr className="border-b border-purple-100 dark:border-gray-700">
-                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
-                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Posts</th>
-                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Joined</th>
+                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  User
+                                </th>
+                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Role
+                                </th>
+                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">
+                                  Posts
+                                </th>
+                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">
+                                  Joined
+                                </th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-purple-50 dark:divide-gray-700/50">
-                              {Array.isArray(members) && members.map((member) => (
-                                <tr key={member.id} className="hover:bg-purple-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                                  <td className="py-4">
-                                    <div className="flex items-center gap-3">
-                                      {member.user?.profile_picture ? (
-                                        <div className="w-8 h-8 rounded-full overflow-hidden border border-purple-100 dark:border-purple-900/30">
-                                          <img
-                                            src={member.user.profile_picture}
-                                            alt={member.user.username}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        </div>
-                                      ) : (
-                                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold text-xs">
-                                          {member.user?.username?.charAt(0).toUpperCase() || '?'}
-                                        </div>
-                                      )}
-                                      <div>
-                                        <div className="flex items-center gap-2">
-                                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {member.user?.full_name || member.user?.username || 'Unknown User'}
+                              {Array.isArray(members) &&
+                                members.map((member) => (
+                                  <tr
+                                    key={member.id}
+                                    className="hover:bg-purple-50/50 dark:hover:bg-gray-700/30 transition-colors"
+                                  >
+                                    <td className="py-4">
+                                      <div className="flex items-center gap-3">
+                                        {member.user?.profile_picture ? (
+                                          <div className="w-8 h-8 rounded-full overflow-hidden border border-purple-100 dark:border-purple-900/30">
+                                            <img
+                                              src={member.user.profile_picture}
+                                              alt={member.user.username}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold text-xs">
+                                            {member.user?.username?.charAt(0).toUpperCase() || '?'}
+                                          </div>
+                                        )}
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                              {member.user?.full_name ||
+                                                member.user?.username ||
+                                                'Unknown User'}
+                                            </p>
+                                            {member.user?.full_name && member.user?.username && (
+                                              <span className="text-[10px] text-gray-400">
+                                                @{member.user.username}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p className="text-[10px] text-gray-500">
+                                            {member.user?.email || 'No email provided'}
                                           </p>
-                                          {member.user?.full_name && member.user?.username && (
-                                            <span className="text-[10px] text-gray-400">@{member.user.username}</span>
-                                          )}
                                         </div>
+                                      </div>
+                                    </td>
+                                    <td className="py-4">
+                                      <span
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${
+                                          member.role === 'admin'
+                                            ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                                            : member.role === 'moderator'
+                                              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                              : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                                        }`}
+                                      >
+                                        {member.role || 'Member'}
+                                      </span>
+                                    </td>
+                                    <td className="py-4 text-center">
+                                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
+                                        <FileText size={12} />
+                                        <span className="text-xs font-bold">
+                                          {member.posts_count || 0}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="py-4 text-right">
+                                      <div className="flex flex-col items-end">
+                                        <p className="text-xs text-gray-700 dark:text-gray-300">
+                                          {formatDate(member.created_at).split(' at ')[0]}
+                                        </p>
                                         <p className="text-[10px] text-gray-500">
-                                          {member.user?.email || 'No email provided'}
+                                          {formatDate(member.created_at).split(' at ')[1]}
                                         </p>
                                       </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-4">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${member.role === 'admin'
-                                      ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                                      : member.role === 'moderator'
-                                        ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                                        : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                                      }`}>
-                                      {member.role || 'Member'}
-                                    </span>
-                                  </td>
-                                  <td className="py-4 text-center">
-                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
-                                      <FileText size={12} />
-                                      <span className="text-xs font-bold">{member.posts_count || 0}</span>
-                                    </div>
-                                  </td>
-                                  <td className="py-4 text-right">
-                                    <div className="flex flex-col items-end">
-                                      <p className="text-xs text-gray-700 dark:text-gray-300">
-                                        {formatDate(member.created_at).split(' at ')[0]}
-                                      </p>
-                                      <p className="text-[10px] text-gray-500">
-                                        {formatDate(member.created_at).split(' at ')[1]}
-                                      </p>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
+                                    </td>
+                                  </tr>
+                                ))}
                             </tbody>
                           </table>
                         </div>
@@ -462,7 +546,9 @@ const CommunitiesDetailsModal = ({
                         {totalPages > 1 && (
                           <div className="flex items-center justify-between pt-4 border-t border-purple-100 dark:border-gray-700">
                             <p className="text-[10px] text-gray-500">
-                              Showing {(membersPage - 1) * membersLimit + 1} to {Math.min(membersPage * membersLimit, totalMembers)} of {totalMembers} members
+                              Showing {(membersPage - 1) * membersLimit + 1} to{' '}
+                              {Math.min(membersPage * membersLimit, totalMembers)} of {totalMembers}{' '}
+                              members
                             </p>
                             <div className="flex gap-2">
                               <button
@@ -540,4 +626,3 @@ const CommunitiesDetailsModal = ({
 };
 
 export default CommunitiesDetailsModal;
-

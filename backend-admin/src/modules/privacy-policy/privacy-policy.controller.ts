@@ -10,6 +10,12 @@ import {
   HttpStatus,
   ParseIntPipe,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 import { PrivacyPolicyService } from './privacy-policy.service';
 import { CreatePrivacyPolicyDto } from './dto/create-privacy-policy.dto';
 import { UpdatePrivacyPolicyDto } from './dto/update-privacy-policy.dto';
@@ -19,14 +25,14 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from '../auth/entities/user.entity';
 
+@ApiTags('Privacy Policy')
 @Controller('privacy-policy')
 export class PrivacyPolicyController {
-  constructor(
-    private readonly privacyPolicyService: PrivacyPolicyService,
-  ) {}
+  constructor(private readonly privacyPolicyService: PrivacyPolicyService) {}
 
   // ─── Public Endpoints (no auth) ─────────────────────────────
 
+  @ApiOperation({ summary: 'Get active privacy policy' })
   @Get()
   @HttpCode(HttpStatus.OK)
   async getActivePrivacyPolicy() {
@@ -34,22 +40,24 @@ export class PrivacyPolicyController {
   }
 }
 
+@ApiTags('Privacy Policy')
+@ApiBearerAuth('JWT-auth')
 @Controller('admin/privacy-policy')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
 export class AdminPrivacyPolicyController {
-  constructor(
-    private readonly privacyPolicyService: PrivacyPolicyService,
-  ) {}
+  constructor(private readonly privacyPolicyService: PrivacyPolicyService) {}
 
   // ─── Admin Endpoints ────────────────────────────────────────
 
+  @ApiOperation({ summary: 'Get privacy policy (admin)' })
   @Get()
   @HttpCode(HttpStatus.OK)
   async getPrivacyPolicy() {
     return this.privacyPolicyService.findOne();
   }
 
+  @ApiOperation({ summary: 'Create privacy policy' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createPrivacyPolicy(
@@ -59,6 +67,8 @@ export class AdminPrivacyPolicyController {
     return this.privacyPolicyService.create(createDto, admin.userId);
   }
 
+  @ApiOperation({ summary: 'Update privacy policy' })
+  @ApiParam({ name: 'id', type: Number })
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async updatePrivacyPolicy(

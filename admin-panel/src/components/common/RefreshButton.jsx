@@ -17,5 +17,3 @@ const RefreshButton = ({ onClick, loading = false, title = 'Refresh', size = 20 
 };
 
 export default React.memo(RefreshButton);
-
-

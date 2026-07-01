@@ -1,9 +1,9 @@
 import {
-    CanActivate,
-    ExecutionContext,
-    ForbiddenException,
-    Injectable,
-    UnauthorizedException,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { REQUIRES_FEATURE_KEY } from '../decorators/requires-feature.decorator';
@@ -26,55 +26,60 @@ import { EntitlementsService } from '../entitlements.service';
  */
 @Injectable()
 export class FeatureGuard implements CanActivate {
-    constructor(
-        private readonly reflector: Reflector,
-        private readonly entitlementsService: EntitlementsService,
-    ) { }
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly entitlementsService: EntitlementsService,
+  ) {}
 
-    async canActivate(context: ExecutionContext): Promise<boolean> {
-        // Check both handler (method) and class-level metadata
-        const required = this.reflector.getAllAndOverride<string>(REQUIRES_FEATURE_KEY, [
-            context.getHandler(),
-            context.getClass(),
-        ]);
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Check both handler (method) and class-level metadata
+    const required = this.reflector.getAllAndOverride<string>(
+      REQUIRES_FEATURE_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
-        if (!required) return true; // no gating on this route
+    if (!required) return true; // no gating on this route
 
-        const request = context.switchToHttp().getRequest();
-        const user = request.user;
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
 
-        if (!user || !user.userId) {
-            throw new UnauthorizedException('Authentication required for gated features');
-        }
-
-        const value = await this.entitlementsService.getFeature(user.userId, required);
-
-        // Numeric fields: 0 and -1 are valid configs, treat only falsy booleans as blocking
-        if (typeof value === 'number') {
-            // For numeric features, 0 means "disabled" and blocks access.
-            // Use -1 for "unlimited".
-            if (value === 0) {
-                throw new ForbiddenException({
-                    statusCode: 403,
-                    error: 'Feature Gated',
-                    message: `Your current plan does not include: ${required}`,
-                    upgrade_required: true,
-                    feature: required,
-                });
-            }
-            return true;
-        }
-
-        if (!value) {
-            throw new ForbiddenException({
-                statusCode: 403,
-                error: 'Feature Gated',
-                message: `Your current plan does not include: ${required}`,
-                upgrade_required: true,
-                feature: required,
-            });
-        }
-
-        return true;
+    if (!user || !user.userId) {
+      throw new UnauthorizedException(
+        'Authentication required for gated features',
+      );
     }
+
+    const value = await this.entitlementsService.getFeature(
+      user.userId,
+      required,
+    );
+
+    // Numeric fields: 0 and -1 are valid configs, treat only falsy booleans as blocking
+    if (typeof value === 'number') {
+      // For numeric features, 0 means "disabled" and blocks access.
+      // Use -1 for "unlimited".
+      if (value === 0) {
+        throw new ForbiddenException({
+          statusCode: 403,
+          error: 'Feature Gated',
+          message: `Your current plan does not include: ${required}`,
+          upgrade_required: true,
+          feature: required,
+        });
+      }
+      return true;
+    }
+
+    if (!value) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'Feature Gated',
+        message: `Your current plan does not include: ${required}`,
+        upgrade_required: true,
+        feature: required,
+      });
+    }
+
+    return true;
+  }
 }

@@ -5,14 +5,8 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, MoreThan, LessThan } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { Subscription } from './entities/subscription.entity';
-import { UserSubscription, SubscriptionStatus } from './entities/user-subscription.entity';
-import { Payment, PaymentStatus } from './entities/payment.entity';
-import { User } from '../auth/entities/user.entity';
-import { Currency } from '../currency/entities/currency.entity';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
@@ -32,20 +26,11 @@ export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
 
   constructor(
-    @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>,
-    @InjectRepository(UserSubscription)
-    private userSubscriptionRepository: Repository<UserSubscription>,
-    @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(Currency)
-    private currencyRepository: Repository<Currency>,
+    private prisma: PrismaService,
     private emailTemplatesService: EmailTemplatesService,
     private configService: ConfigService,
     private entitlementsService: EntitlementsService,
-  ) { }
+  ) {}
 
   // ========== Subscription Management ==========
 
@@ -55,37 +40,42 @@ export class SubscriptionService {
   ): Promise<SubscriptionResponseDto> {
     try {
       // Check if subscription name already exists
-      const existingSubscription = await this.subscriptionRepository.findOne({
+      const existingSubscription = await this.prisma.subscription.findFirst({
         where: { subscription_name: createSubscriptionDto.subscription_name },
-        select: ['id'],
+        select: { id: true },
       });
 
       if (existingSubscription) {
-        throw new ConflictException('Subscription with this name already exists');
+        throw new ConflictException(
+          'Subscription with this name already exists',
+        );
       }
 
       let currencyId: number | null = null;
       if (createSubscriptionDto.subscription_currency) {
-        const currency = await this.currencyRepository.findOne({
-          where: [
-            { currency_code: createSubscriptionDto.subscription_currency },
-            { currency_symbol: createSubscriptionDto.subscription_currency },
-            { currency_name: createSubscriptionDto.subscription_currency },
-          ],
+        const currency = await this.prisma.currency.findFirst({
+          where: {
+            OR: [
+              { currency_code: createSubscriptionDto.subscription_currency },
+              { currency_symbol: createSubscriptionDto.subscription_currency },
+              { currency_name: createSubscriptionDto.subscription_currency },
+            ],
+          },
         });
         if (currency) {
           currencyId = currency.id;
         }
       }
 
-      const subscription = this.subscriptionRepository.create({
-        ...createSubscriptionDto,
-        currency_id: currencyId,
-        is_active: createSubscriptionDto.is_active ?? true,
-        created_by: userId,
+      const savedSubscription = await this.prisma.subscription.create({
+        data: {
+          ...createSubscriptionDto,
+          currency_id: currencyId,
+          is_active: createSubscriptionDto.is_active ?? true,
+          created_by: userId,
+        },
       });
 
-      const savedSubscription = await this.subscriptionRepository.save(subscription);
       return this.mapSubscriptionToResponseDto(savedSubscription);
     } catch (error) {
       if (
@@ -95,14 +85,17 @@ export class SubscriptionService {
       ) {
         throw error;
       }
-      this.logger.error(`Error creating subscription: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create subscription: ${error.message}`);
+      this.logger.error(
+        `Error creating subscription: ${error.message}`,
+        error.stack,
+      );
+      throw new BadRequestException(
+        `Failed to create subscription: ${error.message}`,
+      );
     }
   }
 
-  async getSubscriptions(
-    listQueryDto: ListSubscriptionsQueryDto,
-  ): Promise<{
+  async getSubscriptions(listQueryDto: ListSubscriptionsQueryDto): Promise<{
     data: SubscriptionResponseDto[];
     meta: {
       total: number;
@@ -122,34 +115,35 @@ export class SubscriptionService {
     } = listQueryDto;
 
     const skip = (page - 1) * limit;
+    const sortOrderLower = sort_order.toLowerCase() as 'asc' | 'desc';
 
-    const queryBuilder = this.subscriptionRepository.createQueryBuilder('subscription')
-      .leftJoinAndSelect('subscription.currency', 'currency');
+    const where: any = {};
 
     if (subscription_type) {
-      queryBuilder.andWhere('subscription.subscription_type = :subscription_type', {
-        subscription_type,
-      });
+      where.subscription_type = subscription_type;
     }
 
     if (is_active !== undefined) {
-      const activeValue = is_active === ActiveStatus.ACTIVE;
-      queryBuilder.andWhere('subscription.is_active = :is_active', { is_active: activeValue });
+      where.is_active = is_active === ActiveStatus.ACTIVE;
     }
 
     if (search) {
-      queryBuilder.andWhere(
-        '(subscription.subscription_name LIKE :search OR subscription.subscription_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { subscription_name: { contains: search } },
+        { subscription_description: { contains: search } },
+      ];
     }
 
-    queryBuilder.orderBy(`subscription.${sort_by}`, sort_order);
-
-    const total = await queryBuilder.getCount();
-    queryBuilder.skip(skip).take(limit);
-
-    const subscriptions = await queryBuilder.getMany();
+    const [subscriptions, total] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where,
+        include: { currency: true },
+        orderBy: { [sort_by]: sortOrderLower },
+        skip,
+        take: limit,
+      }),
+      this.prisma.subscription.count({ where }),
+    ]);
 
     return {
       data: subscriptions.map((sub) => this.mapSubscriptionToResponseDto(sub)),
@@ -163,9 +157,9 @@ export class SubscriptionService {
   }
 
   async getSubscriptionById(id: number): Promise<SubscriptionResponseDto> {
-    const subscription = await this.subscriptionRepository.findOne({
+    const subscription = await this.prisma.subscription.findUnique({
       where: { id },
-      relations: ['currency'],
+      include: { currency: true },
     });
 
     if (!subscription) {
@@ -180,9 +174,9 @@ export class SubscriptionService {
     updateSubscriptionDto: UpdateSubscriptionDto,
     userId: number,
   ): Promise<SubscriptionResponseDto> {
-    const subscription = await this.subscriptionRepository.findOne({
+    const subscription = await this.prisma.subscription.findUnique({
       where: { id },
-      relations: ['currency'],
+      include: { currency: true },
     });
 
     if (!subscription) {
@@ -194,33 +188,40 @@ export class SubscriptionService {
       updateSubscriptionDto.subscription_name &&
       updateSubscriptionDto.subscription_name !== subscription.subscription_name
     ) {
-      const existingSubscription = await this.subscriptionRepository.findOne({
+      const existingSubscription = await this.prisma.subscription.findFirst({
         where: { subscription_name: updateSubscriptionDto.subscription_name },
-        select: ['id'],
+        select: { id: true },
       });
 
       if (existingSubscription) {
-        throw new ConflictException('Subscription with this name already exists');
+        throw new ConflictException(
+          'Subscription with this name already exists',
+        );
       }
     }
+
+    const updateData: any = { ...updateSubscriptionDto, updated_by: userId };
 
     if (updateSubscriptionDto.subscription_currency) {
-      const currency = await this.currencyRepository.findOne({
-        where: [
-          { currency_code: updateSubscriptionDto.subscription_currency },
-          { currency_symbol: updateSubscriptionDto.subscription_currency },
-          { currency_name: updateSubscriptionDto.subscription_currency },
-        ],
+      const currency = await this.prisma.currency.findFirst({
+        where: {
+          OR: [
+            { currency_code: updateSubscriptionDto.subscription_currency },
+            { currency_symbol: updateSubscriptionDto.subscription_currency },
+            { currency_name: updateSubscriptionDto.subscription_currency },
+          ],
+        },
       });
       if (currency) {
-        subscription.currency_id = currency.id;
+        updateData.currency_id = currency.id;
       }
     }
 
-    Object.assign(subscription, updateSubscriptionDto);
-    subscription.updated_by = userId;
-
-    const updatedSubscription = await this.subscriptionRepository.save(subscription);
+    const updatedSubscription = await this.prisma.subscription.update({
+      where: { id },
+      data: updateData,
+      include: { currency: true },
+    });
 
     // If plan features changed, invalidate cache for ALL users on this plan
     if (updateSubscriptionDto.features !== undefined) {
@@ -230,8 +231,11 @@ export class SubscriptionService {
     return this.mapSubscriptionToResponseDto(updatedSubscription);
   }
 
-  async deleteSubscription(id: number, userId: number): Promise<{ message: string }> {
-    const subscription = await this.subscriptionRepository.findOne({
+  async deleteSubscription(
+    id: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const subscription = await this.prisma.subscription.findUnique({
       where: { id },
     });
 
@@ -240,7 +244,7 @@ export class SubscriptionService {
     }
 
     // Check if subscription has active user subscriptions
-    const activeUserSubscriptions = await this.userSubscriptionRepository.count({
+    const activeUserSubscriptions = await this.prisma.userSubscription.count({
       where: { subscription_id: id, is_active: true },
     });
 
@@ -250,18 +254,19 @@ export class SubscriptionService {
       );
     }
 
-    subscription.is_active = false;
-    subscription.updated_by = userId;
-    await this.subscriptionRepository.save(subscription);
+    await this.prisma.subscription.update({
+      where: { id },
+      data: { is_active: false, updated_by: userId },
+    });
 
     return { message: 'Subscription deleted successfully' };
   }
 
   async getActiveSubscriptions(): Promise<SubscriptionResponseDto[]> {
-    const subscriptions = await this.subscriptionRepository.find({
+    const subscriptions = await this.prisma.subscription.findMany({
       where: { is_active: true },
-      relations: ['currency'],
-      order: { created_at: 'DESC' },
+      include: { currency: true },
+      orderBy: { created_at: 'desc' },
     });
 
     return subscriptions.map((sub) => this.mapSubscriptionToResponseDto(sub));
@@ -275,8 +280,11 @@ export class SubscriptionService {
   ): Promise<UserSubscriptionResponseDto> {
     try {
       // Verify subscription exists
-      const subscription = await this.subscriptionRepository.findOne({
-        where: { id: createUserSubscriptionDto.subscription_id, is_active: true },
+      const subscription = await this.prisma.subscription.findFirst({
+        where: {
+          id: createUserSubscriptionDto.subscription_id,
+          is_active: true,
+        },
       });
 
       if (!subscription) {
@@ -284,12 +292,13 @@ export class SubscriptionService {
       }
 
       // Check if user already has this subscription
-      const existingUserSubscription = await this.userSubscriptionRepository.findOne({
-        where: {
-          user_id: userId,
-          subscription_id: createUserSubscriptionDto.subscription_id,
-        },
-      });
+      const existingUserSubscription =
+        await this.prisma.userSubscription.findFirst({
+          where: {
+            user_id: userId,
+            subscription_id: createUserSubscriptionDto.subscription_id,
+          },
+        });
 
       if (existingUserSubscription) {
         throw new ConflictException('User already has this subscription');
@@ -303,51 +312,71 @@ export class SubscriptionService {
       // Calculate end date based on subscription duration
       const endDate = createUserSubscriptionDto.subscription_end_date
         ? new Date(createUserSubscriptionDto.subscription_end_date)
-        : this.calculateEndDate(startDate, subscription.subscription_duration, subscription.subscription_duration_type);
+        : this.calculateEndDate(
+            startDate,
+            subscription.subscription_duration,
+            subscription.subscription_duration_type,
+          );
 
-      const userSubscription = this.userSubscriptionRepository.create({
-        user_id: userId,
-        subscription_id: createUserSubscriptionDto.subscription_id,
-        subscription_start_date: startDate,
-        subscription_end_date: endDate,
-        subscription_renewal_type: createUserSubscriptionDto.subscription_renewal_type,
-        subscription_renewal_date: createUserSubscriptionDto.subscription_renewal_date
-          ? new Date(createUserSubscriptionDto.subscription_renewal_date)
-          : null,
-        subscription_renewal_amount: createUserSubscriptionDto.subscription_renewal_amount || subscription.subscription_price,
-        subscription_renewal_currency: createUserSubscriptionDto.subscription_renewal_currency || 'USD',
-        subscription_renewal_gateway: createUserSubscriptionDto.subscription_renewal_gateway,
-        subscription_status: SubscriptionStatus.PENDING,
-        is_active: true,
-        created_by: userId,
+      const savedUserSubscription = await this.prisma.userSubscription.create({
+        data: {
+          user_id: userId,
+          subscription_id: createUserSubscriptionDto.subscription_id,
+          subscription_start_date: startDate,
+          subscription_end_date: endDate,
+          subscription_renewal_type:
+            createUserSubscriptionDto.subscription_renewal_type,
+          subscription_renewal_date:
+            createUserSubscriptionDto.subscription_renewal_date
+              ? new Date(createUserSubscriptionDto.subscription_renewal_date)
+              : null,
+          subscription_renewal_amount:
+            createUserSubscriptionDto.subscription_renewal_amount ||
+            subscription.subscription_price,
+          subscription_renewal_currency:
+            createUserSubscriptionDto.subscription_renewal_currency || 'USD',
+          subscription_renewal_gateway:
+            createUserSubscriptionDto.subscription_renewal_gateway,
+          subscription_status: 'pending',
+          is_active: true,
+          created_by: userId,
+        },
       });
-
-      const savedUserSubscription = await this.userSubscriptionRepository.save(userSubscription);
 
       // Invalidate entitlements cache so new feature set takes effect immediately
       await this.entitlementsService.invalidate(userId);
 
       // Send subscription reminder email if status is PENDING
-      if (savedUserSubscription.subscription_status === SubscriptionStatus.PENDING) {
+      if (savedUserSubscription.subscription_status === 'pending') {
         try {
-          const user = await this.userRepository.findOne({
+          const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            select: ['id', 'email', 'username'],
+            select: { id: true, email: true, username: true },
           });
 
           if (user && user.email) {
-            const reminderHours = this.configService.get<number>('app.subscription.pendingReminderHours', 24);
+            const reminderHours = this.configService.get<number>(
+              'app.subscription.pendingReminderHours',
+              24,
+            );
             await this.emailTemplatesService.sendSubscriptionReminderEmail({
               recipientEmail: user.email,
               recipientName: user.username,
               subscriptionName: subscription.subscription_name,
-              amount: savedUserSubscription.subscription_renewal_amount || subscription.subscription_price,
-              currency: savedUserSubscription.subscription_renewal_currency || 'USD',
+              amount:
+                (savedUserSubscription.subscription_renewal_amount?.toNumber() ??
+                  0) ||
+                (subscription.subscription_price?.toNumber() ?? 0),
+              currency:
+                savedUserSubscription.subscription_renewal_currency || 'USD',
               hoursRemaining: reminderHours,
             });
           }
         } catch (error) {
-          this.logger.error('Failed to send subscription reminder email:', error);
+          this.logger.error(
+            'Failed to send subscription reminder email:',
+            error,
+          );
         }
       }
 
@@ -360,8 +389,13 @@ export class SubscriptionService {
       ) {
         throw error;
       }
-      this.logger.error(`Error creating user subscription: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create user subscription: ${error.message}`);
+      this.logger.error(
+        `Error creating user subscription: ${error.message}`,
+        error.stack,
+      );
+      throw new BadRequestException(
+        `Failed to create user subscription: ${error.message}`,
+      );
     }
   }
 
@@ -390,52 +424,51 @@ export class SubscriptionService {
     } = listQueryDto;
 
     const skip = (page - 1) * limit;
+    const sortOrderLower = sort_order.toLowerCase() as 'asc' | 'desc';
 
-    const queryBuilder = this.userSubscriptionRepository
-      .createQueryBuilder('user_subscription')
-      .leftJoinAndSelect('user_subscription.subscription', 'subscription');
+    const where: any = {};
 
-    // If userId is provided, filter by it (for user's own subscriptions)
     const targetUserId = user_id || userId;
     if (targetUserId) {
-      queryBuilder.andWhere('user_subscription.user_id = :targetUserId', {
-        targetUserId,
-      });
+      where.user_id = targetUserId;
     }
 
     if (subscription_id) {
-      queryBuilder.andWhere('user_subscription.subscription_id = :subscription_id', {
-        subscription_id,
-      });
+      where.subscription_id = subscription_id;
     }
 
     if (subscription_status) {
-      queryBuilder.andWhere('user_subscription.subscription_status = :subscription_status', {
-        subscription_status,
-      });
+      where.subscription_status = subscription_status;
     }
 
     if (is_active !== undefined) {
-      const activeValue = is_active === ActiveStatus.ACTIVE;
-      queryBuilder.andWhere('user_subscription.is_active = :is_active', { is_active: activeValue });
+      where.is_active = is_active === ActiveStatus.ACTIVE;
     }
 
     if (search) {
-      queryBuilder.andWhere(
-        '(subscription.subscription_name LIKE :search OR subscription.subscription_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.subscription = {
+        OR: [
+          { subscription_name: { contains: search } },
+          { subscription_description: { contains: search } },
+        ],
+      };
     }
 
-    queryBuilder.orderBy(`user_subscription.${sort_by}`, sort_order);
-
-    const total = await queryBuilder.getCount();
-    queryBuilder.skip(skip).take(limit);
-
-    const userSubscriptions = await queryBuilder.getMany();
+    const [userSubscriptions, total] = await Promise.all([
+      this.prisma.userSubscription.findMany({
+        where,
+        include: { subscription: true },
+        orderBy: { [sort_by]: sortOrderLower },
+        skip,
+        take: limit,
+      }),
+      this.prisma.userSubscription.count({ where }),
+    ]);
 
     return {
-      data: userSubscriptions.map((us) => this.mapUserSubscriptionToResponseDto(us)),
+      data: userSubscriptions.map((us) =>
+        this.mapUserSubscriptionToResponseDto(us),
+      ),
       meta: {
         total,
         page,
@@ -445,15 +478,18 @@ export class SubscriptionService {
     };
   }
 
-  async getUserSubscriptionById(id: number, userId?: number): Promise<UserSubscriptionResponseDto> {
-    const where: FindOptionsWhere<UserSubscription> = { id };
+  async getUserSubscriptionById(
+    id: number,
+    userId?: number,
+  ): Promise<UserSubscriptionResponseDto> {
+    const where: any = { id };
     if (userId) {
       where.user_id = userId;
     }
 
-    const userSubscription = await this.userSubscriptionRepository.findOne({
+    const userSubscription = await this.prisma.userSubscription.findFirst({
       where,
-      relations: ['subscription', 'subscription.currency'],
+      include: { subscription: { include: { currency: true } } },
     });
 
     if (!userSubscription) {
@@ -465,10 +501,10 @@ export class SubscriptionService {
 
   async updateUserSubscriptionStatus(
     id: number,
-    status: SubscriptionStatus,
+    status: string,
     userId: number,
   ): Promise<UserSubscriptionResponseDto> {
-    const userSubscription = await this.userSubscriptionRepository.findOne({
+    const userSubscription = await this.prisma.userSubscription.findUnique({
       where: { id },
     });
 
@@ -476,15 +512,18 @@ export class SubscriptionService {
       throw new NotFoundException('User subscription not found');
     }
 
-    userSubscription.subscription_status = status;
-    userSubscription.updated_by = userId;
+    const updateData: any = { subscription_status: status, updated_by: userId };
 
     // If activating, set start date if not set
-    if (status === SubscriptionStatus.ACTIVE && !userSubscription.subscription_start_date) {
-      userSubscription.subscription_start_date = new Date();
+    if (status === 'active' && !userSubscription.subscription_start_date) {
+      updateData.subscription_start_date = new Date();
     }
 
-    const updatedUserSubscription = await this.userSubscriptionRepository.save(userSubscription);
+    const updatedUserSubscription = await this.prisma.userSubscription.update({
+      where: { id },
+      data: updateData,
+    });
+
     return this.mapUserSubscriptionToResponseDto(updatedUserSubscription);
   }
 
@@ -492,7 +531,7 @@ export class SubscriptionService {
     id: number,
     userId: number,
   ): Promise<{ message: string }> {
-    const userSubscription = await this.userSubscriptionRepository.findOne({
+    const userSubscription = await this.prisma.userSubscription.findFirst({
       where: { id, user_id: userId },
     });
 
@@ -500,11 +539,14 @@ export class SubscriptionService {
       throw new NotFoundException('User subscription not found');
     }
 
-    userSubscription.subscription_status = SubscriptionStatus.INACTIVE;
-    userSubscription.is_active = false;
-    userSubscription.updated_by = userId;
-
-    await this.userSubscriptionRepository.save(userSubscription);
+    await this.prisma.userSubscription.update({
+      where: { id },
+      data: {
+        subscription_status: 'inactive',
+        is_active: false,
+        updated_by: userId,
+      },
+    });
 
     // Invalidate entitlements cache so user loses premium features immediately
     await this.entitlementsService.invalidate(userId);
@@ -520,7 +562,7 @@ export class SubscriptionService {
   ): Promise<PaymentResponseDto> {
     try {
       // Verify user subscription exists
-      const userSubscription = await this.userSubscriptionRepository.findOne({
+      const userSubscription = await this.prisma.userSubscription.findUnique({
         where: { id: createPaymentDto.users_subscriptions_id },
       });
 
@@ -529,7 +571,7 @@ export class SubscriptionService {
       }
 
       // Check if payment already exists for this subscription
-      const existingPayment = await this.paymentRepository.findOne({
+      const existingPayment = await this.prisma.payment.findFirst({
         where: {
           users_subscriptions_id: createPaymentDto.users_subscriptions_id,
           user_id: userSubscription.user_id,
@@ -537,53 +579,67 @@ export class SubscriptionService {
       });
 
       if (existingPayment) {
-        throw new ConflictException('Payment already exists for this subscription');
+        throw new ConflictException(
+          'Payment already exists for this subscription',
+        );
       }
 
-      const payment = this.paymentRepository.create({
-        ...createPaymentDto,
-        user_id: userSubscription.user_id,
-        created_by: userId,
+      const savedPayment = await this.prisma.payment.create({
+        data: {
+          ...createPaymentDto,
+          user_id: userSubscription.user_id,
+          created_by: userId,
+        },
       });
 
-      const savedPayment = await this.paymentRepository.save(payment);
-
       // Update user subscription status if payment is completed
-      if (createPaymentDto.payment_status === PaymentStatus.COMPLETED) {
-        userSubscription.subscription_status = SubscriptionStatus.ACTIVE;
+      if (createPaymentDto.payment_status === 'completed') {
+        const updateData: any = { subscription_status: 'active' };
         if (!userSubscription.subscription_start_date) {
-          userSubscription.subscription_start_date = new Date();
+          updateData.subscription_start_date = new Date();
         }
-        await this.userSubscriptionRepository.save(userSubscription);
+        await this.prisma.userSubscription.update({
+          where: { id: userSubscription.id },
+          data: updateData,
+        });
 
         // Send subscription confirmation email
         try {
-          const user = await this.userRepository.findOne({
+          const user = await this.prisma.user.findUnique({
             where: { id: userSubscription.user_id },
-            select: ['id', 'email', 'username'],
+            select: { id: true, email: true, username: true },
           });
 
           if (user && user.email) {
-            const subscription = await this.subscriptionRepository.findOne({
+            const subscription = await this.prisma.subscription.findUnique({
               where: { id: userSubscription.subscription_id },
             });
 
             if (subscription && userSubscription.subscription_end_date) {
-              await this.emailTemplatesService.sendSubscriptionConfirmationEmail({
-                recipientEmail: user.email,
-                recipientName: user.username,
-                subscriptionName: subscription.subscription_name,
-                subscriptionType: subscription.subscription_type,
-                amount: savedPayment.payment_amount,
-                currency: savedPayment.payment_currency,
-                startDate: userSubscription.subscription_start_date,
-                endDate: userSubscription.subscription_end_date,
-                renewalDate: userSubscription.subscription_renewal_date || undefined,
-              });
+              const startDate =
+                updateData.subscription_start_date ||
+                userSubscription.subscription_start_date;
+              await this.emailTemplatesService.sendSubscriptionConfirmationEmail(
+                {
+                  recipientEmail: user.email,
+                  recipientName: user.username,
+                  subscriptionName: subscription.subscription_name,
+                  subscriptionType: subscription.subscription_type,
+                  amount: savedPayment.payment_amount?.toNumber() ?? 0,
+                  currency: savedPayment.payment_currency,
+                  startDate,
+                  endDate: userSubscription.subscription_end_date,
+                  renewalDate:
+                    userSubscription.subscription_renewal_date || undefined,
+                },
+              );
             }
           }
         } catch (error) {
-          this.logger.error('Failed to send subscription confirmation email:', error);
+          this.logger.error(
+            'Failed to send subscription confirmation email:',
+            error,
+          );
         }
       }
 
@@ -596,8 +652,13 @@ export class SubscriptionService {
       ) {
         throw error;
       }
-      this.logger.error(`Error creating payment: ${error.message}`, error.stack);
-      throw new BadRequestException(`Failed to create payment: ${error.message}`);
+      this.logger.error(
+        `Error creating payment: ${error.message}`,
+        error.stack,
+      );
+      throw new BadRequestException(
+        `Failed to create payment: ${error.message}`,
+      );
     }
   }
 
@@ -626,45 +687,47 @@ export class SubscriptionService {
     } = listQueryDto;
 
     const skip = (page - 1) * limit;
+    const sortOrderLower = sort_order.toLowerCase() as 'asc' | 'desc';
 
-    const queryBuilder = this.paymentRepository
-      .createQueryBuilder('payment')
-      .leftJoinAndSelect('payment.user_subscription', 'user_subscription')
-      .leftJoinAndSelect('user_subscription.subscription', 'subscription')
-      .leftJoinAndSelect('payment.currency', 'currency');
+    const where: any = {};
 
     const targetUserId = user_id || userId;
     if (targetUserId) {
-      queryBuilder.andWhere('payment.user_id = :targetUserId', { targetUserId });
+      where.user_id = targetUserId;
     }
 
     if (users_subscriptions_id) {
-      queryBuilder.andWhere('payment.users_subscriptions_id = :users_subscriptions_id', {
-        users_subscriptions_id,
-      });
+      where.users_subscriptions_id = users_subscriptions_id;
     }
 
     if (payment_status) {
-      queryBuilder.andWhere('payment.payment_status = :payment_status', { payment_status });
+      where.payment_status = payment_status;
     }
 
     if (payment_method) {
-      queryBuilder.andWhere('payment.payment_method = :payment_method', { payment_method });
+      where.payment_method = payment_method;
     }
 
     if (search) {
-      queryBuilder.andWhere(
-        '(payment.payment_transaction_id LIKE :search OR payment.payment_gateway LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { payment_transaction_id: { contains: search } },
+        { payment_gateway: { contains: search } },
+      ];
     }
 
-    queryBuilder.orderBy(`payment.${sort_by}`, sort_order);
-
-    const total = await queryBuilder.getCount();
-    queryBuilder.skip(skip).take(limit);
-
-    const payments = await queryBuilder.getMany();
+    const [payments, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        include: {
+          user_subscription: { include: { subscription: true } },
+          currency: true,
+        },
+        orderBy: { [sort_by]: sortOrderLower },
+        skip,
+        take: limit,
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
 
     return {
       data: payments.map((payment) => this.mapPaymentToResponseDto(payment)),
@@ -677,15 +740,21 @@ export class SubscriptionService {
     };
   }
 
-  async getPaymentById(id: number, userId?: number): Promise<PaymentResponseDto> {
-    const where: FindOptionsWhere<Payment> = { id };
+  async getPaymentById(
+    id: number,
+    userId?: number,
+  ): Promise<PaymentResponseDto> {
+    const where: any = { id };
     if (userId) {
       where.user_id = userId;
     }
 
-    const payment = await this.paymentRepository.findOne({
+    const payment = await this.prisma.payment.findFirst({
       where,
-      relations: ['user_subscription', 'user_subscription.subscription', 'currency'],
+      include: {
+        user_subscription: { include: { subscription: true } },
+        currency: true,
+      },
     });
 
     if (!payment) {
@@ -697,53 +766,80 @@ export class SubscriptionService {
 
   async updatePaymentStatus(
     id: number,
-    status: PaymentStatus,
+    status: string,
     userId: number,
   ): Promise<PaymentResponseDto> {
-    const payment = await this.paymentRepository.findOne({
+    const payment = await this.prisma.payment.findUnique({
       where: { id },
-      relations: ['user_subscription', 'user_subscription.subscription', 'currency'],
+      include: {
+        user_subscription: { include: { subscription: true } },
+        currency: true,
+      },
     });
 
     if (!payment) {
       throw new NotFoundException('Payment not found');
     }
 
-    payment.payment_status = status;
-    payment.updated_by = userId;
-
-    const updatedPayment = await this.paymentRepository.save(payment);
+    const updatedPayment = await this.prisma.payment.update({
+      where: { id },
+      data: { payment_status: status as any, updated_by: userId },
+      include: {
+        user_subscription: { include: { subscription: true } },
+        currency: true,
+      },
+    });
 
     // Update user subscription status if payment is completed
-    if (status === PaymentStatus.COMPLETED && payment.user_subscription) {
-      payment.user_subscription.subscription_status = SubscriptionStatus.ACTIVE;
+    if (status === 'completed' && payment.user_subscription) {
+      const updateSubData: any = { subscription_status: 'active' };
       if (!payment.user_subscription.subscription_start_date) {
-        payment.user_subscription.subscription_start_date = new Date();
+        updateSubData.subscription_start_date = new Date();
       }
-      await this.userSubscriptionRepository.save(payment.user_subscription);
+      await this.prisma.userSubscription.update({
+        where: { id: payment.user_subscription.id },
+        data: updateSubData,
+      });
 
       // Send subscription confirmation email
       try {
-        const user = await this.userRepository.findOne({
+        const userSubForEmail = await this.prisma.userSubscription.findUnique({
+          where: { id: payment.user_subscription.id },
+        });
+        const user = await this.prisma.user.findUnique({
           where: { id: payment.user_subscription.user_id },
-          select: ['id', 'email', 'username'],
+          select: { id: true, email: true, username: true },
         });
 
-        if (user && user.email && payment.user_subscription.subscription && payment.user_subscription.subscription_end_date) {
+        if (
+          user &&
+          user.email &&
+          payment.user_subscription.subscription &&
+          userSubForEmail?.subscription_end_date
+        ) {
+          const startDate =
+            updateSubData.subscription_start_date ||
+            payment.user_subscription.subscription_start_date;
           await this.emailTemplatesService.sendSubscriptionConfirmationEmail({
             recipientEmail: user.email,
             recipientName: user.username,
-            subscriptionName: payment.user_subscription.subscription.subscription_name,
-            subscriptionType: payment.user_subscription.subscription.subscription_type,
-            amount: updatedPayment.payment_amount,
+            subscriptionName:
+              payment.user_subscription.subscription.subscription_name,
+            subscriptionType:
+              payment.user_subscription.subscription.subscription_type,
+            amount: updatedPayment.payment_amount?.toNumber() ?? 0,
             currency: updatedPayment.payment_currency,
-            startDate: payment.user_subscription.subscription_start_date,
-            endDate: payment.user_subscription.subscription_end_date,
-            renewalDate: payment.user_subscription.subscription_renewal_date || undefined,
+            startDate,
+            endDate: userSubForEmail.subscription_end_date,
+            renewalDate:
+              payment.user_subscription.subscription_renewal_date || undefined,
           });
         }
       } catch (error) {
-        this.logger.error('Failed to send subscription confirmation email:', error);
+        this.logger.error(
+          'Failed to send subscription confirmation email:',
+          error,
+        );
       }
     }
 
@@ -780,7 +876,7 @@ export class SubscriptionService {
   }
 
   private mapSubscriptionToResponseDto(
-    subscription: Subscription,
+    subscription: any,
   ): SubscriptionResponseDto {
     return {
       id: subscription.id,
@@ -802,7 +898,7 @@ export class SubscriptionService {
   }
 
   private mapUserSubscriptionToResponseDto(
-    userSubscription: UserSubscription,
+    userSubscription: any,
   ): UserSubscriptionResponseDto {
     return {
       id: userSubscription.id,
@@ -812,9 +908,13 @@ export class SubscriptionService {
       subscription_end_date: userSubscription.subscription_end_date,
       subscription_renewal_type: userSubscription.subscription_renewal_type,
       subscription_renewal_date: userSubscription.subscription_renewal_date,
-      subscription_renewal_amount: Number(userSubscription.subscription_renewal_amount),
-      subscription_renewal_currency: userSubscription.subscription_renewal_currency,
-      subscription_renewal_gateway: userSubscription.subscription_renewal_gateway,
+      subscription_renewal_amount: Number(
+        userSubscription.subscription_renewal_amount,
+      ),
+      subscription_renewal_currency:
+        userSubscription.subscription_renewal_currency,
+      subscription_renewal_gateway:
+        userSubscription.subscription_renewal_gateway,
       subscription_status: userSubscription.subscription_status,
       is_active: userSubscription.is_active,
       created_by: userSubscription.created_by,
@@ -822,12 +922,14 @@ export class SubscriptionService {
       created_at: userSubscription.created_at,
       updated_at: userSubscription.updated_at,
       ...(userSubscription.subscription && {
-        subscription: this.mapSubscriptionToResponseDto(userSubscription.subscription),
+        subscription: this.mapSubscriptionToResponseDto(
+          userSubscription.subscription,
+        ),
       }),
     };
   }
 
-  private mapPaymentToResponseDto(payment: Payment): PaymentResponseDto {
+  private mapPaymentToResponseDto(payment: any): PaymentResponseDto {
     return {
       id: payment.id,
       users_subscriptions_id: payment.users_subscriptions_id,
@@ -845,9 +947,10 @@ export class SubscriptionService {
       currency_id: payment.currency_id,
       currency: payment.currency,
       ...(payment.user_subscription && {
-        user_subscription: this.mapUserSubscriptionToResponseDto(payment.user_subscription),
+        user_subscription: this.mapUserSubscriptionToResponseDto(
+          payment.user_subscription,
+        ),
       }),
     };
   }
 }
-

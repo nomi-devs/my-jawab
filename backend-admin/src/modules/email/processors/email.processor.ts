@@ -11,7 +11,7 @@ export interface EmailJobData {
 
 /**
  * Email Queue Processor
- * 
+ *
  * Processes email jobs from the queue and sends them via SMTP.
  * This runs in the background, allowing the API to return immediately.
  */
@@ -32,13 +32,13 @@ export class EmailProcessor extends WorkerHost {
    */
   async process(job: Job<EmailJobData>): Promise<boolean> {
     const { emailId } = job.data;
-    
+
     this.logger.log(`Processing email job ${job.id} for email ${emailId}`);
 
     try {
       // Fetch email from database
       const email = await this.emailService.findById(emailId);
-      
+
       if (!email) {
         this.logger.error(`Email ${emailId} not found`);
         throw new Error(`Email ${emailId} not found`);
@@ -62,7 +62,7 @@ export class EmailProcessor extends WorkerHost {
       }
     } catch (error) {
       this.logger.error(`Error processing email ${emailId}:`, error.message);
-      
+
       // Update email status to failed
       await this.emailService.updateStatus(emailId, EmailStatus.FAILED, {
         error_message: error.message || 'Unknown error occurred',

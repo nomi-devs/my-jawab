@@ -19,7 +19,6 @@ const CommunitiesPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-
   // Filter and search state
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -45,16 +44,20 @@ const CommunitiesPage = () => {
   const [localError, setLocalError] = useState(null); // For non-query errors
 
   // Memoized params for TanStack Query
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    limit: communitiesPerPage,
-    ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
-    sort_by: sortBy,
-    sort_order: sortOrder,
-    ...(statusFilter !== 'all' && statusFilter !== null && {
-      is_active: statusFilter
-    })
-  }), [currentPage, searchTerm, statusFilter, sortBy, sortOrder, communitiesPerPage]);
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: communitiesPerPage,
+      ...(searchTerm && searchTerm.trim() && { search: searchTerm.trim() }),
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      ...(statusFilter !== 'all' &&
+        statusFilter !== null && {
+          is_active: statusFilter,
+        }),
+    }),
+    [currentPage, searchTerm, statusFilter, sortBy, sortOrder, communitiesPerPage],
+  );
 
   const {
     data,
@@ -62,7 +65,7 @@ const CommunitiesPage = () => {
     isFetching,
     isError,
     error: queryError,
-    refetch
+    refetch,
   } = useCommunitiesList(queryParams);
 
   const {
@@ -72,7 +75,7 @@ const CommunitiesPage = () => {
     deleteCommunity,
     isCreating,
     isUpdating,
-    isDeleting
+    isDeleting,
   } = useCommunityActions();
 
   const communities = data?.communities || [];
@@ -80,14 +83,9 @@ const CommunitiesPage = () => {
   const totalPages = data?.totalPages || 1;
 
   // Use effective loading state for UI
-  // If we have data (even previous), we show it. 
+  // If we have data (even previous), we show it.
   // Initial loading matches the "shimmer first time" requirement.
   const loading = isInitialLoading; // Only true when no data is available yet
-
-
-
-
-
 
   // Handle navigation state from search
   useEffect(() => {
@@ -126,8 +124,6 @@ const CommunitiesPage = () => {
     }
   }, [communities]);
 
-
-
   // Filter handlers
   const handleSearch = useCallback((term) => {
     setSearchTerm(term || '');
@@ -138,7 +134,6 @@ const CommunitiesPage = () => {
     setStatusFilter(status || 'all');
     setCurrentPage(1);
   }, []);
-
 
   const handleSortChange = useCallback(({ sortBy: newSortBy, sortOrder: newSortOrder }) => {
     setSortBy(newSortBy || 'created_at');
@@ -151,19 +146,24 @@ const CommunitiesPage = () => {
   }, []);
 
   // Handle toggle community status
-  const handleToggleStatus = useCallback(async (communityId, newStatus) => {
-    try {
-      await updateCommunityStatus({ id: communityId, is_active: newStatus });
-      // Success message handling
-      const community = communities.find(c => c.id === communityId);
-      setSuccessMessage(`Community "${community?.name}" ${newStatus ? 'activated' : 'deactivated'} successfully!`);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error toggling community status:', err);
-      setLocalError('Failed to update community status. Please try again.');
-      setTimeout(() => setLocalError(null), 5000);
-    }
-  }, [communities, updateCommunityStatus]);
+  const handleToggleStatus = useCallback(
+    async (communityId, newStatus) => {
+      try {
+        await updateCommunityStatus({ id: communityId, is_active: newStatus });
+        // Success message handling
+        const community = communities.find((c) => c.id === communityId);
+        setSuccessMessage(
+          `Community "${community?.name}" ${newStatus ? 'activated' : 'deactivated'} successfully!`,
+        );
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error toggling community status:', err);
+        setLocalError('Failed to update community status. Please try again.');
+        setTimeout(() => setLocalError(null), 5000);
+      }
+    },
+    [communities, updateCommunityStatus],
+  );
 
   // Handle view community
   const handleViewCommunity = useCallback((community) => {
@@ -201,9 +201,7 @@ const CommunitiesPage = () => {
         // Note: keeping this complex logic here for now instead of hook, as it involves multiple potential calls
         try {
           const topicsRes = await communitiesApi.getCommunityTopics(communityId);
-          const existingRelations = Array.isArray(topicsRes?.data)
-            ? topicsRes.data
-            : [];
+          const existingRelations = Array.isArray(topicsRes?.data) ? topicsRes.data : [];
 
           const existingIds = existingRelations
             .map((rel) => rel.topic_id)
@@ -216,25 +214,22 @@ const CommunitiesPage = () => {
 
           if (toAdd.length > 0) {
             await Promise.all(
-              toAdd.map((id) =>
-                communitiesApi.addTopicToCommunity(communityId, id)
-              )
+              toAdd.map((id) => communitiesApi.addTopicToCommunity(communityId, id)),
             );
           }
 
           if (toRemove.length > 0) {
             await Promise.all(
-              toRemove.map((id) =>
-                communitiesApi.removeTopicFromCommunity(communityId, id)
-              )
+              toRemove.map((id) => communitiesApi.removeTopicFromCommunity(communityId, id)),
             );
           }
         } catch (topicError) {
           console.error('Error syncing community topics:', topicError);
           // Don't block the main success on topic sync error, but surface message
           setLocalError(
-            `Community updated, but topics sync failed: ${topicError.response?.data?.message || topicError.message
-            }`
+            `Community updated, but topics sync failed: ${
+              topicError.response?.data?.message || topicError.message
+            }`,
           );
           setTimeout(() => setLocalError(null), 5000);
         }
@@ -243,30 +238,28 @@ const CommunitiesPage = () => {
         await refetch();
 
         const community = communities.find((c) => c.id === communityId);
-        setSuccessMessage(
-          `Community "${community?.name || 'Community'}" updated successfully!`
-        );
+        setSuccessMessage(`Community "${community?.name || 'Community'}" updated successfully!`);
         setShowEditModal(false);
         setSelectedCommunityForEdit(null);
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error updating community:', err);
-        setLocalError(
-          `Failed to update community: ${err.response?.data?.message || err.message
-          }`
-        );
+        setLocalError(`Failed to update community: ${err.response?.data?.message || err.message}`);
         setTimeout(() => setLocalError(null), 5000);
       }
     },
-    [updateCommunity, refetch, communities]
+    [updateCommunity, refetch, communities],
   );
 
   // Handle delete community
-  const handleDeleteCommunity = useCallback((communityId) => {
-    const community = communities.find(c => c.id === communityId);
-    setCommunityToDelete(community);
-    setShowDeleteConfirm(true);
-  }, [communities]);
+  const handleDeleteCommunity = useCallback(
+    (communityId) => {
+      const community = communities.find((c) => c.id === communityId);
+      setCommunityToDelete(community);
+      setShowDeleteConfirm(true);
+    },
+    [communities],
+  );
 
   const confirmDeleteCommunity = useCallback(async () => {
     if (!communityToDelete) return;
@@ -280,7 +273,8 @@ const CommunitiesPage = () => {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting community:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to delete community. Please try again.';
+      const errorMsg =
+        err.response?.data?.message || 'Failed to delete community. Please try again.';
       setLocalError(errorMsg);
       setShowDeleteConfirm(false);
       setCommunityToDelete(null);
@@ -294,18 +288,21 @@ const CommunitiesPage = () => {
   }, []);
 
   // Handle add community
-  const handleAddCommunity = useCallback(async (communityData) => {
-    try {
-      await createCommunity(communityData);
-      setSuccessMessage('Community created successfully!');
-      setShowAddModal(false);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error creating community:', err);
-      setLocalError(`Failed to create community: ${err.response?.data?.message || err.message}`);
-      setTimeout(() => setLocalError(null), 5000);
-    }
-  }, [createCommunity]);
+  const handleAddCommunity = useCallback(
+    async (communityData) => {
+      try {
+        await createCommunity(communityData);
+        setSuccessMessage('Community created successfully!');
+        setShowAddModal(false);
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error creating community:', err);
+        setLocalError(`Failed to create community: ${err.response?.data?.message || err.message}`);
+        setTimeout(() => setLocalError(null), 5000);
+      }
+    },
+    [createCommunity],
+  );
 
   // Initial loading: shimmer skeleton instead of circle loader
   if (loading && communities.length === 0) {
@@ -317,13 +314,13 @@ const CommunitiesPage = () => {
         showActions
         avatarColumnIndex={1}
         columnWidths={[
-          'w-10',        // #
-          'w-[240px]',   // Community
-          'w-[260px]',   // Description
-          'w-[140px]',   // Category / Members
-          'w-[120px]',   // Status
-          'w-[130px]',   // Created
-          'w-[100px]',   // Actions
+          'w-10', // #
+          'w-[240px]', // Community
+          'w-[260px]', // Description
+          'w-[140px]', // Category / Members
+          'w-[120px]', // Status
+          'w-[130px]', // Created
+          'w-[100px]', // Actions
         ]}
         containerClassName="min-h-[560px]"
       />
@@ -331,7 +328,12 @@ const CommunitiesPage = () => {
   }
 
   if (isError && !communities.length) {
-    return <ErrorMessage message={queryError?.message || 'Failed to load communities'} onRetry={() => refetch()} />;
+    return (
+      <ErrorMessage
+        message={queryError?.message || 'Failed to load communities'}
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   return (
@@ -410,7 +412,11 @@ const CommunitiesPage = () => {
         onConfirm={confirmDeleteCommunity}
         type="danger"
         title="Delete Community"
-        message={communityToDelete ? `Are you sure you want to delete "${communityToDelete.name}"? This action cannot be undone.` : ''}
+        message={
+          communityToDelete
+            ? `Are you sure you want to delete "${communityToDelete.name}"? This action cannot be undone.`
+            : ''
+        }
         confirmText="Delete"
         cancelText="Cancel"
         isLoading={isDeleting}
@@ -435,8 +441,11 @@ const CommunitiesPage = () => {
         />
 
         {/* Loading Overlay - Smooth transition */}
-        <div className={`relative overflow-hidden transition-all duration-300 ${isFetching && communities.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
-          }`}>
+        <div
+          className={`relative overflow-hidden transition-all duration-300 ${
+            isFetching && communities.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
@@ -445,11 +454,14 @@ const CommunitiesPage = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto transition-all duration-300 ease-in-out" style={{
-          minHeight: communities.length === 0 ? '400px' : 'auto',
-          opacity: isFetching && communities.length > 0 ? 0.6 : 1,
-          scrollbarGutter: 'stable'
-        }}>
+        <div
+          className="overflow-x-auto transition-all duration-300 ease-in-out"
+          style={{
+            minHeight: communities.length === 0 ? '400px' : 'auto',
+            opacity: isFetching && communities.length > 0 ? 0.6 : 1,
+            scrollbarGutter: 'stable',
+          }}
+        >
           {loading && communities.length === 0 ? (
             <div className="p-12">
               <div className="flex flex-col items-center justify-center">
@@ -462,7 +474,9 @@ const CommunitiesPage = () => {
               <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                 <Users className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No communities found</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                No communities found
+              </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all'
                   ? 'Try changing your search or filters'

@@ -1,13 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
-import { User } from '../auth/entities/user.entity';
-import { UserProfile } from '../user/entities/user-profile.entity';
-import { UserPost, PostStatus } from '../post/entities/user-post.entity';
-import { Community } from '../community/entities/community.entity';
-import { CommunityUser } from '../community/entities/community-user.entity';
-import { Topic } from '../general/entities/topic.entity';
-import { UserPoll, PollStatus } from '../poll/entities/user-poll.entity';
 import { SearchQueryDto, SearchType } from './dto/search-query.dto';
 import {
   SearchResponseDto,
@@ -17,25 +8,11 @@ import {
   SearchTopicResult,
   SearchPollResult,
 } from './dto/search-response.dto';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class SearchService {
-  constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(UserProfile)
-    private profileRepository: Repository<UserProfile>,
-    @InjectRepository(UserPost)
-    private postRepository: Repository<UserPost>,
-    @InjectRepository(Community)
-    private communityRepository: Repository<Community>,
-    @InjectRepository(CommunityUser)
-    private communityUserRepository: Repository<CommunityUser>,
-    @InjectRepository(Topic)
-    private topicRepository: Repository<Topic>,
-    @InjectRepository(UserPoll)
-    private pollRepository: Repository<UserPoll>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async search(
     searchQueryDto: SearchQueryDto,
@@ -50,7 +27,6 @@ export class SearchService {
 
     const effectiveLimit = Math.min(Math.max(limit || 10, 1), 50);
     const skip = (page - 1) * effectiveLimit;
-    const searchLike = `%${term}%`;
 
     const results: SearchResponseDto = {
       meta: {
@@ -62,14 +38,23 @@ export class SearchService {
 
     // Search based on type
     if (type === SearchType.ALL || type === SearchType.USERS) {
-      const { users, count } = await this.searchUsers(searchLike, effectiveLimit, skip);
+      const { users, count } = await this.searchUsers(
+        term,
+        effectiveLimit,
+        skip,
+      );
       results.users = users;
       results.meta.users = { count };
       results.meta.total += count;
     }
 
     if (type === SearchType.ALL || type === SearchType.POSTS) {
-      const { posts, count } = await this.searchPosts(searchLike, effectiveLimit, skip, userId);
+      const { posts, count } = await this.searchPosts(
+        term,
+        effectiveLimit,
+        skip,
+        userId,
+      );
       results.posts = posts;
       results.meta.posts = { count };
       results.meta.total += count;
@@ -77,7 +62,7 @@ export class SearchService {
 
     if (type === SearchType.ALL || type === SearchType.COMMUNITIES) {
       const { communities, count } = await this.searchCommunities(
-        searchLike,
+        term,
         effectiveLimit,
         skip,
         userId,
@@ -88,14 +73,23 @@ export class SearchService {
     }
 
     if (type === SearchType.ALL || type === SearchType.TOPICS) {
-      const { topics, count } = await this.searchTopics(searchLike, effectiveLimit, skip);
+      const { topics, count } = await this.searchTopics(
+        term,
+        effectiveLimit,
+        skip,
+      );
       results.topics = topics;
       results.meta.topics = { count };
       results.meta.total += count;
     }
 
     if (type === SearchType.ALL || type === SearchType.POLLS) {
-      const { polls, count } = await this.searchPolls(searchLike, effectiveLimit, skip, userId);
+      const { polls, count } = await this.searchPolls(
+        term,
+        effectiveLimit,
+        skip,
+        userId,
+      );
       results.polls = polls;
       results.meta.polls = { count };
       results.meta.total += count;
@@ -107,118 +101,112 @@ export class SearchService {
   }
 
   private async searchUsers(
-    searchLike: string,
+    term: string,
     limit: number,
     skip: number,
   ): Promise<{ users: SearchUserResult[]; count: number }> {
-    const queryBuilder = this.userRepository
-      .createQueryBuilder('user')
-      .leftJoin(UserProfile, 'profile', 'profile.user_id = user.id')
-      .where(
-        '(user.username LIKE :search OR user.email LIKE :search OR profile.full_name LIKE :search)',
-        { search: searchLike },
-      )
-      .andWhere('user.is_active = :isActive', { isActive: true })
-      .andWhere('user.is_verified = :isVerified', { isVerified: true })
-      .orderBy('user.username', 'ASC');
+    const where = {
+      is_active: true,
+      is_verified: true,
+      OR: [
+        { username: { contains: term } },
+        { email: { contains: term } },
+        { profile: { full_name: { contains: term } } },
+      ],
+    };
 
-    const count = await queryBuilder.getCount();
-    
-    const usersRaw = await queryBuilder
-      .select([
-        'user.id',
-        'user.username',
-        'user.role',
-        'profile.full_name',
-        'profile.profile_picture',
-        'profile.profile_bio',
-      ])
-      .skip(skip)
-      .take(limit)
-      .getRawMany();
+    const [users, count] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        include: {
+          profile: {
+            select: {
+              full_name: true,
+              profile_picture: true,
+              profile_bio: true,
+            },
+          },
+        },
+        orderBy: { username: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
 
-    const userResults: SearchUserResult[] = usersRaw.map((row: any) => {
-      return {
-        id: row.user_id,
-        name: row.profile_full_name || row.user_username,
-        handle: `@${row.user_username}`,
-        avatar: row.profile_profile_picture || null,
-        role: row.user_role,
-        bio: row.profile_profile_bio || null,
-      };
-    });
+    const userResults: SearchUserResult[] = users.map((user) => ({
+      id: user.id,
+      name: (user as any).profile?.full_name || user.username,
+      handle: `@${user.username}`,
+      avatar: (user as any).profile?.profile_picture || null,
+      role: user.role,
+      bio: (user as any).profile?.profile_bio || null,
+    }));
 
     return { users: userResults, count };
   }
 
   private async searchPosts(
-    searchLike: string,
+    term: string,
     limit: number,
     skip: number,
     userId?: number,
   ): Promise<{ posts: SearchPostResult[]; count: number }> {
-    const queryBuilder = this.postRepository
-      .createQueryBuilder('post')
-      .leftJoin('post.user', 'user')
-      .leftJoin(UserProfile, 'profile', 'profile.user_id = user.id')
-      .leftJoin('post.topic', 'topic')
-      .where(
-        '(post.post_title LIKE :search OR post.post_content LIKE :search OR post.post_slug LIKE :search)',
-        { search: searchLike },
-      )
-      .andWhere('post.post_status = :status', { status: PostStatus.PUBLISHED })
-      .orderBy('post.created_at', 'DESC');
+    const where = {
+      post_status: 'published',
+      OR: [
+        { post_title: { contains: term } },
+        { post_content: { contains: term } },
+        { post_slug: { contains: term } },
+      ],
+    } as any;
 
-    const count = await queryBuilder.getCount();
-    const postsRaw = await queryBuilder
-      .select([
-        'post.id',
-        'post.post_title',
-        'post.post_slug',
-        'post.post_content',
-        'post.post_status',
-        'post.view_count',
-        'post.like_count',
-        'post.comment_count',
-        'post.created_at',
-        'user.id',
-        'user.username',
-        'profile.full_name',
-        'profile.profile_picture',
-        'topic.id',
-        'topic.topic_name',
-        'topic.topic_slug',
-      ])
-      .skip(skip)
-      .take(limit)
-      .getRawMany();
+    const [posts, count] = await Promise.all([
+      this.prisma.userPost.findMany({
+        where,
+        include: {
+          user: {
+            include: { profile: true },
+          },
+          topic: true,
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.userPost.count({ where }),
+    ]);
 
-    const postResults: SearchPostResult[] = postsRaw.map((row: any) => {
-      const contentPreview = row.post_post_content
-        ? row.post_post_content.substring(0, 200) + (row.post_post_content.length > 200 ? '...' : '')
+    const postResults: SearchPostResult[] = posts.map((post) => {
+      const contentPreview = (post as any).post_content
+        ? (post as any).post_content.substring(0, 200) +
+          ((post as any).post_content.length > 200 ? '...' : '')
         : '';
 
       return {
-        id: row.post_id,
-        title: row.post_post_title,
-        slug: row.post_post_slug,
+        id: post.id,
+        title: (post as any).post_title,
+        slug: (post as any).post_slug,
         content_preview: contentPreview,
-        status: row.post_post_status,
-        view_count: row.post_view_count || 0,
-        like_count: row.post_like_count || 0,
-        comment_count: row.post_comment_count || 0,
-        created_at: row.post_created_at,
+        status: (post as any).post_status,
+        view_count: (post as any).view_count || 0,
+        like_count: (post as any).like_count || 0,
+        comment_count: (post as any).comment_count || 0,
+        created_at: (post as any).created_at,
         user: {
-          id: row.user_id || 0,
-          name: row.profile_full_name || row.user_username || 'Unknown',
-          handle: `@${row.user_username || 'unknown'}`,
-          avatar: row.profile_profile_picture || null,
+          id: (post as any).user?.id || 0,
+          name:
+            (post as any).user?.profile?.full_name ||
+            (post as any).user?.username ||
+            'Unknown',
+          handle: `@${(post as any).user?.username || 'unknown'}`,
+          avatar: (post as any).user?.profile?.profile_picture || null,
         },
-        topic: row.topic_id
+        topic: (post as any).topic
           ? {
-              id: row.topic_id,
-              name: row.topic_topic_name,
-              slug: row.topic_topic_slug,
+              id: (post as any).topic.id,
+              name: (post as any).topic.topic_name,
+              slug: (post as any).topic.topic_slug,
             }
           : undefined,
       };
@@ -228,49 +216,42 @@ export class SearchService {
   }
 
   private async searchCommunities(
-    searchLike: string,
+    term: string,
     limit: number,
     skip: number,
     userId?: number,
   ): Promise<{ communities: SearchCommunityResult[]; count: number }> {
-    // Count query (without GROUP BY for accurate count)
-    const countQuery = this.communityRepository
-      .createQueryBuilder('community')
-      .where(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search OR community.community_description LIKE :search)',
-        { search: searchLike },
-      )
-      .andWhere('community.is_active = :isActive', { isActive: true });
-    
-    const count = await countQuery.getCount();
+    const where = {
+      is_active: true,
+      OR: [
+        { community_name: { contains: term } },
+        { community_slug: { contains: term } },
+        { community_description: { contains: term } },
+      ],
+    };
 
-    // Results query
-    const queryBuilder = this.communityRepository
-      .createQueryBuilder('community')
-      .where(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search OR community.community_description LIKE :search)',
-        { search: searchLike },
-      )
-      .andWhere('community.is_active = :isActive', { isActive: true })
-      .orderBy('community.created_at', 'DESC');
-
-    const communities = await queryBuilder
-      .select([
-        'community.id',
-        'community.community_name',
-        'community.community_slug',
-        'community.community_description',
-        'community.community_image',
-        'community.is_active',
-      ])
-      .skip(skip)
-      .take(limit)
-      .getMany();
+    const [communities, count] = await Promise.all([
+      this.prisma.community.findMany({
+        where,
+        select: {
+          id: true,
+          community_name: true,
+          community_slug: true,
+          community_description: true,
+          community_image: true,
+          is_active: true,
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.community.count({ where }),
+    ]);
 
     // Get member counts separately
     const communityResults: SearchCommunityResult[] = await Promise.all(
       communities.map(async (community) => {
-        const memberCount = await this.communityUserRepository.count({
+        const memberCount = await this.prisma.communityUser.count({
           where: { community_id: community.id, is_active: true },
         });
 
@@ -278,8 +259,8 @@ export class SearchService {
           id: community.id,
           name: community.community_name,
           slug: community.community_slug,
-          description: community.community_description || null,
-          image: community.community_image || null,
+          description: (community as any).community_description || null,
+          image: (community as any).community_image || null,
           member_count: memberCount,
           is_active: community.is_active,
         };
@@ -290,57 +271,50 @@ export class SearchService {
   }
 
   private async searchTopics(
-    searchLike: string,
+    term: string,
     limit: number,
     skip: number,
   ): Promise<{ topics: SearchTopicResult[]; count: number }> {
-    // Count query (without GROUP BY for accurate count)
-    const countQuery = this.topicRepository
-      .createQueryBuilder('topic')
-      .where(
-        '(topic.topic_name LIKE :search OR topic.topic_slug LIKE :search OR topic.topic_description LIKE :search)',
-        { search: searchLike },
-      )
-      .andWhere('topic.is_active = :isActive', { isActive: true });
-    
-    const count = await countQuery.getCount();
+    const where = {
+      is_active: true,
+      OR: [
+        { topic_name: { contains: term } },
+        { topic_slug: { contains: term } },
+        { topic_description: { contains: term } },
+      ],
+    };
 
-    // Results query
-    const queryBuilder = this.topicRepository
-      .createQueryBuilder('topic')
-      .where(
-        '(topic.topic_name LIKE :search OR topic.topic_slug LIKE :search OR topic.topic_description LIKE :search)',
-        { search: searchLike },
-      )
-      .andWhere('topic.is_active = :isActive', { isActive: true })
-      .orderBy('topic.created_at', 'DESC');
-
-    const topics = await queryBuilder
-      .select([
-        'topic.id',
-        'topic.topic_name',
-        'topic.topic_slug',
-        'topic.topic_description',
-        'topic.topic_image',
-        'topic.is_active',
-      ])
-      .skip(skip)
-      .take(limit)
-      .getMany();
+    const [topics, count] = await Promise.all([
+      this.prisma.topic.findMany({
+        where,
+        select: {
+          id: true,
+          topic_name: true,
+          topic_slug: true,
+          topic_description: true,
+          topic_image: true,
+          is_active: true,
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.topic.count({ where }),
+    ]);
 
     // Get post counts separately
     const topicResults: SearchTopicResult[] = await Promise.all(
       topics.map(async (topic) => {
-        const postsCount = await this.postRepository.count({
-          where: { post_topic_id: topic.id, post_status: PostStatus.PUBLISHED },
+        const postsCount = await this.prisma.userPost.count({
+          where: { post_topic_id: topic.id, post_status: 'published' },
         });
 
         return {
           id: topic.id,
           name: topic.topic_name,
           slug: topic.topic_slug,
-          description: topic.topic_description || null,
-          image: topic.topic_image || null,
+          description: (topic as any).topic_description || null,
+          image: (topic as any).topic_image || null,
           posts_count: postsCount,
           is_active: topic.is_active,
         };
@@ -351,63 +325,60 @@ export class SearchService {
   }
 
   private async searchPolls(
-    searchLike: string,
+    term: string,
     limit: number,
     skip: number,
     userId?: number,
   ): Promise<{ polls: SearchPollResult[]; count: number }> {
-    const queryBuilder = this.pollRepository
-      .createQueryBuilder('poll')
-      .leftJoin('poll.user', 'user')
-      .leftJoin(UserProfile, 'profile', 'profile.user_id = user.id')
-      .where(
-        '(poll.poll_title LIKE :search OR poll.poll_description LIKE :search OR poll.poll_slug LIKE :search)',
-        { search: searchLike },
-      )
-      .andWhere('poll.poll_status = :status', { status: PollStatus.PUBLISHED })
-      .orderBy('poll.created_at', 'DESC');
+    const where = {
+      poll_status: 'published',
+      OR: [
+        { poll_title: { contains: term } },
+        { poll_description: { contains: term } },
+        { poll_slug: { contains: term } },
+      ],
+    } as any;
 
-    const count = await queryBuilder.getCount();
-    const pollsRaw = await queryBuilder
-      .select([
-        'poll.id',
-        'poll.poll_title',
-        'poll.poll_slug',
-        'poll.poll_description',
-        'poll.poll_status',
-        'poll.vote_count',
-        'poll.view_count',
-        'poll.poll_expires_at',
-        'poll.created_at',
-        'user.id',
-        'user.username',
-        'profile.full_name',
-        'profile.profile_picture',
-      ])
-      .skip(skip)
-      .take(limit)
-      .getRawMany();
+    const [polls, count] = await Promise.all([
+      this.prisma.userPoll.findMany({
+        where,
+        include: {
+          user: {
+            include: { profile: true },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.userPoll.count({ where }),
+    ]);
 
-    const pollResults: SearchPollResult[] = pollsRaw.map((row: any) => {
+    const pollResults: SearchPollResult[] = polls.map((poll) => {
       const now = new Date();
-      const expiresAt = row.poll_poll_expires_at ? new Date(row.poll_poll_expires_at) : null;
+      const expiresAt = (poll as any).poll_expires_at
+        ? new Date((poll as any).poll_expires_at)
+        : null;
       const isExpired = expiresAt ? expiresAt < now : false;
 
       return {
-        id: row.poll_id,
-        title: row.poll_poll_title,
-        slug: row.poll_poll_slug,
-        description: row.poll_poll_description || null,
-        status: row.poll_poll_status,
-        vote_count: row.poll_vote_count || 0,
-        view_count: row.poll_view_count || 0,
+        id: poll.id,
+        title: (poll as any).poll_title,
+        slug: (poll as any).poll_slug,
+        description: (poll as any).poll_description || null,
+        status: (poll as any).poll_status,
+        vote_count: (poll as any).vote_count || 0,
+        view_count: (poll as any).view_count || 0,
         is_expired: isExpired,
-        created_at: row.poll_created_at,
+        created_at: (poll as any).created_at,
         user: {
-          id: row.user_id || 0,
-          name: row.profile_full_name || row.user_username || 'Unknown',
-          handle: `@${row.user_username || 'unknown'}`,
-          avatar: row.profile_profile_picture || null,
+          id: (poll as any).user?.id || 0,
+          name:
+            (poll as any).user?.profile?.full_name ||
+            (poll as any).user?.username ||
+            'Unknown',
+          handle: `@${(poll as any).user?.username || 'unknown'}`,
+          avatar: (poll as any).user?.profile?.profile_picture || null,
         },
       };
     });

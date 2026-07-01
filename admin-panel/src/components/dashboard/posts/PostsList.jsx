@@ -53,17 +53,30 @@ const PostsList = () => {
   }, [searchTerm]);
 
   // Memoized query params
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    limit: postsPerPage,
-    ...(debouncedSearchTerm && debouncedSearchTerm.trim() && { search: debouncedSearchTerm.trim() }),
-    sort_by: sortBy,
-    sort_order: sortOrder,
-    ...(statusFilter && statusFilter !== 'all' && { post_status: statusFilter }),
-    ...(featuredFilter !== 'all' && featuredFilter !== null && {
-      is_featured: featuredFilter
-    })
-  }), [currentPage, debouncedSearchTerm, statusFilter, featuredFilter, sortBy, sortOrder, postsPerPage]);
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: postsPerPage,
+      ...(debouncedSearchTerm &&
+        debouncedSearchTerm.trim() && { search: debouncedSearchTerm.trim() }),
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      ...(statusFilter && statusFilter !== 'all' && { post_status: statusFilter }),
+      ...(featuredFilter !== 'all' &&
+        featuredFilter !== null && {
+          is_featured: featuredFilter,
+        }),
+    }),
+    [
+      currentPage,
+      debouncedSearchTerm,
+      statusFilter,
+      featuredFilter,
+      sortBy,
+      sortOrder,
+      postsPerPage,
+    ],
+  );
 
   // TanStack Query Hooks
   const {
@@ -73,7 +86,7 @@ const PostsList = () => {
     isError,
     error: queryError,
     isPlaceholderData,
-    refetch
+    refetch,
   } = usePostsList(queryParams);
 
   const {
@@ -84,7 +97,7 @@ const PostsList = () => {
     isCreating,
     isUpdating,
     isUpdatingStatus,
-    isDeleting
+    isDeleting,
   } = usePostActions();
 
   const posts = data?.posts || [];
@@ -113,7 +126,7 @@ const PostsList = () => {
   // displayPosts memo for deep linked filtering
   const displayPosts = useMemo(() => {
     if (searchIdRef.current && posts.length > 0) {
-      const filtered = posts.filter(post => post.id === searchIdRef.current);
+      const filtered = posts.filter((post) => post.id === searchIdRef.current);
       if (filtered.length > 0) return filtered;
     }
     return posts;
@@ -141,15 +154,18 @@ const PostsList = () => {
     setCurrentPage(1);
   }, []);
 
-  const handleUpdatePostStatus = useCallback(async (postId, statusData) => {
-    try {
-      await updatePostStatus({ id: postId, data: statusData });
-      setSuccessMessage('Post status updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error updating post status:', err);
-    }
-  }, [updatePostStatus]);
+  const handleUpdatePostStatus = useCallback(
+    async (postId, statusData) => {
+      try {
+        await updatePostStatus({ id: postId, data: statusData });
+        setSuccessMessage('Post status updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error updating post status:', err);
+      }
+    },
+    [updatePostStatus],
+  );
 
   const handleEditPost = useCallback((post) => {
     setSelectedPost(post);
@@ -161,58 +177,77 @@ const PostsList = () => {
     setShowPostDetailsModal(true);
   }, []);
 
-  const handleAddPost = useCallback(async (formData) => {
-    try {
-      await createPost(formData);
-      setSuccessMessage('Post created successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      setShowAddModal(false);
-    } catch (err) {
-      console.error('Error creating post:', err);
-    }
-  }, [createPost]);
-
-  const handleSaveEdit = useCallback(async (postId, updatedData) => {
-    try {
-      if (updatedData instanceof FormData) {
-        await updatePost({ id: postId, data: updatedData });
-      } else {
-        const hasStatusUpdate = updatedData.post_status !== undefined || updatedData.is_featured !== undefined;
-        const hasContentUpdate = ['content', 'title', 'post_title', 'post_content', 'tags', 'post_tags', 'post_topic_id'].some(k => updatedData[k] !== undefined);
-
-        if (hasStatusUpdate && !hasContentUpdate) {
-          await updatePostStatus({
-            id: postId, data: {
-              post_status: updatedData.post_status,
-              is_featured: updatedData.is_featured
-            }
-          });
-        } else if (hasContentUpdate) {
-          const postData = {
-            post_title: updatedData.title || updatedData.post_title,
-            post_content: updatedData.content || updatedData.post_content,
-            post_status: updatedData.post_status,
-            is_featured: updatedData.is_featured,
-            post_tags: updatedData.tags || updatedData.post_tags,
-            post_topic_id: updatedData.post_topic_id,
-            post_slug: updatedData.post_slug
-          };
-          await updatePost({ id: postId, data: postData });
-        }
+  const handleAddPost = useCallback(
+    async (formData) => {
+      try {
+        await createPost(formData);
+        setSuccessMessage('Post created successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setShowAddModal(false);
+      } catch (err) {
+        console.error('Error creating post:', err);
       }
-      setSuccessMessage('Post updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      setShowEditModal(false);
-    } catch (err) {
-      console.error('Error updating post:', err);
-    }
-  }, [updatePost, updatePostStatus]);
+    },
+    [createPost],
+  );
 
-  const handleDeletePost = useCallback((postId) => {
-    const post = posts.find(post => post.id === postId);
-    setPostToDelete(post);
-    setShowDeleteConfirm(true);
-  }, [posts]);
+  const handleSaveEdit = useCallback(
+    async (postId, updatedData) => {
+      try {
+        if (updatedData instanceof FormData) {
+          await updatePost({ id: postId, data: updatedData });
+        } else {
+          const hasStatusUpdate =
+            updatedData.post_status !== undefined || updatedData.is_featured !== undefined;
+          const hasContentUpdate = [
+            'content',
+            'title',
+            'post_title',
+            'post_content',
+            'tags',
+            'post_tags',
+            'post_topic_id',
+          ].some((k) => updatedData[k] !== undefined);
+
+          if (hasStatusUpdate && !hasContentUpdate) {
+            await updatePostStatus({
+              id: postId,
+              data: {
+                post_status: updatedData.post_status,
+                is_featured: updatedData.is_featured,
+              },
+            });
+          } else if (hasContentUpdate) {
+            const postData = {
+              post_title: updatedData.title || updatedData.post_title,
+              post_content: updatedData.content || updatedData.post_content,
+              post_status: updatedData.post_status,
+              is_featured: updatedData.is_featured,
+              post_tags: updatedData.tags || updatedData.post_tags,
+              post_topic_id: updatedData.post_topic_id,
+              post_slug: updatedData.post_slug,
+            };
+            await updatePost({ id: postId, data: postData });
+          }
+        }
+        setSuccessMessage('Post updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setShowEditModal(false);
+      } catch (err) {
+        console.error('Error updating post:', err);
+      }
+    },
+    [updatePost, updatePostStatus],
+  );
+
+  const handleDeletePost = useCallback(
+    (postId) => {
+      const post = posts.find((post) => post.id === postId);
+      setPostToDelete(post);
+      setShowDeleteConfirm(true);
+    },
+    [posts],
+  );
 
   const confirmDeletePost = useCallback(async () => {
     if (!postToDelete) return;
@@ -244,14 +279,27 @@ const PostsList = () => {
         showAvatar
         showActions
         avatarColumnIndex={1}
-        columnWidths={['w-10', 'w-[260px]', 'w-[260px]', 'w-[120px]', 'w-[140px]', 'w-[130px]', 'w-[100px]']}
+        columnWidths={[
+          'w-10',
+          'w-[260px]',
+          'w-[260px]',
+          'w-[120px]',
+          'w-[140px]',
+          'w-[130px]',
+          'w-[100px]',
+        ]}
         containerClassName="min-h-[560px]"
       />
     );
   }
 
   if (isError) {
-    return <ErrorMessage message={queryError?.message || 'Failed to load posts'} onRetry={() => refetch()} />;
+    return (
+      <ErrorMessage
+        message={queryError?.message || 'Failed to load posts'}
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   const isRefreshing = isFetching;
@@ -275,7 +323,11 @@ const PostsList = () => {
         onConfirm={confirmDeletePost}
         type="danger"
         title="Delete Post"
-        message={postToDelete ? `Are you sure you want to delete this post by ${postToDelete.author.name}? This action cannot be undone.` : ''}
+        message={
+          postToDelete
+            ? `Are you sure you want to delete this post by ${postToDelete.author.name}? This action cannot be undone.`
+            : ''
+        }
         confirmText="Delete"
         cancelText="Cancel"
         isLoading={isDeleting}
@@ -289,7 +341,9 @@ const PostsList = () => {
         }}
         type="info"
         title="Analytics"
-        message={analyticsPost ? `Analytics for post by ${analyticsPost.author.name} would open here` : ''}
+        message={
+          analyticsPost ? `Analytics for post by ${analyticsPost.author.name} would open here` : ''
+        }
         duration={0}
       />
 
@@ -343,7 +397,9 @@ const PostsList = () => {
           onRefresh={() => refetch()}
         />
 
-        <div className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div
+          className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}
+        >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
@@ -352,17 +408,22 @@ const PostsList = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto transition-all duration-300 ease-in-out" style={{
-          minHeight: displayPosts.length === 0 ? '400px' : 'auto',
-          opacity: isRefreshing ? 0.6 : 1,
-          scrollbarGutter: 'stable'
-        }}>
+        <div
+          className="overflow-x-auto transition-all duration-300 ease-in-out"
+          style={{
+            minHeight: displayPosts.length === 0 ? '400px' : 'auto',
+            opacity: isRefreshing ? 0.6 : 1,
+            scrollbarGutter: 'stable',
+          }}
+        >
           {displayPosts.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                 <FileText className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No posts found</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                No posts found
+              </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all' || featuredFilter !== 'all'
                   ? 'Try changing your search or filters'

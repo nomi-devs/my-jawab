@@ -1,4 +1,4 @@
-import { Media, MediaType, StorageType, MediaStatus } from '../entities/media.entity';
+import { MediaType, StorageType, MediaStatus } from '../entities/media.entity';
 
 export class MediaResponseDto {
   id!: number;
@@ -34,7 +34,7 @@ export class MediaResponseDto {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
-  static fromEntity(media: Media): MediaResponseDto {
+  static fromEntity(media: any): MediaResponseDto {
     return {
       id: media.id,
       original_filename: media.original_filename,

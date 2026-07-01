@@ -1,6 +1,15 @@
 // src/components/dashboard/payments/PaymentDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, DollarSign, Calendar, CheckCircle, XCircle, Clock, User } from 'lucide-react';
+import {
+  X,
+  CreditCard,
+  DollarSign,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  Clock,
+  User,
+} from 'lucide-react';
 import paymentsApi from '../../../api/paymentsApi';
 
 const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
@@ -30,7 +39,7 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
   const formatAmount = (amount, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency
+      currency: currency,
     }).format(amount);
   };
 
@@ -78,7 +87,9 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
             <div className="space-y-5">
               {/* Payment Info */}
               <div className="bg-purple-50 dark:bg-gray-700/30 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Payment Information</h3>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                  Payment Information
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] text-gray-500 dark:text-gray-400">Amount</label>
@@ -89,13 +100,17 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
                   <div>
                     <label className="text-[10px] text-gray-500 dark:text-gray-400">Status</label>
                     <p className="text-xs font-medium mt-0.5">
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(pay?.payment_status)}`}>
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(pay?.payment_status)}`}
+                      >
                         {pay?.payment_status || 'N/A'}
                       </span>
                     </p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400">Payment Method</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                      Payment Method
+                    </label>
                     <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5 capitalize">
                       {pay?.payment_method?.replace('_', ' ') || 'N/A'}
                     </p>
@@ -107,7 +122,9 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
                     </p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400">Transaction ID</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                      Transaction ID
+                    </label>
                     <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {pay?.payment_transaction_id || 'N/A'}
                     </p>
@@ -124,11 +141,15 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
               {/* User & Subscription Info */}
               {pay?.user_subscription && (
                 <div className="bg-purple-50 dark:bg-gray-700/30 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Subscription</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    Subscription
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {pay?.user_subscription?.subscription?.subscription_name && (
                       <div>
-                        <label className="text-[10px] text-gray-500 dark:text-gray-400">Subscription Plan</label>
+                        <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                          Subscription Plan
+                        </label>
                         <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                           {pay.user_subscription.subscription.subscription_name}
                         </p>
@@ -136,12 +157,17 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
                     )}
                     {pay?.user_subscription?.subscription_status && (
                       <div>
-                        <label className="text-[10px] text-gray-500 dark:text-gray-400">Subscription Status</label>
+                        <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                          Subscription Status
+                        </label>
                         <p className="text-xs font-medium mt-0.5">
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${pay.user_subscription.is_active
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                            }`}>
+                          <span
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                              pay.user_subscription.is_active
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                            }`}
+                          >
                             {pay.user_subscription.subscription_status}
                           </span>
                         </p>
@@ -153,32 +179,38 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
 
               {/* Dates */}
               <div className="bg-purple-50 dark:bg-gray-700/30 rounded-lg p-3">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Timestamps</h3>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                  Timestamps
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {pay?.created_at && (
                     <div>
-                      <label className="text-[10px] text-gray-500 dark:text-gray-400">Created</label>
+                      <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                        Created
+                      </label>
                       <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                         {new Date(pay.created_at).toLocaleString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
                         })}
                       </p>
                     </div>
                   )}
                   {pay?.updated_at && (
                     <div>
-                      <label className="text-[10px] text-gray-500 dark:text-gray-400">Last Updated</label>
+                      <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                        Last Updated
+                      </label>
                       <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                         {new Date(pay.updated_at).toLocaleString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
                         })}
                       </p>
                     </div>
@@ -204,4 +236,3 @@ const PaymentDetailsModal = ({ isOpen, onClose, paymentId, paymentData }) => {
 };
 
 export default PaymentDetailsModal;
-

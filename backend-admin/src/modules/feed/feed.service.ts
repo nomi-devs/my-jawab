@@ -4,17 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, MoreThan } from 'typeorm';
-import { UserPost, PostStatus } from '../post/entities/user-post.entity';
-import { UserPoll, PollStatus } from '../poll/entities/user-poll.entity';
-import { UserFollower } from '../user/entities/user-follower.entity';
-import { UserTopic } from '../user/entities/user-topic.entity';
-import { CommunityUser } from '../community/entities/community-user.entity';
-import { UserProfile } from '../user/entities/user-profile.entity';
-import { Topic } from '../general/entities/topic.entity';
-import { Community } from '../community/entities/community.entity';
-import { CommunityTopic } from '../community/entities/community-topic.entity';
+import { Prisma } from '@prisma/client';
 import { RedisService } from '../shared/services/redis.service';
 import { GetFeedQueryDto, FeedType } from './dto/get-feed-query.dto';
 import { FeedResponseDto, FeedItemDto } from './dto/feed-item.dto';
@@ -22,6 +12,7 @@ import { PostService } from '../post/post.service';
 import { PollService } from '../poll/poll.service';
 import { BannerService } from '../banner/banner.service';
 import { EntitlementsService } from '../entitlements/entitlements.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import Redis from 'ioredis';
 
 interface FeedItem {
@@ -38,24 +29,7 @@ export class FeedService {
   private redis: Redis | null = null;
 
   constructor(
-    @InjectRepository(UserPost)
-    private postRepository: Repository<UserPost>,
-    @InjectRepository(UserPoll)
-    private pollRepository: Repository<UserPoll>,
-    @InjectRepository(UserFollower)
-    private followerRepository: Repository<UserFollower>,
-    @InjectRepository(UserTopic)
-    private topicRepository: Repository<UserTopic>,
-    @InjectRepository(CommunityUser)
-    private communityUserRepository: Repository<CommunityUser>,
-    @InjectRepository(UserProfile)
-    private profileRepository: Repository<UserProfile>,
-    @InjectRepository(Topic)
-    private topicEntityRepository: Repository<Topic>,
-    @InjectRepository(Community)
-    private communityRepository: Repository<Community>,
-    @InjectRepository(CommunityTopic)
-    private communityTopicRepository: Repository<CommunityTopic>,
+    private prisma: PrismaService,
     private redisService: RedisService,
     private postService: PostService,
     private pollService: PollService,
@@ -83,7 +57,10 @@ export class FeedService {
       }
 
       // Respect ads_enabled entitlement — pro/premium users see no banners
-      const adsEnabled = await this.entitlementsService.getFeature(userId, 'ads_enabled');
+      const adsEnabled = await this.entitlementsService.getFeature(
+        userId,
+        'ads_enabled',
+      );
       if (adsEnabled === false) {
         return response;
       }
@@ -113,7 +90,7 @@ export class FeedService {
       let postCount = 0;
       let bannerIndex = 0;
 
-      // 🆕 Insert a banner at position 0 (top of the first page)
+      // Insert a banner at position 0 (top of the first page)
       if (isFirstPage) {
         newItems.push(makeBannerItem(bannerIndex));
         bannerIndex++;
@@ -151,8 +128,14 @@ export class FeedService {
     userId: number,
     query: GetFeedQueryDto,
   ): Promise<FeedResponseDto> {
-    const { feed_type, page = 1, limit = 20, topic_id, community_id, user_id } = query;
-    const skip = (page - 1) * limit;
+    const {
+      feed_type,
+      page = 1,
+      limit = 20,
+      topic_id,
+      community_id,
+      user_id,
+    } = query;
 
     switch (feed_type) {
       case FeedType.PERSONALIZED:
@@ -164,7 +147,9 @@ export class FeedService {
         return this.getTopicFeed(userId, topic_id, page, limit);
       case FeedType.COMMUNITY:
         if (!community_id) {
-          throw new BadRequestException('community_id is required for community feed');
+          throw new BadRequestException(
+            'community_id is required for community feed',
+          );
         }
         return this.getCommunityFeed(userId, community_id, page, limit);
       case FeedType.USER:
@@ -195,7 +180,7 @@ export class FeedService {
       try {
         const cachedCount = await this.redis.zcard(cacheKey);
         this.logger.debug(`Redis cache for ${cacheKey}: ${cachedCount} items`);
-        
+
         if (cachedCount > 0) {
           const items = await this.redis.zrevrange(
             cacheKey,
@@ -205,13 +190,17 @@ export class FeedService {
           );
 
           if (items.length > 0) {
-            this.logger.debug(`Returning ${items.length} items from Redis cache`);
+            this.logger.debug(
+              `Returning ${items.length} items from Redis cache`,
+            );
             const feedItems = this.parseFeedItems(items);
             const enrichedItems = await this.enrichFeedItems(feedItems, userId);
-            
+
             // If enrichment returned empty but cache had items, rebuild from database
             if (enrichedItems.length === 0 && feedItems.length > 0) {
-              this.logger.warn(`Redis cache returned ${feedItems.length} items but enrichment failed, rebuilding from database`);
+              this.logger.warn(
+                `Redis cache returned ${feedItems.length} items but enrichment failed, rebuilding from database`,
+              );
               // Continue to database rebuild below
             } else if (enrichedItems.length > 0) {
               return {
@@ -228,41 +217,58 @@ export class FeedService {
             }
           }
         } else {
-          this.logger.debug(`Redis cache empty for ${cacheKey}, building from database`);
+          this.logger.debug(
+            `Redis cache empty for ${cacheKey}, building from database`,
+          );
         }
       } catch (error) {
-        this.logger.warn(`Redis error for ${cacheKey}, falling back to database:`, error.message);
+        this.logger.warn(
+          `Redis error for ${cacheKey}, falling back to database:`,
+          error.message,
+        );
       }
     }
 
     // Cache miss - build from database
     let feed = await this.buildPersonalizedFeedFromDatabase(userId);
-    this.logger.debug(`Personalized feed built: ${feed.length} items for user ${userId}`);
+    this.logger.debug(
+      `Personalized feed built: ${feed.length} items for user ${userId}`,
+    );
 
     // Fallback: If personalized feed is empty, show trending posts
     if (feed.length === 0) {
-      this.logger.warn(`Personalized feed empty for user ${userId} (no follows/subscriptions/communities), falling back to trending feed`);
+      this.logger.warn(
+        `Personalized feed empty for user ${userId} (no follows/subscriptions/communities), falling back to trending feed`,
+      );
       feed = await this.buildTrendingFeedFromDatabase();
       this.logger.debug(`Trending feed built: ${feed.length} items`);
-      
+
       // If still empty, check if there are any published posts at all
       if (feed.length === 0) {
-        const totalPublishedPosts = await this.postRepository.count({
-          where: { post_status: PostStatus.PUBLISHED },
+        const totalPublishedPosts = await this.prisma.userPost.count({
+          where: { post_status: 'published' },
         });
-        this.logger.error(`CRITICAL: No posts found in trending feed. Total published posts in database: ${totalPublishedPosts}`);
+        this.logger.error(
+          `CRITICAL: No posts found in trending feed. Total published posts in database: ${totalPublishedPosts}`,
+        );
       } else {
-        this.logger.log(`Successfully loaded ${feed.length} posts from trending feed as fallback`);
+        this.logger.log(
+          `Successfully loaded ${feed.length} posts from trending feed as fallback`,
+        );
       }
     } else {
-      this.logger.log(`Personalized feed has ${feed.length} items from follows/subscriptions/communities`);
+      this.logger.log(
+        `Personalized feed has ${feed.length} items from follows/subscriptions/communities`,
+      );
     }
 
     // Store in Redis (only if we have items, and clear cache if feed is empty to force rebuild)
     if (this.redis) {
       if (feed.length > 0) {
         await this.storeFeedInRedis(cacheKey, feed);
-        this.logger.debug(`Stored ${feed.length} items in Redis cache: ${cacheKey}`);
+        this.logger.debug(
+          `Stored ${feed.length} items in Redis cache: ${cacheKey}`,
+        );
       } else {
         // Clear empty cache to force rebuild next time
         try {
@@ -276,13 +282,17 @@ export class FeedService {
 
     // Return paginated results
     const paginatedItems = feed.slice(skip, skip + limit);
-    this.logger.debug(`Paginating feed: ${feed.length} total items, returning ${paginatedItems.length} items (page ${page}, limit ${limit})`);
-    
+    this.logger.debug(
+      `Paginating feed: ${feed.length} total items, returning ${paginatedItems.length} items (page ${page}, limit ${limit})`,
+    );
+
     const enrichedItems = await this.enrichFeedItems(paginatedItems, userId);
     this.logger.debug(`Final enriched feed: ${enrichedItems.length} items`);
-    
+
     if (enrichedItems.length === 0 && feed.length > 0) {
-      this.logger.error(`CRITICAL: Feed has ${feed.length} items but enrichment returned 0 items!`);
+      this.logger.error(
+        `CRITICAL: Feed has ${feed.length} items but enrichment returned 0 items!`,
+      );
     }
 
     return {
@@ -509,7 +519,7 @@ export class FeedService {
       try {
         const cachedCount = await this.redis.zcard(cacheKey);
         this.logger.debug(`Redis cache for ${cacheKey}: ${cachedCount} items`);
-        
+
         if (cachedCount > 0) {
           const items = await this.redis.zrevrange(
             cacheKey,
@@ -519,13 +529,17 @@ export class FeedService {
           );
 
           if (items.length > 0) {
-            this.logger.debug(`Returning ${items.length} items from Redis cache`);
+            this.logger.debug(
+              `Returning ${items.length} items from Redis cache`,
+            );
             const feedItems = this.parseFeedItems(items);
             const enrichedItems = await this.enrichFeedItems(feedItems, userId);
-            
+
             // If enrichment returned empty but cache had items, rebuild from database
             if (enrichedItems.length === 0 && feedItems.length > 0) {
-              this.logger.warn(`Redis cache returned ${feedItems.length} items but enrichment failed, rebuilding from database`);
+              this.logger.warn(
+                `Redis cache returned ${feedItems.length} items but enrichment failed, rebuilding from database`,
+              );
               // Continue to database rebuild below
             } else if (enrichedItems.length > 0) {
               return {
@@ -542,10 +556,15 @@ export class FeedService {
             }
           }
         } else {
-          this.logger.debug(`Redis cache empty for ${cacheKey}, building from database`);
+          this.logger.debug(
+            `Redis cache empty for ${cacheKey}, building from database`,
+          );
         }
       } catch (error) {
-        this.logger.warn(`Redis error for ${cacheKey}, falling back to database:`, error.message);
+        this.logger.warn(
+          `Redis error for ${cacheKey}, falling back to database:`,
+          error.message,
+        );
       }
     }
 
@@ -557,7 +576,9 @@ export class FeedService {
     if (this.redis) {
       if (feed.length > 0) {
         await this.storeFeedInRedis(cacheKey, feed);
-        this.logger.debug(`Stored ${feed.length} items in Redis cache: ${cacheKey}`);
+        this.logger.debug(
+          `Stored ${feed.length} items in Redis cache: ${cacheKey}`,
+        );
       } else {
         // Clear empty cache to force rebuild next time
         try {
@@ -571,13 +592,17 @@ export class FeedService {
 
     // Return paginated results
     const paginatedItems = feed.slice(skip, skip + limit);
-    this.logger.debug(`Paginating feed: ${feed.length} total items, returning ${paginatedItems.length} items (page ${page}, limit ${limit})`);
-    
+    this.logger.debug(
+      `Paginating feed: ${feed.length} total items, returning ${paginatedItems.length} items (page ${page}, limit ${limit})`,
+    );
+
     const enrichedItems = await this.enrichFeedItems(paginatedItems, userId);
     this.logger.debug(`Final enriched feed: ${enrichedItems.length} items`);
-    
+
     if (enrichedItems.length === 0 && feed.length > 0) {
-      this.logger.error(`CRITICAL: Feed has ${feed.length} items but enrichment returned 0 items!`);
+      this.logger.error(
+        `CRITICAL: Feed has ${feed.length} items but enrichment returned 0 items!`,
+      );
     }
 
     return {
@@ -619,7 +644,7 @@ export class FeedService {
           if (items.length > 0) {
             const feedItems = this.parseFeedItems(items);
             const enrichedItems = await this.enrichFeedItems(feedItems, userId);
-            
+
             if (enrichedItems.length > 0) {
               return {
                 data: enrichedItems,
@@ -636,7 +661,10 @@ export class FeedService {
           }
         }
       } catch (error) {
-        this.logger.warn(`Redis error for ${cacheKey}, falling back to database:`, error.message);
+        this.logger.warn(
+          `Redis error for ${cacheKey}, falling back to database:`,
+          error.message,
+        );
       }
     }
 
@@ -691,7 +719,7 @@ export class FeedService {
           if (items.length > 0) {
             const feedItems = this.parseFeedItems(items);
             const enrichedItems = await this.enrichFeedItems(feedItems, userId);
-            
+
             if (enrichedItems.length > 0) {
               return {
                 data: enrichedItems,
@@ -708,7 +736,10 @@ export class FeedService {
           }
         }
       } catch (error) {
-        this.logger.warn(`Redis error for ${cacheKey}, falling back to database:`, error.message);
+        this.logger.warn(
+          `Redis error for ${cacheKey}, falling back to database:`,
+          error.message,
+        );
       }
     }
 
@@ -746,41 +777,47 @@ export class FeedService {
     const feed: FeedItem[] = [];
 
     // Get followed users
-    const followedUsers = await this.followerRepository.find({
+    const followedUsers = await this.prisma.userFollower.findMany({
       where: { follower_id: userId, is_active: true },
-      select: ['user_id'],
+      select: { user_id: true },
     });
     const followedUserIds = followedUsers.map((f) => f.user_id);
     this.logger.debug(`User ${userId} follows ${followedUserIds.length} users`);
 
-    // Get subscribed topics
-    const subscribedTopics = await this.topicRepository.find({
+    // Get subscribed topics (UserTopic records for this user)
+    const subscribedTopics = await this.prisma.userTopic.findMany({
       where: { user_id: userId, is_active: true },
-      select: ['topic_id'],
+      select: { topic_id: true },
     });
     const subscribedTopicIds = subscribedTopics.map((t) => t.topic_id);
-    this.logger.debug(`User ${userId} subscribed to ${subscribedTopicIds.length} topics`);
+    this.logger.debug(
+      `User ${userId} subscribed to ${subscribedTopicIds.length} topics`,
+    );
 
     // Get joined communities
-    const joinedCommunities = await this.communityUserRepository.find({
+    const joinedCommunities = await this.prisma.communityUser.findMany({
       where: { user_id: userId, is_active: true },
-      select: ['community_id'],
+      select: { community_id: true },
     });
     const communityIds = joinedCommunities.map((c) => c.community_id);
-    this.logger.debug(`User ${userId} joined ${communityIds.length} communities`);
+    this.logger.debug(
+      `User ${userId} joined ${communityIds.length} communities`,
+    );
 
     // Get posts from followed users
     if (followedUserIds.length > 0) {
-      const posts = await this.postRepository.find({
+      const posts = await this.prisma.userPost.findMany({
         where: {
-          user_id: In(followedUserIds),
-          post_status: PostStatus.PUBLISHED,
+          user_id: { in: followedUserIds },
+          post_status: 'published',
         },
-        order: { created_at: 'DESC' },
+        orderBy: { created_at: 'desc' },
         take: 50,
-        select: ['id', 'user_id', 'created_at'],
+        select: { id: true, user_id: true, created_at: true },
       });
-      this.logger.debug(`Found ${posts.length} posts from ${followedUserIds.length} followed users`);
+      this.logger.debug(
+        `Found ${posts.length} posts from ${followedUserIds.length} followed users`,
+      );
       posts.forEach((post) => {
         feed.push({
           type: 'post',
@@ -793,16 +830,18 @@ export class FeedService {
 
     // Get posts from subscribed topics
     if (subscribedTopicIds.length > 0) {
-      const posts = await this.postRepository.find({
+      const posts = await this.prisma.userPost.findMany({
         where: {
-          post_topic_id: In(subscribedTopicIds),
-          post_status: PostStatus.PUBLISHED,
+          post_topic_id: { in: subscribedTopicIds },
+          post_status: 'published',
         },
-        order: { created_at: 'DESC' },
+        orderBy: { created_at: 'desc' },
         take: 50,
-        select: ['id', 'user_id', 'created_at'],
+        select: { id: true, user_id: true, created_at: true },
       });
-      this.logger.debug(`Found ${posts.length} posts from ${subscribedTopicIds.length} subscribed topics`);
+      this.logger.debug(
+        `Found ${posts.length} posts from ${subscribedTopicIds.length} subscribed topics`,
+      );
       posts.forEach((post) => {
         feed.push({
           type: 'post',
@@ -815,35 +854,27 @@ export class FeedService {
 
     // Get posts from joined communities
     if (communityIds.length > 0) {
-      // Build OR conditions for each community ID (MySQL doesn't support LIKE ANY)
-      const communityConditions = communityIds
-        .map((id, index) => {
-          return `(post.community_ids LIKE :community_id_${index} OR post.community_ids LIKE :community_id_start_${index} OR post.community_ids LIKE :community_id_end_${index} OR post.community_ids LIKE :community_id_middle_${index})`;
-        })
-        .join(' OR ');
+      const communityPosts = await this.prisma.$queryRaw<
+        Array<{ id: number; user_id: number; created_at: Date }>
+      >`
+        SELECT id, user_id, created_at FROM user_posts
+        WHERE post_status = 'published'
+        AND (${Prisma.join(
+          communityIds.map(
+            (id) =>
+              Prisma.sql`(community_ids = ${String(id)} OR community_ids LIKE ${`${id},%`} OR community_ids LIKE ${`%,${id}`} OR community_ids LIKE ${`%,${id},%`})`,
+          ),
+          ' OR ',
+        )})
+        ORDER BY created_at DESC
+        LIMIT 50
+      `;
 
-      const queryBuilder = this.postRepository
-        .createQueryBuilder('post')
-        .where('post.post_status = :status', { status: PostStatus.PUBLISHED })
-        .andWhere(`(${communityConditions})`);
+      this.logger.debug(
+        `Found ${communityPosts.length} posts from ${communityIds.length} communities for user ${userId}`,
+      );
 
-      // Set parameters for each community ID
-      communityIds.forEach((id, index) => {
-        queryBuilder.setParameter(`community_id_${index}`, `${id}`);
-        queryBuilder.setParameter(`community_id_start_${index}`, `${id},%`);
-        queryBuilder.setParameter(`community_id_end_${index}`, `%,${id}`);
-        queryBuilder.setParameter(`community_id_middle_${index}`, `%,${id},%`);
-      });
-
-      const posts = await queryBuilder
-        .orderBy('post.created_at', 'DESC')
-        .take(50)
-        .select(['post.id', 'post.user_id', 'post.created_at'])
-        .getMany();
-
-      this.logger.debug(`Found ${posts.length} posts from ${communityIds.length} communities for user ${userId}`);
-
-      posts.forEach((post) => {
+      communityPosts.forEach((post) => {
         feed.push({
           type: 'post',
           id: post.id,
@@ -854,15 +885,15 @@ export class FeedService {
     }
 
     // Get recent published posts (with or without community) to ensure all posts appear in feed
-    const recentPosts = await this.postRepository.find({
-      where: {
-        post_status: PostStatus.PUBLISHED,
-      },
-      order: { created_at: 'DESC' },
+    const recentPosts = await this.prisma.userPost.findMany({
+      where: { post_status: 'published' },
+      orderBy: { created_at: 'desc' },
       take: 50,
-      select: ['id', 'user_id', 'created_at'],
+      select: { id: true, user_id: true, created_at: true },
     });
-    this.logger.debug(`Found ${recentPosts.length} recent published posts (with and without community)`);
+    this.logger.debug(
+      `Found ${recentPosts.length} recent published posts (with and without community)`,
+    );
     recentPosts.forEach((post) => {
       feed.push({
         type: 'post',
@@ -874,17 +905,23 @@ export class FeedService {
 
     // Get polls from followed users
     if (followedUserIds.length > 0) {
-      const polls = await this.pollRepository
-        .createQueryBuilder('poll')
-        .where('poll.user_id IN (:...userIds)', { userIds: followedUserIds })
-        .andWhere('poll.poll_status = :status', { status: PollStatus.PUBLISHED })
-        .andWhere('(poll.poll_expires_at IS NULL OR poll.poll_expires_at > :now)', { now: new Date() })
-        .orderBy('poll.created_at', 'DESC')
-        .take(50)
-        .select(['poll.id', 'poll.user_id', 'poll.created_at'])
-        .getMany();
+      const polls = await this.prisma.userPoll.findMany({
+        where: {
+          user_id: { in: followedUserIds },
+          poll_status: 'published',
+          OR: [
+            { poll_expires_at: null },
+            { poll_expires_at: { gt: new Date() } },
+          ],
+        },
+        orderBy: { created_at: 'desc' },
+        take: 50,
+        select: { id: true, user_id: true, created_at: true },
+      });
 
-      this.logger.debug(`Found ${polls.length} polls from ${followedUserIds.length} followed users`);
+      this.logger.debug(
+        `Found ${polls.length} polls from ${followedUserIds.length} followed users`,
+      );
 
       polls.forEach((poll) => {
         feed.push({
@@ -900,14 +937,14 @@ export class FeedService {
 
     // Add joined communities as feed items
     if (communityIds.length > 0) {
-      const communities = await this.communityRepository.find({
+      const communities = await this.prisma.community.findMany({
         where: {
-          id: In(communityIds),
+          id: { in: communityIds },
           is_active: true,
         },
-        order: { created_at: 'DESC' },
+        orderBy: { created_at: 'desc' },
         take: 20,
-        select: ['id', 'created_at'],
+        select: { id: true, created_at: true },
       });
 
       communities.forEach((community) => {
@@ -927,7 +964,9 @@ export class FeedService {
     );
     uniqueFeed.sort((a, b) => b.created_at - a.created_at);
 
-    this.logger.debug(`Personalized feed built: ${uniqueFeed.length} unique items (${feed.length} before deduplication)`);
+    this.logger.debug(
+      `Personalized feed built: ${uniqueFeed.length} unique items (${feed.length} before deduplication)`,
+    );
 
     return uniqueFeed.slice(0, 200); // Limit to 200 items
   }
@@ -935,18 +974,19 @@ export class FeedService {
   /**
    * Build topic feed from database
    */
-  private async buildTopicFeedFromDatabase(topicId: number): Promise<FeedItem[]> {
+  private async buildTopicFeedFromDatabase(
+    topicId: number,
+  ): Promise<FeedItem[]> {
     const feed: FeedItem[] = [];
 
-    // Get posts from topic
-    const posts = await this.postRepository.find({
+    const posts = await this.prisma.userPost.findMany({
       where: {
         post_topic_id: topicId,
-        post_status: PostStatus.PUBLISHED,
+        post_status: 'published',
       },
-      order: { created_at: 'DESC' },
+      orderBy: { created_at: 'desc' },
       take: 100,
-      select: ['id', 'user_id', 'created_at'],
+      select: { id: true, user_id: true, created_at: true },
     });
 
     posts.forEach((post) => {
@@ -970,22 +1010,20 @@ export class FeedService {
     const feed: FeedItem[] = [];
 
     // Get posts from community
-    const posts = await this.postRepository
-      .createQueryBuilder('post')
-      .where('post.post_status = :status', { status: PostStatus.PUBLISHED })
-      .andWhere(
-        '(post.community_ids LIKE :communityId OR post.community_ids LIKE :communityId_start OR post.community_ids LIKE :communityId_end OR post.community_ids LIKE :communityId_middle)',
-        {
-          communityId: `${communityId}`,
-          communityId_start: `${communityId},%`,
-          communityId_end: `%,${communityId}`,
-          communityId_middle: `%,${communityId},%`,
-        },
+    const posts = await this.prisma.$queryRaw<
+      Array<{ id: number; user_id: number; created_at: Date }>
+    >`
+      SELECT id, user_id, created_at FROM user_posts
+      WHERE post_status = 'published'
+      AND (
+        community_ids = ${String(communityId)}
+        OR community_ids LIKE ${`${communityId},%`}
+        OR community_ids LIKE ${`%,${communityId}`}
+        OR community_ids LIKE ${`%,${communityId},%`}
       )
-      .orderBy('post.created_at', 'DESC')
-      .take(100)
-      .select(['post.id', 'post.user_id', 'post.created_at'])
-      .getMany();
+      ORDER BY created_at DESC
+      LIMIT 100
+    `;
 
     posts.forEach((post) => {
       feed.push({
@@ -997,17 +1035,16 @@ export class FeedService {
     });
 
     // Get polls from community
-    const polls = await this.pollRepository
-      .createQueryBuilder('poll')
-      .where('poll.poll_status = :status', { status: PollStatus.PUBLISHED })
-      .andWhere('(poll.poll_expires_at IS NULL OR poll.poll_expires_at > :now)', { now: new Date() })
-      .andWhere(`poll.community_ids LIKE :communityId`, {
-        communityId: `%,${communityId},%`,
-      })
-      .orderBy('poll.created_at', 'DESC')
-      .take(100)
-      .select(['poll.id', 'poll.user_id', 'poll.created_at'])
-      .getMany();
+    const polls = await this.prisma.$queryRaw<
+      Array<{ id: number; user_id: number; created_at: Date }>
+    >`
+      SELECT id, user_id, created_at FROM user_polls
+      WHERE poll_status = 'published'
+      AND (poll_expires_at IS NULL OR poll_expires_at > NOW())
+      AND community_ids LIKE ${`%,${communityId},%`}
+      ORDER BY created_at DESC
+      LIMIT 100
+    `;
 
     polls.forEach((poll) => {
       feed.push({
@@ -1029,14 +1066,14 @@ export class FeedService {
     const feed: FeedItem[] = [];
 
     // Get user posts
-    const posts = await this.postRepository.find({
+    const posts = await this.prisma.userPost.findMany({
       where: {
         user_id: userId,
-        post_status: PostStatus.PUBLISHED,
+        post_status: 'published',
       },
-      order: { created_at: 'DESC' },
+      orderBy: { created_at: 'desc' },
       take: 100,
-      select: ['id', 'user_id', 'created_at'],
+      select: { id: true, user_id: true, created_at: true },
     });
 
     posts.forEach((post) => {
@@ -1049,15 +1086,19 @@ export class FeedService {
     });
 
     // Get user polls
-    const polls = await this.pollRepository
-      .createQueryBuilder('poll')
-      .where('poll.user_id = :userId', { userId })
-      .andWhere('poll.poll_status = :status', { status: PollStatus.PUBLISHED })
-      .andWhere('(poll.poll_expires_at IS NULL OR poll.poll_expires_at > :now)', { now: new Date() })
-      .orderBy('poll.created_at', 'DESC')
-      .take(100)
-      .select(['poll.id', 'poll.user_id', 'poll.created_at'])
-      .getMany();
+    const polls = await this.prisma.userPoll.findMany({
+      where: {
+        user_id: userId,
+        poll_status: 'published',
+        OR: [
+          { poll_expires_at: null },
+          { poll_expires_at: { gt: new Date() } },
+        ],
+      },
+      orderBy: { created_at: 'desc' },
+      take: 100,
+      select: { id: true, user_id: true, created_at: true },
+    });
 
     polls.forEach((poll) => {
       feed.push({
@@ -1078,36 +1119,55 @@ export class FeedService {
   private async buildTrendingFeedFromDatabase(): Promise<FeedItem[]> {
     const feed: FeedItem[] = [];
 
-    // Get trending posts (high like_count + comment_count)
-    // First, try with engagement sorting
-    let posts = await this.postRepository
-      .createQueryBuilder('post')
-      .where('post.post_status = :status', { status: PostStatus.PUBLISHED })
-      .orderBy('post.like_count + post.comment_count', 'DESC')
-      .addOrderBy('post.created_at', 'DESC')
-      .take(100)
-      .select(['post.id', 'post.user_id', 'post.created_at', 'post.like_count', 'post.comment_count'])
-      .getMany();
+    // Get trending posts (high like_count + comment_count) using raw SQL for expression orderBy
+    let posts = await this.prisma.$queryRaw<
+      Array<{
+        id: number;
+        user_id: number;
+        created_at: Date;
+        like_count: number;
+        comment_count: number;
+      }>
+    >`
+      SELECT id, user_id, created_at, like_count, comment_count
+      FROM user_posts
+      WHERE post_status = 'published'
+      ORDER BY (like_count + comment_count) DESC, created_at DESC
+      LIMIT 100
+    `;
 
     // If no posts found, try simpler query (in case of SQL syntax issues)
     if (posts.length === 0) {
-      this.logger.warn('No posts found with engagement sorting, trying simple query');
-      posts = await this.postRepository.find({
-        where: { post_status: PostStatus.PUBLISHED },
-        order: { created_at: 'DESC' },
+      this.logger.warn(
+        'No posts found with engagement sorting, trying simple query',
+      );
+      const simplePosts = await this.prisma.userPost.findMany({
+        where: { post_status: 'published' },
+        orderBy: { created_at: 'desc' },
         take: 100,
-        select: ['id', 'user_id', 'created_at', 'like_count', 'comment_count'],
+        select: {
+          id: true,
+          user_id: true,
+          created_at: true,
+          like_count: true,
+          comment_count: true,
+        },
       });
+      posts = simplePosts as any;
     }
 
-    this.logger.debug(`Found ${posts.length} published posts for trending feed`);
+    this.logger.debug(
+      `Found ${posts.length} published posts for trending feed`,
+    );
 
     if (posts.length === 0) {
       // Double-check with a count query
-      const totalCount = await this.postRepository.count({
-        where: { post_status: PostStatus.PUBLISHED },
+      const totalCount = await this.prisma.userPost.count({
+        where: { post_status: 'published' },
       });
-      this.logger.error(`CRITICAL: No posts found in trending feed query, but database has ${totalCount} published posts!`);
+      this.logger.error(
+        `CRITICAL: No posts found in trending feed query, but database has ${totalCount} published posts!`,
+      );
     }
 
     posts.forEach((post) => {
@@ -1115,24 +1175,32 @@ export class FeedService {
         type: 'post',
         id: post.id,
         user_id: post.user_id,
-        created_at: post.created_at.getTime(),
-        score: (post as any).like_count + (post as any).comment_count,
+        created_at:
+          post.created_at instanceof Date
+            ? post.created_at.getTime()
+            : new Date(post.created_at).getTime(),
+        score: (post.like_count || 0) + (post.comment_count || 0),
       });
     });
 
     // Get trending polls (high vote_count)
     // Note: Only get non-expired polls, or polls without expiration date
-    const polls = await this.pollRepository
-      .createQueryBuilder('poll')
-      .where('poll.poll_status = :status', { status: PollStatus.PUBLISHED })
-      .andWhere('(poll.poll_expires_at IS NULL OR poll.poll_expires_at > :now)', { now: new Date() })
-      .orderBy('poll.vote_count', 'DESC')
-      .addOrderBy('poll.created_at', 'DESC')
-      .take(100)
-      .select(['poll.id', 'poll.user_id', 'poll.created_at', 'poll.vote_count'])
-      .getMany();
+    const polls = await this.prisma.userPoll.findMany({
+      where: {
+        poll_status: 'published',
+        OR: [
+          { poll_expires_at: null },
+          { poll_expires_at: { gt: new Date() } },
+        ],
+      },
+      orderBy: [{ vote_count: 'desc' }, { created_at: 'desc' }],
+      take: 100,
+      select: { id: true, user_id: true, created_at: true, vote_count: true },
+    });
 
-    this.logger.debug(`Found ${polls.length} published polls for trending feed`);
+    this.logger.debug(
+      `Found ${polls.length} published polls for trending feed`,
+    );
 
     polls.forEach((poll) => {
       feed.push({
@@ -1140,7 +1208,7 @@ export class FeedService {
         id: poll.id,
         user_id: poll.user_id,
         created_at: poll.created_at.getTime(),
-        score: (poll as any).vote_count,
+        score: (poll as any).vote_count || 0,
       });
     });
 
@@ -1165,38 +1233,28 @@ export class FeedService {
     const feed: FeedItem[] = [];
 
     // Get followed users
-    const followedUsers = await this.followerRepository.find({
+    const followedUsers = await this.prisma.userFollower.findMany({
       where: { follower_id: userId, is_active: true },
-      select: ['user_id'],
+      select: { user_id: true },
     });
     const followedUserIds = followedUsers.map((f) => f.user_id);
 
-    // Get subscribed topics
-    const subscribedTopics = await this.topicRepository.find({
-      where: { user_id: userId, is_active: true },
-      select: ['topic_id'],
-    });
-    const subscribedTopicIds = subscribedTopics.map((t) => t.topic_id);
-
-    // Get joined communities
-    const joinedCommunities = await this.communityUserRepository.find({
-      where: { user_id: userId, is_active: true },
-      select: ['community_id'],
-    });
-    const communityIds = joinedCommunities.map((c) => c.community_id);
-
     // Get polls from followed users
     if (followedUserIds.length > 0) {
-      const polls = await this.pollRepository
-        .createQueryBuilder('poll')
-        .where('poll.user_id IN (:...userIds)', { userIds: followedUserIds })
-        .andWhere('poll.poll_status = :status', { status: PollStatus.PUBLISHED })
-        .andWhere('(poll.poll_expires_at IS NULL OR poll.poll_expires_at > :now)', { now: new Date() })
-        .orderBy('poll.created_at', 'DESC')
-        .take(100)
-        .select(['poll.id', 'poll.user_id', 'poll.created_at'])
-        .getMany();
-      
+      const polls = await this.prisma.userPoll.findMany({
+        where: {
+          user_id: { in: followedUserIds },
+          poll_status: 'published',
+          OR: [
+            { poll_expires_at: null },
+            { poll_expires_at: { gt: new Date() } },
+          ],
+        },
+        orderBy: { created_at: 'desc' },
+        take: 100,
+        select: { id: true, user_id: true, created_at: true },
+      });
+
       polls.forEach((poll) => {
         feed.push({
           type: 'poll',
@@ -1230,36 +1288,36 @@ export class FeedService {
     const feed: FeedItem[] = [];
 
     // Get followed users
-    const followedUsers = await this.followerRepository.find({
+    const followedUsers = await this.prisma.userFollower.findMany({
       where: { follower_id: userId, is_active: true },
-      select: ['user_id'],
+      select: { user_id: true },
     });
     const followedUserIds = followedUsers.map((f) => f.user_id);
 
     // Get subscribed topics
-    const subscribedTopics = await this.topicRepository.find({
+    const subscribedTopics = await this.prisma.userTopic.findMany({
       where: { user_id: userId, is_active: true },
-      select: ['topic_id'],
+      select: { topic_id: true },
     });
     const subscribedTopicIds = subscribedTopics.map((t) => t.topic_id);
 
     // Get joined communities
-    const joinedCommunities = await this.communityUserRepository.find({
+    const joinedCommunities = await this.prisma.communityUser.findMany({
       where: { user_id: userId, is_active: true },
-      select: ['community_id'],
+      select: { community_id: true },
     });
     const communityIds = joinedCommunities.map((c) => c.community_id);
 
     // Get posts from followed users
     if (followedUserIds.length > 0) {
-      const posts = await this.postRepository.find({
+      const posts = await this.prisma.userPost.findMany({
         where: {
-          user_id: In(followedUserIds),
-          post_status: PostStatus.PUBLISHED,
+          user_id: { in: followedUserIds },
+          post_status: 'published',
         },
-        order: { created_at: 'DESC' },
+        orderBy: { created_at: 'desc' },
         take: 100,
-        select: ['id', 'user_id', 'created_at'],
+        select: { id: true, user_id: true, created_at: true },
       });
       posts.forEach((post) => {
         feed.push({
@@ -1273,14 +1331,14 @@ export class FeedService {
 
     // Get posts from subscribed topics
     if (subscribedTopicIds.length > 0) {
-      const posts = await this.postRepository.find({
+      const posts = await this.prisma.userPost.findMany({
         where: {
-          post_topic_id: In(subscribedTopicIds),
-          post_status: PostStatus.PUBLISHED,
+          post_topic_id: { in: subscribedTopicIds },
+          post_status: 'published',
         },
-        order: { created_at: 'DESC' },
+        orderBy: { created_at: 'desc' },
         take: 100,
-        select: ['id', 'user_id', 'created_at'],
+        select: { id: true, user_id: true, created_at: true },
       });
       posts.forEach((post) => {
         feed.push({
@@ -1294,31 +1352,23 @@ export class FeedService {
 
     // Get posts from joined communities
     if (communityIds.length > 0) {
-      const communityConditions = communityIds
-        .map((id, index) => {
-          return `(post.community_ids LIKE :community_id_${index} OR post.community_ids LIKE :community_id_start_${index} OR post.community_ids LIKE :community_id_end_${index} OR post.community_ids LIKE :community_id_middle_${index})`;
-        })
-        .join(' OR ');
+      const communityPosts = await this.prisma.$queryRaw<
+        Array<{ id: number; user_id: number; created_at: Date }>
+      >`
+        SELECT id, user_id, created_at FROM user_posts
+        WHERE post_status = 'published'
+        AND (${Prisma.join(
+          communityIds.map(
+            (id) =>
+              Prisma.sql`(community_ids = ${String(id)} OR community_ids LIKE ${`${id},%`} OR community_ids LIKE ${`%,${id}`} OR community_ids LIKE ${`%,${id},%`})`,
+          ),
+          ' OR ',
+        )})
+        ORDER BY created_at DESC
+        LIMIT 100
+      `;
 
-      const queryBuilder = this.postRepository
-        .createQueryBuilder('post')
-        .where('post.post_status = :status', { status: PostStatus.PUBLISHED })
-        .andWhere(`(${communityConditions})`);
-
-      communityIds.forEach((id, index) => {
-        queryBuilder.setParameter(`community_id_${index}`, `${id}`);
-        queryBuilder.setParameter(`community_id_start_${index}`, `${id},%`);
-        queryBuilder.setParameter(`community_id_end_${index}`, `%,${id}`);
-        queryBuilder.setParameter(`community_id_middle_${index}`, `%,${id},%`);
-      });
-
-      const posts = await queryBuilder
-        .orderBy('post.created_at', 'DESC')
-        .take(100)
-        .select(['post.id', 'post.user_id', 'post.created_at'])
-        .getMany();
-
-      posts.forEach((post) => {
+      communityPosts.forEach((post) => {
         feed.push({
           type: 'post',
           id: post.id,
@@ -1329,15 +1379,15 @@ export class FeedService {
     }
 
     // Get recent published posts (with or without community) to ensure all posts appear in feed
-    const recentPosts = await this.postRepository.find({
-      where: {
-        post_status: PostStatus.PUBLISHED,
-      },
-      order: { created_at: 'DESC' },
+    const recentPosts = await this.prisma.userPost.findMany({
+      where: { post_status: 'published' },
+      orderBy: { created_at: 'desc' },
       take: 100,
-      select: ['id', 'user_id', 'created_at'],
+      select: { id: true, user_id: true, created_at: true },
     });
-    this.logger.debug(`Found ${recentPosts.length} recent published posts (with and without community)`);
+    this.logger.debug(
+      `Found ${recentPosts.length} recent published posts (with and without community)`,
+    );
     recentPosts.forEach((post) => {
       feed.push({
         type: 'post',
@@ -1416,39 +1466,45 @@ export class FeedService {
     userId: number,
   ): Promise<FeedItemDto[]> {
     const enrichedItems: FeedItemDto[] = [];
-    this.logger.debug(`Enriching ${items.length} feed items for user ${userId}`);
+    this.logger.debug(
+      `Enriching ${items.length} feed items for user ${userId}`,
+    );
 
     for (const item of items) {
       try {
         if (item.type === 'post') {
           try {
             // Skip view count increment for feed items
-            const post = await this.postService.getPostById(item.id, userId, true);
-            
+            const post = await this.postService.getPostById(
+              item.id,
+              userId,
+              true,
+            );
+
             if (!post) {
               this.logger.warn(`Post ${item.id} not found during enrichment`);
               continue;
             }
 
             // Verify post is still published (might have been changed)
-            if (post.post_status !== PostStatus.PUBLISHED) {
-              this.logger.warn(`Post ${item.id} is not published (status: ${post.post_status}), skipping`);
+            if (post.post_status !== 'published') {
+              this.logger.warn(
+                `Post ${item.id} is not published (status: ${post.post_status}), skipping`,
+              );
               continue;
             }
-            
+
             // Truncate post content for feed display (max 180 characters, plain text).
             // Full content is available on the post detail screen.
             // isMore: 'yes' when the original content exceeds the limit, 'no' otherwise.
-            const { content: truncatedContent, isMore } = this.truncateContentWithFlag(
-              post.post_content,
-              180,
-            );
+            const { content: truncatedContent, isMore } =
+              this.truncateContentWithFlag(post.post_content, 180);
             const truncatedPost = {
               ...post,
               post_content: truncatedContent,
               isMore,
             };
-            
+
             enrichedItems.push({
               type: 'post',
               id: item.id,
@@ -1459,24 +1515,33 @@ export class FeedService {
           } catch (error) {
             // getPostById throws NotFoundException if post doesn't exist
             if (error instanceof NotFoundException) {
-              this.logger.warn(`Post ${item.id} not found (deleted or doesn't exist)`);
+              this.logger.warn(
+                `Post ${item.id} not found (deleted or doesn't exist)`,
+              );
             } else {
-              this.logger.error(`Error enriching post ${item.id}:`, error.message);
+              this.logger.error(
+                `Error enriching post ${item.id}:`,
+                error.message,
+              );
             }
           }
         } else if (item.type === 'poll') {
           // Skip view count increment for feed items
           // Poll options are already included via getPollById which loads the 'options' relation
-          const poll = await this.pollService.getPollById(item.id, userId, true);
-          
+          const poll = await this.pollService.getPollById(
+            item.id,
+            userId,
+            true,
+          );
+
           if (!poll) {
             this.logger.warn(`Poll ${item.id} not found during enrichment`);
             continue;
           }
-          
+
           // Remove community_ids from poll data (polls don't have communities)
           const { community_ids, ...pollWithoutCommunities } = poll as any;
-          
+
           enrichedItems.push({
             type: 'poll',
             id: item.id,
@@ -1486,20 +1551,20 @@ export class FeedService {
           });
         } else if (item.type === 'community') {
           // Get community details
-          const community = await this.communityRepository.findOne({
+          const community = await this.prisma.community.findUnique({
             where: { id: item.id },
-            select: [
-              'id',
-              'community_slug',
-              'community_name',
-              'community_description',
-              'community_image',
-              'is_active',
-              'created_by',
-              'updated_by',
-              'created_at',
-              'updated_at',
-            ],
+            select: {
+              id: true,
+              community_slug: true,
+              community_name: true,
+              community_description: true,
+              community_image: true,
+              is_active: true,
+              created_by: true,
+              updated_by: true,
+              created_at: true,
+              updated_at: true,
+            },
           });
 
           if (community) {
@@ -1510,16 +1575,23 @@ export class FeedService {
               community: community as any,
             });
           } else {
-            this.logger.warn(`Community ${item.id} not found during enrichment`);
+            this.logger.warn(
+              `Community ${item.id} not found during enrichment`,
+            );
           }
         }
       } catch (error) {
-        this.logger.error(`Failed to enrich ${item.type} ${item.id}:`, error.message);
+        this.logger.error(
+          `Failed to enrich ${item.type} ${item.id}:`,
+          error.message,
+        );
         this.logger.error(`Error stack:`, error.stack);
       }
     }
 
-    this.logger.debug(`Successfully enriched ${enrichedItems.length} out of ${items.length} feed items`);
+    this.logger.debug(
+      `Successfully enriched ${enrichedItems.length} out of ${items.length} feed items`,
+    );
 
     // Enrich with user profile pictures, main topics, communities, and follow status
     let enriched = await this.enrichWithUserProfilePictures(enrichedItems);
@@ -1552,17 +1624,17 @@ export class FeedService {
     }
 
     // Batch fetch profile pictures and full names for all users
-    const profiles = await this.profileRepository.find({
-      where: { user_id: In(Array.from(userIds)) },
-      select: ['user_id', 'profile_picture', 'full_name'],
+    const profiles = await this.prisma.userProfile.findMany({
+      where: { user_id: { in: Array.from(userIds) } },
+      select: { user_id: true, profile_picture: true, full_name: true },
     });
 
     // Create maps of user_id -> profile_picture and user_id -> full_name
     const profileMap = new Map<number, string | null>();
     const fullNameMap = new Map<number, string | null>();
     profiles.forEach((profile) => {
-      profileMap.set(profile.user_id, profile.profile_picture);
-      fullNameMap.set(profile.user_id, profile.full_name);
+      profileMap.set(profile.user_id, (profile as any).profile_picture);
+      fullNameMap.set(profile.user_id, (profile as any).full_name);
     });
 
     // Add profile pictures, full names, and image alias to feed items
@@ -1598,29 +1670,34 @@ export class FeedService {
   /**
    * Get main topic name from a topic ID (traverse up to find parent with parent_id = 0)
    */
-  private async getMainTopicName(topicId: number | null): Promise<string | null> {
+  private async getMainTopicName(
+    topicId: number | null,
+  ): Promise<string | null> {
     if (!topicId) return null;
 
     try {
-      let currentTopic = await this.topicEntityRepository.findOne({
+      let currentTopic = await this.prisma.topic.findUnique({
         where: { id: topicId },
-        select: ['id', 'parent_id', 'topic_name'],
+        select: { id: true, parent_id: true, topic_name: true },
       });
 
       if (!currentTopic) return null;
 
       // Traverse up to find main topic (parent_id = 0)
       while (currentTopic && currentTopic.parent_id !== 0) {
-        currentTopic = await this.topicEntityRepository.findOne({
+        currentTopic = await this.prisma.topic.findUnique({
           where: { id: currentTopic.parent_id },
-          select: ['id', 'parent_id', 'topic_name'],
+          select: { id: true, parent_id: true, topic_name: true },
         });
         if (!currentTopic) break;
       }
 
       return currentTopic?.topic_name || null;
     } catch (error) {
-      this.logger.warn(`Failed to get main topic for topic ${topicId}:`, error.message);
+      this.logger.warn(
+        `Failed to get main topic for topic ${topicId}:`,
+        error.message,
+      );
       return null;
     }
   }
@@ -1628,20 +1705,25 @@ export class FeedService {
   /**
    * Get main topic for a community
    */
-  private async getCommunityMainTopic(communityId: number): Promise<string | null> {
+  private async getCommunityMainTopic(
+    communityId: number,
+  ): Promise<string | null> {
     try {
       // Get the first active topic for the community
-      const communityTopic = await this.communityTopicRepository.findOne({
+      const communityTopic = await this.prisma.communityTopic.findFirst({
         where: { community_id: communityId, is_active: true },
-        relations: ['topic'],
+        include: { topic: true },
       });
 
-      if (!communityTopic || !communityTopic.topic) return null;
+      if (!communityTopic || !(communityTopic as any).topic) return null;
 
       // Get main topic name
-      return this.getMainTopicName(communityTopic.topic.id);
+      return this.getMainTopicName((communityTopic as any).topic.id);
     } catch (error) {
-      this.logger.warn(`Failed to get main topic for community ${communityId}:`, error.message);
+      this.logger.warn(
+        `Failed to get main topic for community ${communityId}:`,
+        error.message,
+      );
       return null;
     }
   }
@@ -1649,9 +1731,11 @@ export class FeedService {
   /**
    * Enrich feed items with main topic names
    */
-  private async enrichWithMainTopics(items: FeedItemDto[]): Promise<FeedItemDto[]> {
+  private async enrichWithMainTopics(
+    items: FeedItemDto[],
+  ): Promise<FeedItemDto[]> {
     const topicIds = new Set<number>();
-    
+
     // Collect all topic IDs from posts
     items.forEach((item) => {
       if (item.post?.post_topic_id) {
@@ -1711,21 +1795,23 @@ export class FeedService {
     }
 
     // Batch fetch communities
-    const communities = await this.communityRepository.find({
-      where: { id: In(Array.from(communityIds)) },
-      select: ['id', 'community_name', 'community_image'],
+    const communities = await this.prisma.community.findMany({
+      where: { id: { in: Array.from(communityIds) } },
+      select: { id: true, community_name: true, community_image: true },
     });
 
     // Batch fetch community memberships for logged user
-    const userMemberships = await this.communityUserRepository.find({
+    const userMemberships = await this.prisma.communityUser.findMany({
       where: {
-        community_id: In(Array.from(communityIds)),
+        community_id: { in: Array.from(communityIds) },
         user_id: userId,
         is_active: true,
       },
-      select: ['community_id'],
+      select: { community_id: true },
     });
-    const followedCommunityIds = new Set(userMemberships.map((m) => m.community_id));
+    const followedCommunityIds = new Set(
+      userMemberships.map((m) => m.community_id),
+    );
 
     // Batch fetch main topics for communities
     const communityMainTopics = new Map<number, string | null>();
@@ -1741,8 +1827,8 @@ export class FeedService {
     communities.forEach((community) => {
       communityMap.set(community.id, {
         id: community.id,
-        name: community.community_name,
-        pic: community.community_image,
+        name: (community as any).community_name,
+        pic: (community as any).community_image,
         topic_main: communityMainTopics.get(community.id) || null,
         is_followed: followedCommunityIds.has(community.id),
       });
@@ -1755,14 +1841,14 @@ export class FeedService {
           .split(',')
           .map((id) => parseInt(id.trim(), 10))
           .filter((id) => !isNaN(id));
-        const communities = ids
+        const itemCommunities = ids
           .map((id) => communityMap.get(id))
           .filter((c) => c !== undefined);
-        
-        if (communities.length > 0) {
+
+        if (itemCommunities.length > 0) {
           item.post = {
             ...item.post,
-            communities: communities,
+            communities: itemCommunities,
           } as any;
         }
       }
@@ -1779,7 +1865,7 @@ export class FeedService {
     userId: number,
   ): Promise<FeedItemDto[]> {
     const userIds = new Set<number>();
-    
+
     // Collect all user IDs from posts and polls
     items.forEach((item) => {
       if (item.post?.user?.id) {
@@ -1795,13 +1881,13 @@ export class FeedService {
     }
 
     // Batch fetch follow relationships
-    const follows = await this.followerRepository.find({
+    const follows = await this.prisma.userFollower.findMany({
       where: {
-        user_id: In(Array.from(userIds)),
+        user_id: { in: Array.from(userIds) },
         follower_id: userId,
         is_active: true,
       },
-      select: ['user_id'],
+      select: { user_id: true },
     });
 
     const followedUserIds = new Set(follows.map((f) => f.user_id));
@@ -1832,7 +1918,7 @@ export class FeedService {
     userId: number,
   ): Promise<FeedItemDto[]> {
     const communityIds: number[] = [];
-    
+
     // Collect all community IDs from community feed items
     items.forEach((item) => {
       if (item.type === 'community' && item.community?.id) {
@@ -1845,15 +1931,17 @@ export class FeedService {
     }
 
     // Batch fetch community memberships for logged user
-    const userMemberships = await this.communityUserRepository.find({
+    const userMemberships = await this.prisma.communityUser.findMany({
       where: {
-        community_id: In(communityIds),
+        community_id: { in: communityIds },
         user_id: userId,
         is_active: true,
       },
-      select: ['community_id'],
+      select: { community_id: true },
     });
-    const followedCommunityIds = new Set(userMemberships.map((m) => m.community_id));
+    const followedCommunityIds = new Set(
+      userMemberships.map((m) => m.community_id),
+    );
 
     // Batch fetch main topics for communities
     const communityMainTopics = new Map<number, string | null>();
@@ -1933,27 +2021,31 @@ export class FeedService {
   /**
    * Invalidate feed cache
    */
-  async invalidateFeedCache(userId?: number, topicId?: number, communityId?: number): Promise<void> {
+  async invalidateFeedCache(
+    userId?: number,
+    topicId?: number,
+    communityId?: number,
+  ): Promise<void> {
     if (!this.redis) return;
 
     try {
       const pipeline = this.redis.pipeline();
-      
+
       if (userId) {
         pipeline.del(`feed:timeline:${userId}`);
         pipeline.del(`feed:user:${userId}`);
         pipeline.del(`feed:polls:${userId}`);
         pipeline.del(`feed:posts:${userId}`);
       }
-      
+
       if (topicId) {
         pipeline.del(`feed:topic:${topicId}`);
       }
-      
+
       if (communityId) {
         pipeline.del(`feed:community:${communityId}`);
       }
-      
+
       pipeline.del('feed:trending');
       await pipeline.exec();
     } catch (error) {
@@ -1961,4 +2053,3 @@ export class FeedService {
     }
   }
 }
-

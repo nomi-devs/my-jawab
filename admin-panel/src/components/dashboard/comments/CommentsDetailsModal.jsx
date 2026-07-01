@@ -1,6 +1,21 @@
 // src/components/dashboard/comments/CommentsDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, MessageSquare, Calendar, User, FileText, ThumbsUp, Edit, Trash2, CheckCircle, XCircle, Loader2, Settings, AlertCircle, Save } from 'lucide-react';
+import {
+  X,
+  MessageSquare,
+  Calendar,
+  User,
+  FileText,
+  ThumbsUp,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Settings,
+  AlertCircle,
+  Save,
+} from 'lucide-react';
 import commentsApi from '../../../api/commentsApi';
 
 const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onApprove, onDelete }) => {
@@ -32,17 +47,13 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
           comment_content: commentData.content || commentData.comment_content,
           is_approved: isApproved,
           is_reported: commentData.is_reported || false,
-          like_count: commentData.likes_count || 0
+          like_count: commentData.likes_count || 0,
         });
       }
     } finally {
       setLoading(false);
     }
   };
-
-
-
-
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
@@ -52,7 +63,7 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -134,7 +145,9 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
                 <div className="px-6 py-5 space-y-5">
                   {/* Comment Content */}
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Content</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                      Content
+                    </h3>
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                       <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                         {comment.comment_content || comment.content || 'No content'}
@@ -144,11 +157,13 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
 
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {((comment.like_count > 0) || (comment.likes_count > 0)) && (
+                    {(comment.like_count > 0 || comment.likes_count > 0) && (
                       <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
                         <div className="flex items-center gap-1.5 mb-1">
                           <ThumbsUp size={14} className="text-purple-500" />
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Likes</span>
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            Likes
+                          </span>
                         </div>
                         <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
                           {comment.like_count || comment.likes_count || 0}
@@ -158,7 +173,9 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
                     <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <FileText size={14} className="text-blue-500" />
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Post</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                          Post
+                        </span>
                       </div>
                       <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
                         {comment.post?.post_title || comment.post?.title || 'Unknown'}
@@ -167,7 +184,9 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
                     <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <User size={14} className="text-green-500" />
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Author</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                          Author
+                        </span>
                       </div>
                       <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
                         {comment.user?.username || comment.user?.name || 'Anonymous'}
@@ -178,12 +197,19 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
                   {/* Metadata */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Author</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Author
+                      </h3>
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-purple-200 dark:border-purple-700 ${comment.user?.role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
-                          comment.user?.role === 'moderator' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                            'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                          }`}>
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-purple-200 dark:border-purple-700 ${
+                            comment.user?.role === 'admin'
+                              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                              : comment.user?.role === 'moderator'
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                          }`}
+                        >
                           {comment.user?.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div>
@@ -198,7 +224,9 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Created</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Created
+                      </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Calendar size={14} />
                         <span>{formatDate(comment.created_at)}</span>
@@ -208,7 +236,6 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
                 </div>
               )}
             </>
-
           )}
         </div>
 
@@ -227,7 +254,6 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
                 <span>Delete</span>
               </button>
             )}
-
           </div>
 
           <div className="flex items-center gap-3">
@@ -237,13 +263,11 @@ const CommentsDetailsModal = ({ isOpen, onClose, commentId, commentData, onAppro
             >
               Cancel
             </button>
-
           </div>
         </div>
       </div>
-    </div >
+    </div>
   );
 };
 
 export default CommentsDetailsModal;
-

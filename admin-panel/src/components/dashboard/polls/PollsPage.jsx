@@ -49,14 +49,18 @@ const PollsPage = () => {
   }, [searchTerm]);
 
   // Memoized query params
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    limit: pollsPerPage,
-    ...(debouncedSearchTerm && debouncedSearchTerm.trim() && { search: debouncedSearchTerm.trim() }),
-    sort_by: sortBy,
-    sort_order: sortOrder,
-    ...(statusFilter && statusFilter !== 'all' && { poll_status: statusFilter })
-  }), [currentPage, debouncedSearchTerm, statusFilter, sortBy, sortOrder, pollsPerPage]);
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: pollsPerPage,
+      ...(debouncedSearchTerm &&
+        debouncedSearchTerm.trim() && { search: debouncedSearchTerm.trim() }),
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      ...(statusFilter && statusFilter !== 'all' && { poll_status: statusFilter }),
+    }),
+    [currentPage, debouncedSearchTerm, statusFilter, sortBy, sortOrder, pollsPerPage],
+  );
 
   // TanStack Query Hooks
   const {
@@ -66,7 +70,7 @@ const PollsPage = () => {
     isError,
     error: queryError,
     isPlaceholderData,
-    refetch
+    refetch,
   } = usePollsList(queryParams);
 
   const {
@@ -77,7 +81,7 @@ const PollsPage = () => {
     isCreating,
     isUpdating,
     isDeleting,
-    isUpdatingStatus
+    isUpdatingStatus,
   } = usePollActions();
 
   const polls = data?.polls || [];
@@ -106,7 +110,7 @@ const PollsPage = () => {
   // displayPolls memo for deep linked filtering
   const displayPolls = useMemo(() => {
     if (searchIdRef.current && polls.length > 0) {
-      const filtered = polls.filter(poll => poll.id === searchIdRef.current);
+      const filtered = polls.filter((poll) => poll.id === searchIdRef.current);
       if (filtered.length > 0) return filtered;
     }
     return polls;
@@ -133,22 +137,31 @@ const PollsPage = () => {
     setCurrentPage(newPage);
   }, []);
 
-  const handleAddPoll = useCallback(async (pollData) => {
-    try {
-      await createPoll(pollData);
-      setSuccessMessage('Poll created successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      setShowAddModal(false);
-    } catch (err) {
-      console.error('Error creating poll:', err);
-    }
-  }, [createPoll]);
+  const handleAddPoll = useCallback(
+    async (pollData) => {
+      try {
+        await createPoll(pollData);
+        setSuccessMessage('Poll created successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setShowAddModal(false);
+      } catch (err) {
+        console.error('Error creating poll:', err);
+      }
+    },
+    [createPoll],
+  );
 
-  const handleDeletePoll = useCallback((pollOrId) => {
-    const poll = typeof pollOrId === 'object' ? pollOrId : (polls.find(p => p.id === pollOrId) || { id: pollOrId });
-    setPollToDelete(poll);
-    setShowDeleteConfirm(true);
-  }, [polls]);
+  const handleDeletePoll = useCallback(
+    (pollOrId) => {
+      const poll =
+        typeof pollOrId === 'object'
+          ? pollOrId
+          : polls.find((p) => p.id === pollOrId) || { id: pollOrId };
+      setPollToDelete(poll);
+      setShowDeleteConfirm(true);
+    },
+    [polls],
+  );
 
   const confirmDeletePoll = useCallback(async () => {
     if (!pollToDelete) return;
@@ -163,36 +176,42 @@ const PollsPage = () => {
     }
   }, [pollToDelete, deletePoll]);
 
-  const handleEditPoll = useCallback(async (pollOrId, updatedData) => {
-    if (updatedData !== undefined) {
-      try {
-        const pollId = typeof pollOrId === 'object' ? pollOrId.id : pollOrId;
-        await updatePoll({ id: pollId, data: updatedData });
-        setSuccessMessage('Poll updated successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
-        setShowEditModal(false);
-        setSelectedPollForEdit(null);
-      } catch (err) {
-        console.error('Error updating poll:', err);
+  const handleEditPoll = useCallback(
+    async (pollOrId, updatedData) => {
+      if (updatedData !== undefined) {
+        try {
+          const pollId = typeof pollOrId === 'object' ? pollOrId.id : pollOrId;
+          await updatePoll({ id: pollId, data: updatedData });
+          setSuccessMessage('Poll updated successfully!');
+          setTimeout(() => setSuccessMessage(''), 3000);
+          setShowEditModal(false);
+          setSelectedPollForEdit(null);
+        } catch (err) {
+          console.error('Error updating poll:', err);
+        }
+      } else {
+        const poll = typeof pollOrId === 'object' ? pollOrId : polls.find((p) => p.id === pollOrId);
+        if (poll) {
+          setSelectedPollForEdit(poll);
+          setShowEditModal(true);
+        }
       }
-    } else {
-      const poll = typeof pollOrId === 'object' ? pollOrId : polls.find(p => p.id === pollOrId);
-      if (poll) {
-        setSelectedPollForEdit(poll);
-        setShowEditModal(true);
-      }
-    }
-  }, [updatePoll, polls]);
+    },
+    [updatePoll, polls],
+  );
 
-  const handleUpdatePollStatus = useCallback(async (pollId, statusData) => {
-    try {
-      await updatePollStatus({ id: pollId, data: statusData });
-      setSuccessMessage('Poll status updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error updating poll status:', err);
-    }
-  }, [updatePollStatus]);
+  const handleUpdatePollStatus = useCallback(
+    async (pollId, statusData) => {
+      try {
+        await updatePollStatus({ id: pollId, data: statusData });
+        setSuccessMessage('Poll status updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        console.error('Error updating poll status:', err);
+      }
+    },
+    [updatePollStatus],
+  );
 
   const handleViewDetails = useCallback((poll) => {
     setSelectedPollForDetails(poll);
@@ -207,14 +226,27 @@ const PollsPage = () => {
         showAvatar
         showActions
         avatarColumnIndex={1}
-        columnWidths={['w-10', 'w-[240px]', 'w-[260px]', 'w-[120px]', 'w-[140px]', 'w-[130px]', 'w-[100px]']}
+        columnWidths={[
+          'w-10',
+          'w-[240px]',
+          'w-[260px]',
+          'w-[120px]',
+          'w-[140px]',
+          'w-[130px]',
+          'w-[100px]',
+        ]}
         containerClassName="min-h-[560px]"
       />
     );
   }
 
   if (isError) {
-    return <ErrorMessage message={queryError?.message || 'Failed to load polls'} onRetry={() => refetch()} />;
+    return (
+      <ErrorMessage
+        message={queryError?.message || 'Failed to load polls'}
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   const isRefreshing = isFetching;
@@ -238,7 +270,11 @@ const PollsPage = () => {
         onConfirm={confirmDeletePoll}
         type="danger"
         title="Delete Poll"
-        message={pollToDelete ? `Are you sure you want to delete "${pollToDelete.poll_title || pollToDelete.title || pollToDelete.question}"? This action cannot be undone.` : ''}
+        message={
+          pollToDelete
+            ? `Are you sure you want to delete "${pollToDelete.poll_title || pollToDelete.title || pollToDelete.question}"? This action cannot be undone.`
+            : ''
+        }
         confirmText="Delete"
         cancelText="Cancel"
         isLoading={isDeleting}
@@ -296,7 +332,9 @@ const PollsPage = () => {
           onRefresh={() => refetch()}
         />
 
-        <div className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div
+          className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}
+        >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
@@ -305,17 +343,22 @@ const PollsPage = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto transition-all duration-300 ease-in-out" style={{
-          minHeight: displayPolls.length === 0 ? '400px' : 'auto',
-          opacity: isRefreshing ? 0.6 : 1,
-          scrollbarGutter: 'stable'
-        }}>
+        <div
+          className="overflow-x-auto transition-all duration-300 ease-in-out"
+          style={{
+            minHeight: displayPolls.length === 0 ? '400px' : 'auto',
+            opacity: isRefreshing ? 0.6 : 1,
+            scrollbarGutter: 'stable',
+          }}
+        >
           {displayPolls.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                 <BarChart3 className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No polls found</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                No polls found
+              </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all'
                   ? 'Try changing your search or filters'

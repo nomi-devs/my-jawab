@@ -1,22 +1,33 @@
-import { IsString, IsNotEmpty, IsBoolean, IsOptional, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsBoolean,
+  IsOptional,
+  MaxLength,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCurrencyDto {
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(255)
-    currency_name: string;
+  @ApiProperty({ example: 'US Dollar' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  currency_name: string;
 
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(10)
-    currency_code: string;
+  @ApiProperty({ example: 'USD' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(10)
+  currency_code: string;
 
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(10)
-    currency_symbol: string;
+  @ApiProperty({ example: '$' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(10)
+  currency_symbol: string;
 
-    @IsBoolean()
-    @IsOptional()
-    is_active?: boolean;
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  is_active?: boolean;
 }

@@ -1,5 +1,5 @@
 // src/api/bannersApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const bannersApi = {
   /**
@@ -18,19 +18,22 @@ const bannersApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "display_order",
-      sort_order: params.sort_order || "DESC",
-      ...(params.banner_type && params.banner_type !== "all" && { banner_type: params.banner_type }),
-      ...(params.is_active !== undefined && params.is_active !== null && params.is_active !== "all" && {
-        is_active: params.is_active === "active" || params.is_active === true,
-      }),
+      sort_by: params.sort_by || 'display_order',
+      sort_order: params.sort_order || 'DESC',
+      ...(params.banner_type &&
+        params.banner_type !== 'all' && { banner_type: params.banner_type }),
+      ...(params.is_active !== undefined &&
+        params.is_active !== null &&
+        params.is_active !== 'all' && {
+          is_active: params.is_active === 'active' || params.is_active === true,
+        }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, v]) => v !== undefined && v !== null)
+      Object.entries(queryParams).filter(([_, v]) => v !== undefined && v !== null),
     );
 
-    return axiosClient.get("/admin/banners", { params: cleanedParams });
+    return axiosClient.get('/admin/banners', { params: cleanedParams });
   },
 
   /** Get a single banner by ID */
@@ -42,13 +45,14 @@ const bannersApi = {
   createBanner(data) {
     const isFormData = data instanceof FormData;
     if (isFormData) {
-      return axiosClient.post("/admin/banners", data);
+      return axiosClient.post('/admin/banners', data);
     }
     const payload = { ...data };
     if (payload.is_active !== undefined) {
-      payload.is_active = payload.is_active === true || payload.is_active === "active" ? "active" : "inactive";
+      payload.is_active =
+        payload.is_active === true || payload.is_active === 'active' ? 'active' : 'inactive';
     }
-    return axiosClient.post("/admin/banners", payload);
+    return axiosClient.post('/admin/banners', payload);
   },
 
   /** Update an existing banner (FormData for image replacement) */
@@ -59,14 +63,15 @@ const bannersApi = {
     }
     const payload = { ...data };
     if (payload.is_active !== undefined) {
-      payload.is_active = payload.is_active === true || payload.is_active === "active" ? "active" : "inactive";
+      payload.is_active =
+        payload.is_active === true || payload.is_active === 'active' ? 'active' : 'inactive';
     }
     return axiosClient.put(`/admin/banners/${id}`, payload);
   },
 
   /** Quick status toggle (active/inactive) */
   updateBannerStatus(id, isActive) {
-    const status = isActive === true || isActive === "active" ? "active" : "inactive";
+    const status = isActive === true || isActive === 'active' ? 'active' : 'inactive';
     return axiosClient.put(`/admin/banners/${id}`, { is_active: status });
   },
 

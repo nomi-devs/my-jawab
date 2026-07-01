@@ -22,4 +22,4 @@ const SuccessNotification = React.memo(({ message, duration = 3000, onClose }) =
 });
 
 SuccessNotification.displayName = 'SuccessNotification';
-export default SuccessNotification; 
+export default SuccessNotification;

@@ -1,26 +1,14 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   BadRequestException,
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, In, IsNull } from 'typeorm';
-import { PostComment } from './entities/post-comment.entity';
-import { CommentLike, LikeStatus } from './entities/comment-like.entity';
-import { PollComment } from '../poll/entities/poll-comment.entity';
-import { UserPost } from '../post/entities/user-post.entity';
-import { UserPoll } from '../poll/entities/user-poll.entity';
-import { UserProfile } from '../user/entities/user-profile.entity';
-import { User } from '../auth/entities/user.entity';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import {
-  CommentResponseDto,
-  CommentWithRepliesResponseDto,
-} from './dto/comment-response.dto';
+import { CommentResponseDto } from './dto/comment-response.dto';
 import { ListCommentsQueryDto } from './dto/list-comments-query.dto';
 import { LikeCommentDto } from './dto/like-comment.dto';
 import { NotificationService } from '../notification/notification.service';
@@ -32,23 +20,10 @@ export class CommentService {
   private readonly logger = new Logger(CommentService.name);
 
   constructor(
-    @InjectRepository(PostComment)
-    private postCommentRepository: Repository<PostComment>,
-    @InjectRepository(PollComment)
-    private pollCommentRepository: Repository<PollComment>,
-    @InjectRepository(CommentLike)
-    private commentLikeRepository: Repository<CommentLike>,
-    @InjectRepository(UserPost)
-    private postRepository: Repository<UserPost>,
-    @InjectRepository(UserPoll)
-    private pollRepository: Repository<UserPoll>,
-    @InjectRepository(UserProfile)
-    private userProfileRepository: Repository<UserProfile>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prisma: PrismaService,
     private notificationService: NotificationService,
     private quotaService: QuotaService,
-  ) { }
+  ) {}
 
   /**
    * Helper: send a notification (in-app + flagged for push) without breaking the main flow.
@@ -90,7 +65,9 @@ export class CommentService {
     userId: number,
   ): Promise<CommentResponseDto> {
     if (!createCommentDto.post_id && !createCommentDto.poll_id) {
-      throw new BadRequestException('Either post_id or poll_id must be provided');
+      throw new BadRequestException(
+        'Either post_id or poll_id must be provided',
+      );
     }
 
     if (createCommentDto.post_id && createCommentDto.poll_id) {
@@ -107,9 +84,9 @@ export class CommentService {
     // Handle Post Comment
     if (createCommentDto.post_id) {
       // Validate post exists
-      const post = await this.postRepository.findOne({
+      const post = await this.prisma.userPost.findUnique({
         where: { id: createCommentDto.post_id },
-        select: ['id', 'post_status'],
+        select: { id: true, post_status: true },
       });
 
       if (!post) {
@@ -118,12 +95,12 @@ export class CommentService {
 
       // Validate parent comment if provided
       if (createCommentDto.parent_comment_id) {
-        const parentComment = await this.postCommentRepository.findOne({
+        const parentComment = await this.prisma.postComment.findFirst({
           where: {
             id: createCommentDto.parent_comment_id,
             post_id: createCommentDto.post_id,
           },
-          select: ['id'],
+          select: { id: true },
         });
 
         if (!parentComment) {
@@ -133,38 +110,38 @@ export class CommentService {
         }
       }
 
-      const comment = this.postCommentRepository.create({
-        post_id: createCommentDto.post_id,
-        user_id: userId,
-        parent_comment_id: createCommentDto.parent_comment_id || null,
-        comment_content: createCommentDto.comment_content,
-        like_count: 0,
-        dislike_count: 0,
-        is_approved: true,
-        created_by: userId,
+      const savedComment = await this.prisma.postComment.create({
+        data: {
+          post_id: createCommentDto.post_id,
+          user_id: userId,
+          parent_comment_id: createCommentDto.parent_comment_id || null,
+          comment_content: createCommentDto.comment_content,
+          like_count: 0,
+          dislike_count: 0,
+          is_approved: true,
+          created_by: userId,
+        },
       });
-
-      const savedComment = await this.postCommentRepository.save(comment);
 
       // Update post comment count
       await this.incrementPostCommentCount(createCommentDto.post_id);
 
       // Notify post owner OR parent-comment author (reply takes priority)
-      const postFull = await this.postRepository.findOne({
+      const postFull = await this.prisma.userPost.findUnique({
         where: { id: createCommentDto.post_id },
-        select: ['id', 'user_id', 'post_title', 'post_slug'],
+        select: { id: true, user_id: true, post_title: true, post_slug: true },
       });
-      const actor = await this.userRepository.findOne({
+      const actor = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: ['id', 'username'],
+        select: { id: true, username: true },
       });
       const actorName = actor?.username || 'Someone';
 
       if (createCommentDto.parent_comment_id) {
         // Notify parent comment author about the reply
-        const parentComment = await this.postCommentRepository.findOne({
+        const parentComment = await this.prisma.postComment.findUnique({
           where: { id: createCommentDto.parent_comment_id },
-          select: ['id', 'user_id'],
+          select: { id: true, user_id: true },
         });
         if (parentComment) {
           await this.safeNotify({
@@ -198,9 +175,9 @@ export class CommentService {
     // Handle Poll Comment
     if (createCommentDto.poll_id) {
       // Validate poll exists
-      const poll = await this.pollRepository.findOne({
+      const poll = await this.prisma.userPoll.findUnique({
         where: { id: createCommentDto.poll_id },
-        select: ['id', 'poll_status'],
+        select: { id: true, poll_status: true },
       });
 
       if (!poll) {
@@ -209,12 +186,12 @@ export class CommentService {
 
       // Validate parent comment if provided
       if (createCommentDto.parent_comment_id) {
-        const parentComment = await this.pollCommentRepository.findOne({
+        const parentComment = await this.prisma.pollComment.findFirst({
           where: {
             id: createCommentDto.parent_comment_id,
             poll_id: createCommentDto.poll_id,
           },
-          select: ['id'],
+          select: { id: true },
         });
 
         if (!parentComment) {
@@ -224,34 +201,34 @@ export class CommentService {
         }
       }
 
-      const comment = this.pollCommentRepository.create({
-        poll_id: createCommentDto.poll_id,
-        user_id: userId,
-        parent_comment_id: createCommentDto.parent_comment_id || null,
-        comment_content: createCommentDto.comment_content,
-        like_count: 0,
-        dislike_count: 0,
-        is_approved: true,
-        created_by: userId,
+      const savedComment = await this.prisma.pollComment.create({
+        data: {
+          poll_id: createCommentDto.poll_id,
+          user_id: userId,
+          parent_comment_id: createCommentDto.parent_comment_id || null,
+          comment_content: createCommentDto.comment_content,
+          like_count: 0,
+          dislike_count: 0,
+          is_approved: true,
+          created_by: userId,
+        },
       });
-
-      const savedComment = await this.pollCommentRepository.save(comment);
 
       // Notify poll owner OR parent-comment author
-      const pollFull = await this.pollRepository.findOne({
+      const pollFull = await this.prisma.userPoll.findUnique({
         where: { id: createCommentDto.poll_id },
-        select: ['id', 'user_id', 'poll_title', 'poll_slug'],
+        select: { id: true, user_id: true, poll_title: true, poll_slug: true },
       });
-      const actor = await this.userRepository.findOne({
+      const actor = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: ['id', 'username'],
+        select: { id: true, username: true },
       });
       const actorName = actor?.username || 'Someone';
 
       if (createCommentDto.parent_comment_id) {
-        const parentComment = await this.pollCommentRepository.findOne({
+        const parentComment = await this.prisma.pollComment.findUnique({
           where: { id: createCommentDto.parent_comment_id },
-          select: ['id', 'user_id'],
+          select: { id: true, user_id: true },
         });
         if (parentComment) {
           await this.safeNotify({
@@ -301,7 +278,6 @@ export class CommentService {
     const limit = listQueryDto.limit || 10;
     const skip = (page - 1) * limit;
 
-    // Determine if we're fetching post or poll comments
     const isPostComments = !!listQueryDto.post_id;
     const isPollComments = !!listQueryDto.poll_id;
 
@@ -310,15 +286,9 @@ export class CommentService {
     } else if (isPollComments) {
       return this.getPollComments(listQueryDto, userId, page, limit, skip);
     } else {
-      // If neither specified, return empty (or could return both, but for now empty)
       return {
         data: [],
-        meta: {
-          total: 0,
-          page,
-          limit,
-          total_pages: 0,
-        },
+        meta: { total: 0, page, limit, total_pages: 0 },
       };
     }
   }
@@ -339,10 +309,8 @@ export class CommentService {
       total_pages: number;
     };
   }> {
-    // Build where condition - only top-level comments (no parent)
-    const where: FindOptionsWhere<PostComment> = {
-      parent_comment_id: IsNull(),
-    };
+    // Only top-level comments (no parent)
+    const where: any = { parent_comment_id: null };
 
     if (listQueryDto.post_id) {
       where.post_id = listQueryDto.post_id;
@@ -352,53 +320,39 @@ export class CommentService {
       where.user_id = listQueryDto.user_id;
     }
 
-    if (listQueryDto.is_approved !== undefined) {
-      where.is_approved = listQueryDto.is_approved;
-    } else {
-      where.is_approved = true;
-    }
+    where.is_approved =
+      listQueryDto.is_approved !== undefined ? listQueryDto.is_approved : true;
 
-    // Build query
-    const queryBuilder = this.postCommentRepository
-      .createQueryBuilder('comment')
-      .where(where);
-
-    // Add search if provided
     if (listQueryDto.search) {
-      queryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${listQueryDto.search}%`,
-      });
+      where.comment_content = { contains: listQueryDto.search };
     }
 
-    // Always include user and post relations
-    queryBuilder.leftJoinAndSelect('comment.user', 'user');
-    queryBuilder.leftJoinAndSelect('comment.post', 'post');
-
-    // Add sorting
     const sortBy = listQueryDto.sort_by || 'created_at';
-    const sortOrder = listQueryDto.sort_order || 'DESC';
-    queryBuilder.orderBy(`comment.${sortBy}`, sortOrder);
+    const sortOrder = (listQueryDto.sort_order || 'DESC').toLowerCase();
+    const orderBy: any = { [sortBy]: sortOrder };
 
     // Get total count
-    const total = await queryBuilder.getCount();
+    const total = await this.prisma.postComment.count({ where });
 
-    // Add pagination
-    queryBuilder.skip(skip).take(limit);
+    const comments = await this.prisma.postComment.findMany({
+      where,
+      orderBy,
+      take: limit,
+      skip,
+      include: { user: true, post: true },
+    });
 
-    const comments = await queryBuilder.getMany();
-
-    // Get unique user IDs
+    // Get unique user IDs for batch profile loading
     const userIds = new Set<number>();
     comments.forEach((comment) => {
       if (comment.user_id) userIds.add(comment.user_id);
     });
 
-    // Load user profiles in batch
-    const userProfilesMap = new Map<number, UserProfile>();
+    const userProfilesMap = new Map<number, any>();
     if (userIds.size > 0) {
-      const profiles = await this.userProfileRepository.find({
-        where: { user_id: In(Array.from(userIds)) },
-        select: ['user_id', 'full_name', 'profile_picture'],
+      const profiles = await this.prisma.userProfile.findMany({
+        where: { user_id: { in: Array.from(userIds) } },
+        select: { user_id: true, full_name: true, profile_picture: true },
       });
       profiles.forEach((profile) => {
         userProfilesMap.set(profile.user_id, profile);
@@ -410,29 +364,26 @@ export class CommentService {
       comments.map(async (comment) => {
         const response: any = { ...comment };
 
-        // Attach profile picture to user if exists
+        // Attach profile data to user
         if (comment.user && userProfilesMap.has(comment.user.id)) {
           const profile = userProfilesMap.get(comment.user.id);
-          (comment.user as any).profile_picture = profile?.profile_picture || null;
+          (comment.user as any).profile_picture =
+            profile?.profile_picture || null;
           (comment.user as any).full_name = profile?.full_name || null;
         }
 
         // Get user like status
         if (userId) {
-          const userLike = await this.commentLikeRepository.findOne({
-            where: {
-              comment_id: comment.id,
-              user_id: userId,
-            },
+          const userLike = await this.prisma.commentLike.findFirst({
+            where: { comment_id: comment.id, user_id: userId },
           });
           response.user_like_status = userLike?.like_status || null;
         }
 
         // Get replies count
-        const repliesCount = await this.postCommentRepository.count({
+        response.replies_count = await this.prisma.postComment.count({
           where: { parent_comment_id: comment.id, is_approved: true },
         });
-        response.replies_count = repliesCount;
 
         return response;
       }),
@@ -467,10 +418,8 @@ export class CommentService {
       total_pages: number;
     };
   }> {
-    // Build where condition - only top-level comments (no parent)
-    const where: FindOptionsWhere<PollComment> = {
-      parent_comment_id: IsNull(),
-    };
+    // Only top-level comments (no parent)
+    const where: any = { parent_comment_id: null };
 
     if (listQueryDto.poll_id) {
       where.poll_id = listQueryDto.poll_id;
@@ -480,53 +429,39 @@ export class CommentService {
       where.user_id = listQueryDto.user_id;
     }
 
-    if (listQueryDto.is_approved !== undefined) {
-      where.is_approved = listQueryDto.is_approved;
-    } else {
-      where.is_approved = true;
-    }
+    where.is_approved =
+      listQueryDto.is_approved !== undefined ? listQueryDto.is_approved : true;
 
-    // Build query
-    const queryBuilder = this.pollCommentRepository
-      .createQueryBuilder('comment')
-      .where(where);
-
-    // Add search if provided
     if (listQueryDto.search) {
-      queryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${listQueryDto.search}%`,
-      });
+      where.comment_content = { contains: listQueryDto.search };
     }
 
-    // Always include user and poll relations
-    queryBuilder.leftJoinAndSelect('comment.user', 'user');
-    queryBuilder.leftJoinAndSelect('comment.poll', 'poll');
-
-    // Add sorting
     const sortBy = listQueryDto.sort_by || 'created_at';
-    const sortOrder = listQueryDto.sort_order || 'DESC';
-    queryBuilder.orderBy(`comment.${sortBy}`, sortOrder);
+    const sortOrder = (listQueryDto.sort_order || 'DESC').toLowerCase();
+    const orderBy: any = { [sortBy]: sortOrder };
 
     // Get total count
-    const total = await queryBuilder.getCount();
+    const total = await this.prisma.pollComment.count({ where });
 
-    // Add pagination
-    queryBuilder.skip(skip).take(limit);
+    const comments = await this.prisma.pollComment.findMany({
+      where,
+      orderBy,
+      take: limit,
+      skip,
+      include: { user: true, poll: true },
+    });
 
-    const comments = await queryBuilder.getMany();
-
-    // Get unique user IDs
+    // Get unique user IDs for batch profile loading
     const userIds = new Set<number>();
     comments.forEach((comment) => {
       if (comment.user_id) userIds.add(comment.user_id);
     });
 
-    // Load user profiles in batch
-    const userProfilesMap = new Map<number, UserProfile>();
+    const userProfilesMap = new Map<number, any>();
     if (userIds.size > 0) {
-      const profiles = await this.userProfileRepository.find({
-        where: { user_id: In(Array.from(userIds)) },
-        select: ['user_id', 'full_name', 'profile_picture'],
+      const profiles = await this.prisma.userProfile.findMany({
+        where: { user_id: { in: Array.from(userIds) } },
+        select: { user_id: true, full_name: true, profile_picture: true },
       });
       profiles.forEach((profile) => {
         userProfilesMap.set(profile.user_id, profile);
@@ -538,22 +473,21 @@ export class CommentService {
       comments.map(async (comment) => {
         const response: any = { ...comment };
 
-        // Attach profile picture to user if exists
+        // Attach profile data to user
         if (comment.user && userProfilesMap.has(comment.user.id)) {
           const profile = userProfilesMap.get(comment.user.id);
-          (comment.user as any).profile_picture = profile?.profile_picture || null;
+          (comment.user as any).profile_picture =
+            profile?.profile_picture || null;
           (comment.user as any).full_name = profile?.full_name || null;
         }
 
-        // Note: Poll comments don't have likes yet - this would need a separate entity
-        // For now, set to null
+        // Note: Poll comments don't have likes yet
         response.user_like_status = null;
 
         // Get replies count
-        const repliesCount = await this.pollCommentRepository.count({
+        response.replies_count = await this.prisma.pollComment.count({
           where: { parent_comment_id: comment.id, is_approved: true },
         });
-        response.replies_count = repliesCount;
 
         return response;
       }),
@@ -578,43 +512,39 @@ export class CommentService {
     userId?: number,
   ): Promise<CommentResponseDto> {
     // Try to find as post comment first
-    let comment: PostComment | PollComment | null = await this.postCommentRepository.findOne({
+    let postComment: any = await this.prisma.postComment.findUnique({
       where: { id: commentId },
-      relations: ['user', 'post'],
+      include: { user: true, post: true },
     });
 
-    let isPostComment = !!comment;
+    const isPostComment = !!postComment;
+    let comment: any = postComment;
 
     // If not found, try poll comment
     if (!comment) {
-      comment = await this.pollCommentRepository.findOne({
+      comment = await this.prisma.pollComment.findUnique({
         where: { id: commentId },
-        relations: ['user', 'poll'],
+        include: { user: true, poll: true },
       });
-      isPostComment = false;
     }
 
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
 
-    // Get user IDs for profile loading
-    const userIds = new Set<number>();
-    if (comment.user_id) userIds.add(comment.user_id);
-
-    // Load user profiles
-    const userProfilesMap = new Map<number, UserProfile>();
-    if (userIds.size > 0) {
-      const profiles = await this.userProfileRepository.find({
-        where: { user_id: In(Array.from(userIds)) },
-        select: ['user_id', 'full_name', 'profile_picture'],
+    // Load user profile
+    const userProfilesMap = new Map<number, any>();
+    if (comment.user_id) {
+      const profile = await this.prisma.userProfile.findFirst({
+        where: { user_id: comment.user_id },
+        select: { user_id: true, full_name: true, profile_picture: true },
       });
-      profiles.forEach((profile) => {
-        userProfilesMap.set(profile.user_id, profile);
-      });
+      if (profile) {
+        userProfilesMap.set(comment.user_id, profile);
+      }
     }
 
-    // Attach profile picture to comment user
+    // Attach profile to user
     if (comment.user && userProfilesMap.has(comment.user.id)) {
       const profile = userProfilesMap.get(comment.user.id);
       (comment.user as any).profile_picture = profile?.profile_picture || null;
@@ -625,11 +555,8 @@ export class CommentService {
 
     // Get user like status (only for post comments)
     if (userId && isPostComment) {
-      const userLike = await this.commentLikeRepository.findOne({
-        where: {
-          comment_id: commentId,
-          user_id: userId,
-        },
+      const userLike = await this.prisma.commentLike.findFirst({
+        where: { comment_id: commentId, user_id: userId },
       });
       commentResponse.user_like_status = userLike?.like_status || null;
     } else {
@@ -638,16 +565,14 @@ export class CommentService {
 
     // Get replies count
     if (isPostComment) {
-      const repliesCount = await this.postCommentRepository.count({
+      commentResponse.replies_count = await this.prisma.postComment.count({
         where: { parent_comment_id: commentId, is_approved: true },
       });
-      commentResponse.replies_count = repliesCount;
       return this.mapPostCommentToResponseDto(commentResponse);
     } else {
-      const repliesCount = await this.pollCommentRepository.count({
+      commentResponse.replies_count = await this.prisma.pollComment.count({
         where: { parent_comment_id: commentId, is_approved: true },
       });
-      commentResponse.replies_count = repliesCount;
       return this.mapPollCommentToResponseDto(commentResponse);
     }
   }
@@ -701,18 +626,18 @@ export class CommentService {
     };
   }> {
     // Determine if it's a post or poll comment
-    const postComment = await this.postCommentRepository.findOne({
+    const postComment = await this.prisma.postComment.findUnique({
       where: { id: commentId },
-      select: ['id', 'post_id'],
+      select: { id: true, post_id: true },
     });
 
     if (postComment) {
       return this.getPostCommentReplies(commentId, listQueryDto, userId);
     }
 
-    const pollComment = await this.pollCommentRepository.findOne({
+    const pollComment = await this.prisma.pollComment.findUnique({
       where: { id: commentId },
-      select: ['id', 'poll_id'],
+      select: { id: true, poll_id: true },
     });
 
     if (pollComment) {
@@ -740,40 +665,28 @@ export class CommentService {
     const limit = listQueryDto.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<PostComment> = {
-      parent_comment_id: commentId,
-    };
+    const where: any = { parent_comment_id: commentId };
 
-    const queryBuilder = this.postCommentRepository
-      .createQueryBuilder('comment')
-      .where('comment.parent_comment_id = :commentId', { commentId });
-
-    if (listQueryDto.is_approved !== undefined) {
-      queryBuilder.andWhere('comment.is_approved = :isApproved', {
-        isApproved: listQueryDto.is_approved ? 1 : 0,
-      });
-    } else {
-      queryBuilder.andWhere('comment.is_approved = :isApproved', { isApproved: 1 });
-    }
-
-    // Always include user and post relations
-    queryBuilder.leftJoinAndSelect('comment.user', 'user');
-    queryBuilder.leftJoinAndSelect('comment.post', 'post');
+    where.is_approved =
+      listQueryDto.is_approved !== undefined ? listQueryDto.is_approved : true;
 
     if (listQueryDto.search) {
-      queryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${listQueryDto.search}%`,
-      });
+      where.comment_content = { contains: listQueryDto.search };
     }
 
     const sortBy = listQueryDto.sort_by || 'created_at';
-    const sortOrder = listQueryDto.sort_order || 'ASC';
-    queryBuilder.orderBy(`comment.${sortBy}`, sortOrder);
+    const sortOrder = (listQueryDto.sort_order || 'ASC').toLowerCase();
+    const orderBy: any = { [sortBy]: sortOrder };
 
-    const total = await queryBuilder.getCount();
-    queryBuilder.skip(skip).take(limit);
+    const total = await this.prisma.postComment.count({ where });
 
-    const replies = await queryBuilder.getMany();
+    const replies = await this.prisma.postComment.findMany({
+      where,
+      orderBy,
+      take: limit,
+      skip,
+      include: { user: true, post: true },
+    });
 
     // Load user profiles
     const userIds = new Set<number>();
@@ -781,11 +694,11 @@ export class CommentService {
       if (reply.user_id) userIds.add(reply.user_id);
     });
 
-    const userProfilesMap = new Map<number, UserProfile>();
+    const userProfilesMap = new Map<number, any>();
     if (userIds.size > 0) {
-      const profiles = await this.userProfileRepository.find({
-        where: { user_id: In(Array.from(userIds)) },
-        select: ['user_id', 'full_name', 'profile_picture'],
+      const profiles = await this.prisma.userProfile.findMany({
+        where: { user_id: { in: Array.from(userIds) } },
+        select: { user_id: true, full_name: true, profile_picture: true },
       });
       profiles.forEach((profile) => {
         userProfilesMap.set(profile.user_id, profile);
@@ -801,20 +714,16 @@ export class CommentService {
         }
 
         if (userId) {
-          const userLike = await this.commentLikeRepository.findOne({
-            where: {
-              comment_id: reply.id,
-              user_id: userId,
-            },
+          const userLike = await this.prisma.commentLike.findFirst({
+            where: { comment_id: reply.id, user_id: userId },
           });
           reply.user_like_status = userLike?.like_status || null;
         }
 
         // Get replies count for each reply
-        const repliesCount = await this.postCommentRepository.count({
+        reply.replies_count = await this.prisma.postComment.count({
           where: { parent_comment_id: reply.id, is_approved: true },
         });
-        reply.replies_count = repliesCount;
 
         return reply;
       }),
@@ -851,39 +760,28 @@ export class CommentService {
     const limit = listQueryDto.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<PollComment> = {
-      parent_comment_id: commentId,
-    };
+    const where: any = { parent_comment_id: commentId };
 
-    if (listQueryDto.is_approved !== undefined) {
-      where.is_approved = listQueryDto.is_approved;
-    } else {
-      where.is_approved = true;
-    }
-
-    const queryBuilder = this.pollCommentRepository
-      .createQueryBuilder('comment')
-      .where(where);
-
-    // Always include user relation
-    // Always include user and poll relations
-    queryBuilder.leftJoinAndSelect('comment.user', 'user');
-    queryBuilder.leftJoinAndSelect('comment.poll', 'poll');
+    where.is_approved =
+      listQueryDto.is_approved !== undefined ? listQueryDto.is_approved : true;
 
     if (listQueryDto.search) {
-      queryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${listQueryDto.search}%`,
-      });
+      where.comment_content = { contains: listQueryDto.search };
     }
 
     const sortBy = listQueryDto.sort_by || 'created_at';
-    const sortOrder = listQueryDto.sort_order || 'ASC';
-    queryBuilder.orderBy(`comment.${sortBy}`, sortOrder);
+    const sortOrder = (listQueryDto.sort_order || 'ASC').toLowerCase();
+    const orderBy: any = { [sortBy]: sortOrder };
 
-    const total = await queryBuilder.getCount();
-    queryBuilder.skip(skip).take(limit);
+    const total = await this.prisma.pollComment.count({ where });
 
-    const replies = await queryBuilder.getMany();
+    const replies = await this.prisma.pollComment.findMany({
+      where,
+      orderBy,
+      take: limit,
+      skip,
+      include: { user: true, poll: true },
+    });
 
     // Load user profiles
     const userIds = new Set<number>();
@@ -891,11 +789,11 @@ export class CommentService {
       if (reply.user_id) userIds.add(reply.user_id);
     });
 
-    const userProfilesMap = new Map<number, UserProfile>();
+    const userProfilesMap = new Map<number, any>();
     if (userIds.size > 0) {
-      const profiles = await this.userProfileRepository.find({
-        where: { user_id: In(Array.from(userIds)) },
-        select: ['user_id', 'full_name', 'profile_picture'],
+      const profiles = await this.prisma.userProfile.findMany({
+        where: { user_id: { in: Array.from(userIds) } },
+        select: { user_id: true, full_name: true, profile_picture: true },
       });
       profiles.forEach((profile) => {
         userProfilesMap.set(profile.user_id, profile);
@@ -914,10 +812,9 @@ export class CommentService {
         reply.user_like_status = null;
 
         // Get replies count for each reply
-        const repliesCount = await this.pollCommentRepository.count({
+        reply.replies_count = await this.prisma.pollComment.count({
           where: { parent_comment_id: reply.id, is_approved: true },
         });
-        reply.replies_count = repliesCount;
 
         return reply;
       }),
@@ -943,18 +840,18 @@ export class CommentService {
     userId: number,
   ): Promise<CommentResponseDto> {
     // Try to find as post comment first
-    let comment: PostComment | PollComment | null = await this.postCommentRepository.findOne({
+    let postComment: any = await this.prisma.postComment.findUnique({
       where: { id: commentId },
     });
 
-    let isPostComment = !!comment;
+    const isPostComment = !!postComment;
+    let comment: any = postComment;
 
     // If not found, try poll comment
     if (!comment) {
-      comment = await this.pollCommentRepository.findOne({
+      comment = await this.prisma.pollComment.findUnique({
         where: { id: commentId },
       });
-      isPostComment = false;
     }
 
     if (!comment) {
@@ -964,20 +861,23 @@ export class CommentService {
     // Check if user owns the comment (unless updating approval status - admin only)
     if (updateCommentDto.is_approved !== undefined) {
       // Approval status update requires admin role - this would be checked in controller
-      // For now, we'll allow the update
     } else if (comment.user_id !== userId) {
       throw new ForbiddenException('You can only update your own comments');
     }
 
-    // Update comment
-    Object.assign(comment, updateCommentDto);
-    comment.updated_by = userId;
+    const updateData: any = { ...updateCommentDto, updated_by: userId };
 
     if (isPostComment) {
-      const updatedComment = await this.postCommentRepository.save(comment as PostComment);
+      const updatedComment = await this.prisma.postComment.update({
+        where: { id: commentId },
+        data: updateData,
+      });
       return this.mapPostCommentToResponseDto(updatedComment);
     } else {
-      const updatedComment = await this.pollCommentRepository.save(comment as PollComment);
+      const updatedComment = await this.prisma.pollComment.update({
+        where: { id: commentId },
+        data: updateData,
+      });
       return this.mapPollCommentToResponseDto(updatedComment);
     }
   }
@@ -988,18 +888,18 @@ export class CommentService {
     userId: number,
   ): Promise<{ message: string }> {
     // Try to find as post comment first
-    let comment: PostComment | PollComment | null = await this.postCommentRepository.findOne({
+    let postComment: any = await this.prisma.postComment.findUnique({
       where: { id: commentId },
     });
 
-    let isPostComment = !!comment;
+    const isPostComment = !!postComment;
+    let comment: any = postComment;
 
     // If not found, try poll comment
     if (!comment) {
-      comment = await this.pollCommentRepository.findOne({
+      comment = await this.prisma.pollComment.findUnique({
         where: { id: commentId },
       });
-      isPostComment = false;
     }
 
     if (!comment) {
@@ -1014,35 +914,39 @@ export class CommentService {
     // Check if comment has replies
     let repliesCount = 0;
     if (isPostComment) {
-      repliesCount = await this.postCommentRepository.count({
+      repliesCount = await this.prisma.postComment.count({
         where: { parent_comment_id: commentId },
       });
     } else {
-      repliesCount = await this.pollCommentRepository.count({
+      repliesCount = await this.prisma.pollComment.count({
         where: { parent_comment_id: commentId },
       });
     }
 
     if (repliesCount > 0) {
       // Soft delete: mark as not approved instead of deleting
-      comment.is_approved = false;
-      comment.updated_by = userId;
       if (isPostComment) {
-        await this.postCommentRepository.save(comment);
+        await this.prisma.postComment.update({
+          where: { id: commentId },
+          data: { is_approved: false, updated_by: userId },
+        });
       } else {
-        await this.pollCommentRepository.save(comment as PollComment);
+        await this.prisma.pollComment.update({
+          where: { id: commentId },
+          data: { is_approved: false, updated_by: userId },
+        });
       }
       return { message: 'Comment deleted successfully (soft delete)' };
     }
 
     // Hard delete if no replies
     if (isPostComment) {
-      const postId = (comment as PostComment).post_id;
-      await this.postCommentRepository.remove(comment as PostComment);
+      const postId = comment.post_id;
+      await this.prisma.postComment.delete({ where: { id: commentId } });
       // Update post comment count
       await this.decrementPostCommentCount(postId);
     } else {
-      await this.pollCommentRepository.remove(comment as PollComment);
+      await this.prisma.pollComment.delete({ where: { id: commentId } });
     }
 
     return { message: 'Comment deleted successfully' };
@@ -1060,13 +964,13 @@ export class CommentService {
     like_status: 'like' | 'dislike' | null;
   }> {
     // Only post comments have likes currently
-    const comment = await this.postCommentRepository.findOne({
+    const comment = await this.prisma.postComment.findUnique({
       where: { id: commentId },
     });
 
     if (!comment) {
       // Check if it's a poll comment
-      const pollComment = await this.pollCommentRepository.findOne({
+      const pollComment = await this.prisma.pollComment.findUnique({
         where: { id: commentId },
       });
       if (pollComment) {
@@ -1078,84 +982,96 @@ export class CommentService {
     }
 
     // Check if user already liked/disliked
-    const existingLike = await this.commentLikeRepository.findOne({
-      where: {
-        comment_id: commentId,
-        user_id: userId,
-      },
+    const existingLike = await this.prisma.commentLike.findFirst({
+      where: { comment_id: commentId, user_id: userId },
     });
 
     if (existingLike) {
       // If same status, remove like/dislike
       if (existingLike.like_status === likeCommentDto.like_status) {
-        await this.commentLikeRepository.remove(existingLike);
+        await this.prisma.commentLike.delete({
+          where: { id: existingLike.id },
+        });
 
         // Update counts
-        if (existingLike.like_status === LikeStatus.LIKE) {
-          comment.like_count = Math.max(0, comment.like_count - 1);
+        const countUpdate: any = {};
+        if (existingLike.like_status === 'like') {
+          countUpdate.like_count = { decrement: 1 };
         } else {
-          comment.dislike_count = Math.max(0, comment.dislike_count - 1);
+          countUpdate.dislike_count = { decrement: 1 };
         }
 
-        await this.postCommentRepository.save(comment);
+        const updatedComment = await this.prisma.postComment.update({
+          where: { id: commentId },
+          data: countUpdate,
+        });
 
         return {
           message: 'Comment like/dislike removed successfully',
-          like_count: comment.like_count,
-          dislike_count: comment.dislike_count,
+          like_count: updatedComment.like_count,
+          dislike_count: updatedComment.dislike_count,
           like_status: null,
         };
       } else {
         // Update existing like/dislike
         const oldStatus = existingLike.like_status;
-        existingLike.like_status = likeCommentDto.like_status;
-        existingLike.updated_by = userId;
-        await this.commentLikeRepository.save(existingLike);
+        await this.prisma.commentLike.update({
+          where: { id: existingLike.id },
+          data: { like_status: likeCommentDto.like_status, updated_by: userId },
+        });
 
         // Update counts (decrement old, increment new)
-        if (oldStatus === LikeStatus.LIKE) {
-          comment.like_count = Math.max(0, comment.like_count - 1);
-          comment.dislike_count += 1;
+        const countUpdate: any = {};
+        if (oldStatus === 'like') {
+          countUpdate.like_count = { decrement: 1 };
+          countUpdate.dislike_count = { increment: 1 };
         } else {
-          comment.dislike_count = Math.max(0, comment.dislike_count - 1);
-          comment.like_count += 1;
+          countUpdate.dislike_count = { decrement: 1 };
+          countUpdate.like_count = { increment: 1 };
         }
 
-        await this.postCommentRepository.save(comment);
+        const updatedComment = await this.prisma.postComment.update({
+          where: { id: commentId },
+          data: countUpdate,
+        });
 
         return {
           message: `Comment ${likeCommentDto.like_status}d successfully`,
-          like_count: comment.like_count,
-          dislike_count: comment.dislike_count,
+          like_count: updatedComment.like_count,
+          dislike_count: updatedComment.dislike_count,
           like_status: likeCommentDto.like_status,
         };
       }
     }
 
     // Create new like/dislike
-    const commentLike = this.commentLikeRepository.create({
-      comment_id: commentId,
-      user_id: userId,
-      like_status: likeCommentDto.like_status,
-      created_by: userId,
+    await this.prisma.commentLike.create({
+      data: {
+        comment_id: commentId,
+        user_id: userId,
+        like_status: likeCommentDto.like_status,
+        created_by: userId,
+      },
     });
 
-    await this.commentLikeRepository.save(commentLike);
-
     // Update counts
-    if (likeCommentDto.like_status === LikeStatus.LIKE) {
-      comment.like_count += 1;
+    const countUpdate: any = {};
+    if (likeCommentDto.like_status === 'like') {
+      countUpdate.like_count = { increment: 1 };
     } else {
-      comment.dislike_count += 1;
+      countUpdate.dislike_count = { increment: 1 };
     }
 
-    await this.postCommentRepository.save(comment);
+    const updatedComment = await this.prisma.postComment.update({
+      where: { id: commentId },
+      data: countUpdate,
+    });
 
     // Notify comment author — only on a new LIKE (not dislike, not status change)
-    if (likeCommentDto.like_status === LikeStatus.LIKE) {
-      const actor = await this.userRepository.findOne({
+    if (likeCommentDto.like_status === 'like') {
+      const actor = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: ['id', 'username'],
+        select: { id: true, username: true },
       });
       const actorName = actor?.username || 'Someone';
       await this.safeNotify({
@@ -1171,20 +1087,26 @@ export class CommentService {
 
     return {
       message: `Comment ${likeCommentDto.like_status}d successfully`,
-      like_count: comment.like_count,
-      dislike_count: comment.dislike_count,
+      like_count: updatedComment.like_count,
+      dislike_count: updatedComment.dislike_count,
       like_status: likeCommentDto.like_status,
     };
   }
 
   // Helper: Increment post comment count
   private async incrementPostCommentCount(postId: number): Promise<void> {
-    await this.postRepository.increment({ id: postId }, 'comment_count', 1);
+    await this.prisma.userPost.update({
+      where: { id: postId },
+      data: { comment_count: { increment: 1 } },
+    });
   }
 
   // Helper: Decrement post comment count
   private async decrementPostCommentCount(postId: number): Promise<void> {
-    await this.postRepository.decrement({ id: postId }, 'comment_count', 1);
+    await this.prisma.userPost.update({
+      where: { id: postId },
+      data: { comment_count: { decrement: 1 } },
+    });
   }
 
   // Helper: Map Post Comment entity to response DTO
@@ -1318,98 +1240,66 @@ export class CommentService {
     const limit = listQueryDto.limit || 10;
     const skip = (page - 1) * limit;
 
-    // Get post comments (including replies)
-    const postCommentsQueryBuilder = this.postCommentRepository
-      .createQueryBuilder('comment')
-      .where('comment.user_id = :userId', { userId })
-      .leftJoinAndSelect('comment.user', 'user')
-      .leftJoinAndSelect('comment.post', 'post');
-
-    if (listQueryDto.is_approved !== undefined) {
-      postCommentsQueryBuilder.andWhere('comment.is_approved = :isApproved', {
-        isApproved: listQueryDto.is_approved ? 1 : 0,
-      });
-    } else {
-      postCommentsQueryBuilder.andWhere('comment.is_approved = :isApproved', {
-        isApproved: 1,
-      });
-    }
-
-    if (listQueryDto.search) {
-      postCommentsQueryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${listQueryDto.search}%`,
-      });
-    }
-
     const sortBy = listQueryDto.sort_by || 'created_at';
-    const sortOrder = listQueryDto.sort_order || 'DESC';
-    postCommentsQueryBuilder.orderBy(`comment.${sortBy}`, sortOrder);
+    const sortOrder = (listQueryDto.sort_order || 'DESC').toLowerCase();
+    const orderBy: any = { [sortBy]: sortOrder };
 
-    const postComments = await postCommentsQueryBuilder.getMany();
+    const isApproved =
+      listQueryDto.is_approved !== undefined ? listQueryDto.is_approved : true;
 
-    // Get poll comments (including replies)
-    const pollCommentsQueryBuilder = this.pollCommentRepository
-      .createQueryBuilder('comment')
-      .where('comment.user_id = :userId', { userId })
-      .leftJoinAndSelect('comment.user', 'user')
-      .leftJoinAndSelect('comment.poll', 'poll');
-
-    if (listQueryDto.is_approved !== undefined) {
-      pollCommentsQueryBuilder.andWhere('comment.is_approved = :isApproved', {
-        isApproved: listQueryDto.is_approved ? 1 : 0,
-      });
-    } else {
-      pollCommentsQueryBuilder.andWhere('comment.is_approved = :isApproved', {
-        isApproved: 1,
-      });
-    }
-
+    // Build post comments where
+    const postWhere: any = { user_id: userId, is_approved: isApproved };
     if (listQueryDto.search) {
-      pollCommentsQueryBuilder.andWhere('comment.comment_content LIKE :search', {
-        search: `%${listQueryDto.search}%`,
-      });
+      postWhere.comment_content = { contains: listQueryDto.search };
     }
 
-    pollCommentsQueryBuilder.orderBy(`comment.${sortBy}`, sortOrder);
+    // Build poll comments where
+    const pollWhere: any = { user_id: userId, is_approved: isApproved };
+    if (listQueryDto.search) {
+      pollWhere.comment_content = { contains: listQueryDto.search };
+    }
 
-    const pollComments = await pollCommentsQueryBuilder.getMany();
+    // Fetch post and poll comments in parallel
+    const [postComments, pollComments] = await Promise.all([
+      this.prisma.postComment.findMany({
+        where: postWhere,
+        orderBy,
+        include: { user: true, post: true },
+      }),
+      this.prisma.pollComment.findMany({
+        where: pollWhere,
+        orderBy,
+        include: { user: true, poll: true },
+      }),
+    ]);
 
     // Combine and sort all comments
     const allComments: any[] = [];
-    
+
     // Process post comments
     for (const comment of postComments) {
-      const userIds = new Set<number>();
-      if (comment.user_id) userIds.add(comment.user_id);
-
-      const userProfilesMap = new Map<number, UserProfile>();
-      if (userIds.size > 0) {
-        const profiles = await this.userProfileRepository.find({
-          where: { user_id: In(Array.from(userIds)) },
-          select: ['user_id', 'full_name', 'profile_picture'],
-        });
-        profiles.forEach((profile) => {
-          userProfilesMap.set(profile.user_id, profile);
-        });
-      }
-
       const response: any = { ...comment };
-      
-      if (comment.user && userProfilesMap.has(comment.user.id)) {
-        const profile = userProfilesMap.get(comment.user.id);
-        (comment.user as any).profile_picture = profile?.profile_picture || null;
-        (comment.user as any).full_name = profile?.full_name || null;
-        (comment.user as any).name = profile?.full_name || comment.user.username || null;
-        (comment.user as any).image = profile?.profile_picture || null;
+
+      // Load user profile
+      if (comment.user_id) {
+        const profile = await this.prisma.userProfile.findFirst({
+          where: { user_id: comment.user_id },
+          select: { user_id: true, full_name: true, profile_picture: true },
+        });
+        if (profile && comment.user) {
+          (comment.user as any).profile_picture =
+            profile.profile_picture || null;
+          (comment.user as any).full_name = profile.full_name || null;
+          (comment.user as any).name =
+            profile.full_name || comment.user.username || null;
+          (comment.user as any).image = profile.profile_picture || null;
+        }
       }
 
       // Get user like status (only for post comments)
       if (loggedUserId) {
-        const userLike = await this.commentLikeRepository.findOne({
-          where: {
-            comment_id: comment.id,
-            user_id: loggedUserId,
-          },
+        const userLike = await this.prisma.commentLike.findFirst({
+          where: { comment_id: comment.id, user_id: loggedUserId },
         });
         response.user_like_status = userLike?.like_status || null;
       } else {
@@ -1417,48 +1307,40 @@ export class CommentService {
       }
 
       // Get replies count
-      const repliesCount = await this.postCommentRepository.count({
+      response.replies_count = await this.prisma.postComment.count({
         where: { parent_comment_id: comment.id, is_approved: true },
       });
-      response.replies_count = repliesCount;
 
       allComments.push(this.mapPostCommentToResponseDto(response));
     }
 
     // Process poll comments
     for (const comment of pollComments) {
-      const userIds = new Set<number>();
-      if (comment.user_id) userIds.add(comment.user_id);
-
-      const userProfilesMap = new Map<number, UserProfile>();
-      if (userIds.size > 0) {
-        const profiles = await this.userProfileRepository.find({
-          where: { user_id: In(Array.from(userIds)) },
-          select: ['user_id', 'full_name', 'profile_picture'],
-        });
-        profiles.forEach((profile) => {
-          userProfilesMap.set(profile.user_id, profile);
-        });
-      }
-
       const response: any = { ...comment };
-      
-      if (comment.user && userProfilesMap.has(comment.user.id)) {
-        const profile = userProfilesMap.get(comment.user.id);
-        (comment.user as any).profile_picture = profile?.profile_picture || null;
-        (comment.user as any).full_name = profile?.full_name || null;
-        (comment.user as any).name = profile?.full_name || comment.user.username || null;
-        (comment.user as any).image = profile?.profile_picture || null;
+
+      // Load user profile
+      if (comment.user_id) {
+        const profile = await this.prisma.userProfile.findFirst({
+          where: { user_id: comment.user_id },
+          select: { user_id: true, full_name: true, profile_picture: true },
+        });
+        if (profile && comment.user) {
+          (comment.user as any).profile_picture =
+            profile.profile_picture || null;
+          (comment.user as any).full_name = profile.full_name || null;
+          (comment.user as any).name =
+            profile.full_name || comment.user.username || null;
+          (comment.user as any).image = profile.profile_picture || null;
+        }
       }
 
       // Poll comments don't support likes
       response.user_like_status = null;
 
       // Get replies count
-      const repliesCount = await this.pollCommentRepository.count({
+      response.replies_count = await this.prisma.pollComment.count({
         where: { parent_comment_id: comment.id, is_approved: true },
       });
-      response.replies_count = repliesCount;
 
       allComments.push(this.mapPollCommentToResponseDto(response));
     }
@@ -1485,4 +1367,3 @@ export class CommentService {
     };
   }
 }
-

@@ -6,14 +6,8 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, In } from 'typeorm';
 import { createHash } from 'crypto';
-import { Community } from './entities/community.entity';
-import { CommunityTopic } from './entities/community-topic.entity';
-import { CommunityUser, CommunityUserRole } from './entities/community-user.entity';
-import { Topic } from '../general/entities/topic.entity';
-import { UserTopic } from '../user/entities/user-topic.entity';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
 import {
@@ -46,16 +40,7 @@ export class CommunityService {
   }
 
   constructor(
-    @InjectRepository(Community)
-    private communityRepository: Repository<Community>,
-    @InjectRepository(CommunityTopic)
-    private communityTopicRepository: Repository<CommunityTopic>,
-    @InjectRepository(CommunityUser)
-    private communityUserRepository: Repository<CommunityUser>,
-    @InjectRepository(Topic)
-    private topicRepository: Repository<Topic>,
-    @InjectRepository(UserTopic)
-    private userTopicRepository: Repository<UserTopic>,
+    private prisma: PrismaService,
     private mediaClientService: MediaClientService,
   ) {}
 
@@ -82,20 +67,28 @@ export class CommunityService {
           mediaResponse.file_path,
         );
       } catch (error) {
-        this.logger.error(
-          `Failed to upload community image: ${error.message}`,
-        );
+        this.logger.error(`Failed to upload community image: ${error.message}`);
         throw new BadRequestException('Failed to upload community image');
       }
     }
 
-    // Helper function to transform is_active value (manual fallback if Transform decorator doesn't work)
+    // Helper function to transform is_active value
     const transformIsActive = (value: any): boolean => {
       if (value === undefined || value === null || value === '') return true; // Default to true
       if (typeof value === 'boolean') return value;
       const stringValue = String(value).toLowerCase().trim();
-      if (stringValue === 'active' || stringValue === 'true' || stringValue === '1') return true;
-      if (stringValue === 'inactive' || stringValue === 'false' || stringValue === '0') return false;
+      if (
+        stringValue === 'active' ||
+        stringValue === 'true' ||
+        stringValue === '1'
+      )
+        return true;
+      if (
+        stringValue === 'inactive' ||
+        stringValue === 'false' ||
+        stringValue === '0'
+      )
+        return false;
       if (value === 1 || value === '1') return true;
       if (value === 0 || value === '0') return false;
       return true; // Default to true if unrecognized
@@ -103,62 +96,75 @@ export class CommunityService {
 
     // Debug logging
     console.log('=== CREATE COMMUNITY DEBUG ===');
-    console.log('createCommunityDto:', JSON.stringify(createCommunityDto, null, 2));
+    console.log(
+      'createCommunityDto:',
+      JSON.stringify(createCommunityDto, null, 2),
+    );
     console.log('is_active value:', createCommunityDto.is_active);
     console.log('is_active type:', typeof createCommunityDto.is_active);
 
-    // Create community with initial slug (will be updated with hash after save)
     // Exclude topic_ids from community creation (handled separately)
     const { topic_ids, ...communityData } = createCommunityDto;
     const transformedIsActive = transformIsActive(createCommunityDto.is_active);
     console.log('Transformed is_active:', transformedIsActive);
-    
-    const community = this.communityRepository.create({
-      ...communityData,
-      community_image: communityImage,
-      is_active: transformedIsActive,
-      created_by: userId,
+
+    // Save to get the ID (with initial slug; will be updated with hash)
+    const savedCommunity = await this.prisma.community.create({
+      data: {
+        ...communityData,
+        community_image: communityImage,
+        is_active: transformedIsActive,
+        created_by: userId,
+      },
     });
 
-    // Save to get the ID
-    const savedCommunity = await this.communityRepository.save(community);
-    
     // Generate slug with ID hash and update
-    savedCommunity.community_slug = this.generateSlugWithHash(createCommunityDto.community_slug, savedCommunity.id);
-    const finalCommunity = await this.communityRepository.save(savedCommunity);
+    const finalSlug = this.generateSlugWithHash(
+      createCommunityDto.community_slug,
+      savedCommunity.id,
+    );
+    const finalCommunity = await this.prisma.community.update({
+      where: { id: savedCommunity.id },
+      data: { community_slug: finalSlug },
+    });
 
     // Add creator as admin member
-    await this.communityUserRepository.save({
-      community_id: finalCommunity.id,
-      user_id: userId,
-      role: CommunityUserRole.ADMIN,
-      is_active: true,
-      created_by: userId,
+    await this.prisma.communityUser.create({
+      data: {
+        community_id: finalCommunity.id,
+        user_id: userId,
+        role: 'admin',
+        is_active: true,
+        created_by: userId,
+      },
     });
 
     // Add topics if provided
-    if (createCommunityDto.topic_ids && createCommunityDto.topic_ids.length > 0) {
+    if (
+      createCommunityDto.topic_ids &&
+      createCommunityDto.topic_ids.length > 0
+    ) {
       // Validate all topics exist and are active
-      const topics = await this.topicRepository.find({
-        where: { id: In(createCommunityDto.topic_ids), is_active: true },
-        select: ['id'],
+      const topics = await this.prisma.topic.findMany({
+        where: { id: { in: createCommunityDto.topic_ids }, is_active: true },
+        select: { id: true },
       });
 
       if (topics.length !== createCommunityDto.topic_ids.length) {
-        throw new BadRequestException('One or more topics not found or inactive');
+        throw new BadRequestException(
+          'One or more topics not found or inactive',
+        );
       }
 
       // Create community-topic associations
-      const communityTopics = createCommunityDto.topic_ids.map((topicId) =>
-        this.communityTopicRepository.create({
+      await this.prisma.communityTopic.createMany({
+        data: createCommunityDto.topic_ids.map((topicId) => ({
           community_id: finalCommunity.id,
           topic_id: topicId,
           is_active: true,
           created_by: userId,
-        }),
-      );
-
-      await this.communityTopicRepository.save(communityTopics);
+        })),
+      });
     }
 
     return this.mapToResponseDto(finalCommunity);
@@ -184,38 +190,37 @@ export class CommunityService {
       sort_by = 'created_at',
       sort_order = 'DESC',
       is_active,
-      // Note: For personalized communities we always want member_count in the response,
-      // so this flag is read for compatibility but ignored in the logic below.
       include_member_count = false,
       include_topic_count = false,
     } = listQueryDto;
 
     const skip = (page - 1) * limit;
 
-    // Build query
-    const queryBuilder = this.communityRepository.createQueryBuilder('community');
+    const where: any = {};
 
     if (is_active !== undefined) {
-      queryBuilder.where('community.is_active = :is_active', { is_active });
+      where.is_active = is_active;
     }
 
     if (search) {
-      queryBuilder.andWhere(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search OR community.community_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { community_name: { contains: search } },
+        { community_slug: { contains: search } },
+        { community_description: { contains: search } },
+      ];
     }
 
-    // Add sorting
-    queryBuilder.orderBy(`community.${sort_by}`, sort_order);
+    const sortOrderLower = sort_order.toLowerCase() as 'asc' | 'desc';
 
-    // Get total count
-    const total = await queryBuilder.getCount();
-
-    // Get paginated results
-    queryBuilder.skip(skip).take(limit);
-
-    const communities = await queryBuilder.getMany();
+    const [communities, total] = await Promise.all([
+      this.prisma.community.findMany({
+        where,
+        orderBy: { [sort_by]: sortOrderLower },
+        skip,
+        take: limit,
+      }),
+      this.prisma.community.count({ where }),
+    ]);
 
     // Load additional data if requested
     const communitiesWithCounts = await Promise.all(
@@ -223,20 +228,20 @@ export class CommunityService {
         const response: any = { ...community };
 
         // Always include member_count for personalized community suggestions
-        const memberCount = await this.communityUserRepository.count({
+        const memberCount = await this.prisma.communityUser.count({
           where: { community_id: community.id, is_active: true },
         });
         response.member_count = memberCount;
 
         if (include_topic_count) {
-          const topicCount = await this.communityTopicRepository.count({
+          const topicCount = await this.prisma.communityTopic.count({
             where: { community_id: community.id, is_active: true },
           });
           response.topic_count = topicCount;
         }
 
         if (userId) {
-          const membership = await this.communityUserRepository.findOne({
+          const membership = await this.prisma.communityUser.findFirst({
             where: {
               community_id: community.id,
               user_id: userId,
@@ -289,44 +294,40 @@ export class CommunityService {
     } = listQueryDto;
 
     const skip = (page - 1) * limit;
+    const sortOrderLower = sort_order.toLowerCase() as 'asc' | 'desc';
 
-    // Get communities that the user has joined
-    const queryBuilder = this.communityRepository
-      .createQueryBuilder('community')
-      .innerJoin(
-        'community_users',
-        'cu',
-        'cu.community_id = community.id AND cu.user_id = :userId AND cu.is_active = :cuActive',
-        {
-          userId,
-          cuActive: true,
+    // Build where for communities the user has joined
+    const communityWhere: any = {
+      is_active: true,
+      communityUsers: {
+        some: {
+          user_id: userId,
+          is_active: true,
         },
-      )
-      .where('community.is_active = :isActive', { isActive: true })
-      .select('community')
-      .distinct(true);
+      },
+    };
 
     if (is_active !== undefined) {
-      queryBuilder.andWhere('community.is_active = :is_active', { is_active });
+      communityWhere.is_active = is_active;
     }
 
     if (search) {
-      queryBuilder.andWhere(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search OR community.community_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      communityWhere.OR = [
+        { community_name: { contains: search } },
+        { community_slug: { contains: search } },
+        { community_description: { contains: search } },
+      ];
     }
 
-    // Add sorting
-    queryBuilder.orderBy(`community.${sort_by}`, sort_order);
-
-    // Get total count
-    const total = await queryBuilder.getCount();
-
-    // Get paginated results
-    queryBuilder.skip(skip).take(limit);
-
-    const communities = await queryBuilder.getMany();
+    const [communities, total] = await Promise.all([
+      this.prisma.community.findMany({
+        where: communityWhere,
+        orderBy: { [sort_by]: sortOrderLower },
+        skip,
+        take: limit,
+      }),
+      this.prisma.community.count({ where: communityWhere }),
+    ]);
 
     // Load additional data
     const communitiesWithCounts = await Promise.all(
@@ -334,20 +335,20 @@ export class CommunityService {
         const response: any = { ...community };
 
         // Always include member_count for joined communities
-        const memberCount = await this.communityUserRepository.count({
+        const memberCount = await this.prisma.communityUser.count({
           where: { community_id: community.id, is_active: true },
         });
         response.member_count = memberCount;
 
         if (include_topic_count) {
-          const topicCount = await this.communityTopicRepository.count({
+          const topicCount = await this.prisma.communityTopic.count({
             where: { community_id: community.id, is_active: true },
           });
           response.topic_count = topicCount;
         }
 
         // Get membership info (user is definitely a member, but get role)
-        const membership = await this.communityUserRepository.findOne({
+        const membership = await this.prisma.communityUser.findFirst({
           where: {
             community_id: community.id,
             user_id: userId,
@@ -394,21 +395,17 @@ export class CommunityService {
       sort_by = 'created_at',
       sort_order = 'DESC',
       is_active,
-      // Note: For personalized communities we now always include member_count
-      // in the response; this flag is kept only for DTO compatibility.
       include_member_count = false,
       include_topic_count = false,
     } = listQueryDto;
 
     const skip = (page - 1) * limit;
+    const sortOrderLower = sort_order.toLowerCase() as 'asc' | 'desc';
 
     // Get user's subscribed topics
-    const userSubscribedTopics = await this.userTopicRepository.find({
-      where: {
-        user_id: userId,
-        is_active: true,
-      },
-      select: ['topic_id'],
+    const userSubscribedTopics = await this.prisma.userTopic.findMany({
+      where: { user_id: userId, is_active: true },
+      select: { topic_id: true },
     });
 
     const subscribedTopicIds = userSubscribedTopics.map((ut) => ut.topic_id);
@@ -417,52 +414,42 @@ export class CommunityService {
     if (subscribedTopicIds.length === 0) {
       return {
         data: [],
-        meta: {
-          total: 0,
-          page,
-          limit,
-          total_pages: 0,
-        },
+        meta: { total: 0, page, limit, total_pages: 0 },
       };
     }
 
     // Get communities that have at least one of the user's subscribed topics
-    const queryBuilder = this.communityRepository
-      .createQueryBuilder('community')
-      .innerJoin(
-        'community_topics',
-        'ct',
-        'ct.community_id = community.id AND ct.topic_id IN (:...topicIds) AND ct.is_active = :ctActive',
-        {
-          topicIds: subscribedTopicIds,
-          ctActive: true,
+    const communityWhere: any = {
+      is_active: true,
+      communityTopics: {
+        some: {
+          topic_id: { in: subscribedTopicIds },
+          is_active: true,
         },
-      )
-      .where('community.is_active = :isActive', { isActive: true })
-      .select('community')
-      .distinct(true);
+      },
+    };
 
     if (is_active !== undefined) {
-      queryBuilder.andWhere('community.is_active = :is_active', { is_active });
+      communityWhere.is_active = is_active;
     }
 
     if (search) {
-      queryBuilder.andWhere(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search OR community.community_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      communityWhere.OR = [
+        { community_name: { contains: search } },
+        { community_slug: { contains: search } },
+        { community_description: { contains: search } },
+      ];
     }
 
-    // Add sorting
-    queryBuilder.orderBy(`community.${sort_by}`, sort_order);
-
-    // Get total count
-    const total = await queryBuilder.getCount();
-
-    // Get paginated results
-    queryBuilder.skip(skip).take(limit);
-
-    const communities = await queryBuilder.getMany();
+    const [communities, total] = await Promise.all([
+      this.prisma.community.findMany({
+        where: communityWhere,
+        orderBy: { [sort_by]: sortOrderLower },
+        skip,
+        take: limit,
+      }),
+      this.prisma.community.count({ where: communityWhere }),
+    ]);
 
     // Load additional data if requested
     const communitiesWithCounts = await Promise.all(
@@ -470,20 +457,20 @@ export class CommunityService {
         const response: any = { ...community };
 
         // Always include member_count for personalized communities
-        const memberCount = await this.communityUserRepository.count({
+        const memberCount = await this.prisma.communityUser.count({
           where: { community_id: community.id, is_active: true },
         });
         response.member_count = memberCount;
 
         if (include_topic_count) {
-          const topicCount = await this.communityTopicRepository.count({
+          const topicCount = await this.prisma.communityTopic.count({
             where: { community_id: community.id, is_active: true },
           });
           response.topic_count = topicCount;
         }
 
         // Check membership
-        const membership = await this.communityUserRepository.findOne({
+        const membership = await this.prisma.communityUser.findFirst({
           where: {
             community_id: community.id,
             user_id: userId,
@@ -494,13 +481,13 @@ export class CommunityService {
         response.user_role = membership?.role || null;
 
         // Get matching topics (topics that user subscribed to and community has)
-        const matchingTopics = await this.communityTopicRepository.find({
+        const matchingTopics = await this.prisma.communityTopic.findMany({
           where: {
             community_id: community.id,
-            topic_id: In(subscribedTopicIds),
+            topic_id: { in: subscribedTopicIds },
             is_active: true,
           },
-          relations: ['topic'],
+          include: { topic: true },
         });
         response.matching_topics = matchingTopics.map((ct) => ({
           id: ct.topic.id,
@@ -550,18 +537,17 @@ export class CommunityService {
 
     const skip = (page - 1) * limit;
 
-    // Get all active communities that match the filter
-    const queryBuilder = this.communityRepository.createQueryBuilder('community');
-    queryBuilder.where('community.is_active = :is_active', { is_active });
+    const where: any = { is_active };
 
     if (search) {
-      queryBuilder.andWhere(
-        '(community.community_name LIKE :search OR community.community_slug LIKE :search OR community.community_description LIKE :search)',
-        { search: `%${search}%` },
-      );
+      where.OR = [
+        { community_name: { contains: search } },
+        { community_slug: { contains: search } },
+        { community_description: { contains: search } },
+      ];
     }
 
-    const allCommunities = await queryBuilder.getMany();
+    const allCommunities = await this.prisma.community.findMany({ where });
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -569,33 +555,33 @@ export class CommunityService {
     // Compute scores per community
     const scored = await Promise.all(
       allCommunities.map(async (community) => {
-        const totalMembers = await this.communityUserRepository.count({
-          where: { community_id: community.id, is_active: true },
-        });
-
-        const recentMembers = await this.communityUserRepository
-          .createQueryBuilder('cu')
-          .where('cu.community_id = :cid', { cid: community.id })
-          .andWhere('cu.is_active = :active', { active: true })
-          .andWhere('cu.created_at >= :since', { since: sevenDaysAgo })
-          .getCount();
+        const [totalMembers, recentMembers] = await Promise.all([
+          this.prisma.communityUser.count({
+            where: { community_id: community.id, is_active: true },
+          }),
+          this.prisma.communityUser.count({
+            where: {
+              community_id: community.id,
+              is_active: true,
+              created_at: { gte: sevenDaysAgo },
+            },
+          }),
+        ]);
 
         // Recent posts assigned to this community (community_ids is CSV)
-        const recentPosts = await this.communityUserRepository.manager
-          .getRepository('user_posts')
-          .createQueryBuilder('post')
-          .where('post.post_status = :status', { status: 'published' })
-          .andWhere('post.created_at >= :since', { since: sevenDaysAgo })
-          .andWhere(
-            `(post.community_ids = :cid OR post.community_ids LIKE :cidStart OR post.community_ids LIKE :cidEnd OR post.community_ids LIKE :cidMid)`,
-            {
-              cid: `${community.id}`,
-              cidStart: `${community.id},%`,
-              cidEnd: `%,${community.id}`,
-              cidMid: `%,${community.id},%`,
-            },
-          )
-          .getCount();
+        const cid = `${community.id}`;
+        const recentPosts = await this.prisma.userPost.count({
+          where: {
+            post_status: 'published',
+            created_at: { gte: sevenDaysAgo },
+            OR: [
+              { community_ids: cid },
+              { community_ids: { startsWith: `${cid},` } },
+              { community_ids: { endsWith: `,${cid}` } },
+              { community_ids: { contains: `,${cid},` } },
+            ],
+          },
+        });
 
         const trending_score =
           totalMembers * 1 + recentMembers * 5 + recentPosts * 3;
@@ -616,7 +602,9 @@ export class CommunityService {
         return b.trending_score - a.trending_score;
       if (b.totalMembers !== a.totalMembers)
         return b.totalMembers - a.totalMembers;
-      return b.community.created_at.getTime() - a.community.created_at.getTime();
+      return (
+        b.community.created_at.getTime() - a.community.created_at.getTime()
+      );
     });
 
     const total = scored.length;
@@ -632,13 +620,13 @@ export class CommunityService {
         response.trending_score = item.trending_score;
 
         if (include_topic_count) {
-          response.topic_count = await this.communityTopicRepository.count({
+          response.topic_count = await this.prisma.communityTopic.count({
             where: { community_id: item.community.id, is_active: true },
           });
         }
 
         if (userId) {
-          const membership = await this.communityUserRepository.findOne({
+          const membership = await this.prisma.communityUser.findFirst({
             where: {
               community_id: item.community.id,
               user_id: userId,
@@ -669,7 +657,7 @@ export class CommunityService {
     communityId: number,
     userId?: number,
   ): Promise<CommunityResponseDto> {
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findUnique({
       where: { id: communityId },
     });
 
@@ -680,20 +668,20 @@ export class CommunityService {
     const response: any = { ...community };
 
     // Get member count
-    const memberCount = await this.communityUserRepository.count({
+    const memberCount = await this.prisma.communityUser.count({
       where: { community_id: communityId, is_active: true },
     });
     response.member_count = memberCount;
 
     // Get topic count
-    const topicCount = await this.communityTopicRepository.count({
+    const topicCount = await this.prisma.communityTopic.count({
       where: { community_id: communityId, is_active: true },
     });
     response.topic_count = topicCount;
 
     // Get user membership if userId provided
     if (userId) {
-      const membership = await this.communityUserRepository.findOne({
+      const membership = await this.prisma.communityUser.findFirst({
         where: {
           community_id: communityId,
           user_id: userId,
@@ -712,7 +700,7 @@ export class CommunityService {
     slug: string,
     userId?: number,
   ): Promise<CommunityResponseDto> {
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findFirst({
       where: { community_slug: slug },
     });
 
@@ -730,7 +718,7 @@ export class CommunityService {
     userId: number,
     file?: Express.Multer.File,
   ): Promise<CommunityResponseDto> {
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findUnique({
       where: { id: communityId },
     });
 
@@ -739,7 +727,7 @@ export class CommunityService {
     }
 
     // Check if user has admin or moderator role
-    const membership = await this.communityUserRepository.findOne({
+    const membership = await this.prisma.communityUser.findFirst({
       where: {
         community_id: communityId,
         user_id: userId,
@@ -749,8 +737,7 @@ export class CommunityService {
 
     if (
       !membership ||
-      (membership.role !== CommunityUserRole.ADMIN &&
-        membership.role !== CommunityUserRole.MODERATOR)
+      (membership.role !== 'admin' && membership.role !== 'moderator')
     ) {
       throw new ForbiddenException(
         'Only community admins and moderators can update the community',
@@ -766,31 +753,32 @@ export class CommunityService {
           optimize: true,
           is_public: true,
         });
-        updateCommunityDto.community_image = this.mediaClientService.buildFileUrl(
-          mediaResponse.file_path,
-        );
+        updateCommunityDto.community_image =
+          this.mediaClientService.buildFileUrl(mediaResponse.file_path);
       } catch (error) {
-        this.logger.error(
-          `Failed to upload community image: ${error.message}`,
-        );
+        this.logger.error(`Failed to upload community image: ${error.message}`);
         throw new BadRequestException('Failed to upload community image');
       }
     }
+
+    const updateData: any = { ...updateCommunityDto, updated_by: userId };
 
     // If slug is being updated, generate new slug with ID hash
     if (
       updateCommunityDto.community_slug &&
       updateCommunityDto.community_slug !== community.community_slug
     ) {
-      // Remove any existing hash and generate new one with current ID
-      updateCommunityDto.community_slug = this.generateSlugWithHash(updateCommunityDto.community_slug, community.id);
+      updateData.community_slug = this.generateSlugWithHash(
+        updateCommunityDto.community_slug,
+        community.id,
+      );
     }
 
-    // Update community
-    Object.assign(community, updateCommunityDto);
-    community.updated_by = userId;
+    const updatedCommunity = await this.prisma.community.update({
+      where: { id: communityId },
+      data: updateData,
+    });
 
-    const updatedCommunity = await this.communityRepository.save(community);
     return this.mapToResponseDto(updatedCommunity);
   }
 
@@ -799,7 +787,7 @@ export class CommunityService {
     communityId: number,
     userId: number,
   ): Promise<{ message: string }> {
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findUnique({
       where: { id: communityId },
     });
 
@@ -808,7 +796,7 @@ export class CommunityService {
     }
 
     // Check if user is admin
-    const membership = await this.communityUserRepository.findOne({
+    const membership = await this.prisma.communityUser.findFirst({
       where: {
         community_id: communityId,
         user_id: userId,
@@ -816,16 +804,17 @@ export class CommunityService {
       },
     });
 
-    if (!membership || membership.role !== CommunityUserRole.ADMIN) {
+    if (!membership || membership.role !== 'admin') {
       throw new ForbiddenException(
         'Only community admins can delete the community',
       );
     }
 
     // Soft delete
-    community.is_active = false;
-    community.updated_by = userId;
-    await this.communityRepository.save(community);
+    await this.prisma.community.update({
+      where: { id: communityId },
+      data: { is_active: false, updated_by: userId },
+    });
 
     return { message: 'Community deleted successfully' };
   }
@@ -835,9 +824,9 @@ export class CommunityService {
     communityId: number,
     userId: number,
   ): Promise<{ message: string }> {
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findFirst({
       where: { id: communityId, is_active: true },
-      select: ['id'],
+      select: { id: true },
     });
 
     if (!community) {
@@ -845,11 +834,8 @@ export class CommunityService {
     }
 
     // Check if already a member
-    const existingMembership = await this.communityUserRepository.findOne({
-      where: {
-        community_id: communityId,
-        user_id: userId,
-      },
+    const existingMembership = await this.prisma.communityUser.findFirst({
+      where: { community_id: communityId, user_id: userId },
     });
 
     if (existingMembership) {
@@ -857,23 +843,25 @@ export class CommunityService {
         throw new ConflictException('Already a member of this community');
       } else {
         // Reactivate membership
-        existingMembership.is_active = true;
-        existingMembership.updated_by = userId;
-        await this.communityUserRepository.save(existingMembership);
+        await this.prisma.communityUser.update({
+          where: { id: existingMembership.id },
+          data: { is_active: true, updated_by: userId },
+        });
         return { message: 'Successfully joined community' };
       }
     }
 
     // Create new membership
-    const membership = this.communityUserRepository.create({
-      community_id: communityId,
-      user_id: userId,
-      role: CommunityUserRole.MEMBER,
-      is_active: true,
-      created_by: userId,
+    await this.prisma.communityUser.create({
+      data: {
+        community_id: communityId,
+        user_id: userId,
+        role: 'member',
+        is_active: true,
+        created_by: userId,
+      },
     });
 
-    await this.communityUserRepository.save(membership);
     return { message: 'Successfully joined community' };
   }
 
@@ -882,7 +870,7 @@ export class CommunityService {
     communityId: number,
     userId: number,
   ): Promise<{ message: string }> {
-    const membership = await this.communityUserRepository.findOne({
+    const membership = await this.prisma.communityUser.findFirst({
       where: {
         community_id: communityId,
         user_id: userId,
@@ -895,11 +883,11 @@ export class CommunityService {
     }
 
     // Check if user is the only admin
-    if (membership.role === CommunityUserRole.ADMIN) {
-      const adminCount = await this.communityUserRepository.count({
+    if (membership.role === 'admin') {
+      const adminCount = await this.prisma.communityUser.count({
         where: {
           community_id: communityId,
-          role: CommunityUserRole.ADMIN,
+          role: 'admin',
           is_active: true,
         },
       });
@@ -912,9 +900,10 @@ export class CommunityService {
     }
 
     // Soft delete membership
-    membership.is_active = false;
-    membership.updated_by = userId;
-    await this.communityUserRepository.save(membership);
+    await this.prisma.communityUser.update({
+      where: { id: membership.id },
+      data: { is_active: false, updated_by: userId },
+    });
 
     return { message: 'Successfully left community' };
   }
@@ -932,9 +921,9 @@ export class CommunityService {
       total_pages: number;
     };
   }> {
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findUnique({
       where: { id: communityId },
-      select: ['id'],
+      select: { id: true },
     });
 
     if (!community) {
@@ -950,23 +939,27 @@ export class CommunityService {
     } = listQueryDto;
 
     const skip = (page - 1) * limit;
+    const sortOrderLower = sort_order.toLowerCase() as 'asc' | 'desc';
 
-    const queryBuilder = this.communityUserRepository
-      .createQueryBuilder('communityUser')
-      .leftJoinAndSelect('communityUser.user', 'user')
-      .where('communityUser.community_id = :communityId', { communityId })
-      .andWhere('communityUser.is_active = :isActive', { isActive: true });
+    const where: any = {
+      community_id: communityId,
+      is_active: true,
+    };
 
     if (role) {
-      queryBuilder.andWhere('communityUser.role = :role', { role });
+      where.role = role;
     }
 
-    queryBuilder.orderBy(`communityUser.${sort_by}`, sort_order);
-
-    const total = await queryBuilder.getCount();
-    queryBuilder.skip(skip).take(limit);
-
-    const members = await queryBuilder.getMany();
+    const [members, total] = await Promise.all([
+      this.prisma.communityUser.findMany({
+        where,
+        include: { user: true },
+        orderBy: { [sort_by]: sortOrderLower },
+        skip,
+        take: limit,
+      }),
+      this.prisma.communityUser.count({ where }),
+    ]);
 
     return {
       data: members.map((member) => this.mapMemberToResponseDto(member)),
@@ -987,7 +980,7 @@ export class CommunityService {
     userId: number,
   ): Promise<CommunityMemberResponseDto> {
     // Check if requester is admin
-    const requesterMembership = await this.communityUserRepository.findOne({
+    const requesterMembership = await this.prisma.communityUser.findFirst({
       where: {
         community_id: communityId,
         user_id: userId,
@@ -995,23 +988,20 @@ export class CommunityService {
       },
     });
 
-    if (
-      !requesterMembership ||
-      requesterMembership.role !== CommunityUserRole.ADMIN
-    ) {
+    if (!requesterMembership || requesterMembership.role !== 'admin') {
       throw new ForbiddenException(
         'Only community admins can update member roles',
       );
     }
 
     // Get target member
-    const targetMember = await this.communityUserRepository.findOne({
+    const targetMember = await this.prisma.communityUser.findFirst({
       where: {
         community_id: communityId,
         user_id: memberId,
         is_active: true,
       },
-      relations: ['user'],
+      include: { user: true },
     });
 
     if (!targetMember) {
@@ -1019,14 +1009,11 @@ export class CommunityService {
     }
 
     // Prevent removing the last admin
-    if (
-      targetMember.role === CommunityUserRole.ADMIN &&
-      updateMemberRoleDto.role !== CommunityUserRole.ADMIN
-    ) {
-      const adminCount = await this.communityUserRepository.count({
+    if (targetMember.role === 'admin' && updateMemberRoleDto.role !== 'admin') {
+      const adminCount = await this.prisma.communityUser.count({
         where: {
           community_id: communityId,
-          role: CommunityUserRole.ADMIN,
+          role: 'admin',
           is_active: true,
         },
       });
@@ -1038,11 +1025,13 @@ export class CommunityService {
       }
     }
 
-    targetMember.role = updateMemberRoleDto.role;
-    targetMember.updated_by = userId;
-    await this.communityUserRepository.save(targetMember);
+    const updatedMember = await this.prisma.communityUser.update({
+      where: { id: targetMember.id },
+      data: { role: updateMemberRoleDto.role, updated_by: userId },
+      include: { user: true },
+    });
 
-    return this.mapMemberToResponseDto(targetMember);
+    return this.mapMemberToResponseDto(updatedMember);
   }
 
   // Add Topic to Community
@@ -1051,9 +1040,9 @@ export class CommunityService {
     addTopicDto: AddTopicToCommunityDto,
     userId: number,
   ): Promise<CommunityTopicResponseDto> {
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findFirst({
       where: { id: communityId, is_active: true },
-      select: ['id'],
+      select: { id: true },
     });
 
     if (!community) {
@@ -1061,7 +1050,7 @@ export class CommunityService {
     }
 
     // Check if user has admin or moderator role
-    const membership = await this.communityUserRepository.findOne({
+    const membership = await this.prisma.communityUser.findFirst({
       where: {
         community_id: communityId,
         user_id: userId,
@@ -1071,8 +1060,7 @@ export class CommunityService {
 
     if (
       !membership ||
-      (membership.role !== CommunityUserRole.ADMIN &&
-        membership.role !== CommunityUserRole.MODERATOR)
+      (membership.role !== 'admin' && membership.role !== 'moderator')
     ) {
       throw new ForbiddenException(
         'Only community admins and moderators can add topics',
@@ -1080,9 +1068,9 @@ export class CommunityService {
     }
 
     // Check if topic exists
-    const topic = await this.topicRepository.findOne({
+    const topic = await this.prisma.topic.findFirst({
       where: { id: addTopicDto.topic_id, is_active: true },
-      select: ['id'],
+      select: { id: true },
     });
 
     if (!topic) {
@@ -1090,7 +1078,7 @@ export class CommunityService {
     }
 
     // Check if topic is already associated
-    const existingAssociation = await this.communityTopicRepository.findOne({
+    const existingAssociation = await this.prisma.communityTopic.findFirst({
       where: {
         community_id: communityId,
         topic_id: addTopicDto.topic_id,
@@ -1099,27 +1087,31 @@ export class CommunityService {
 
     if (existingAssociation) {
       if (existingAssociation.is_active) {
-        throw new ConflictException('Topic is already associated with this community');
+        throw new ConflictException(
+          'Topic is already associated with this community',
+        );
       } else {
         // Reactivate association
-        existingAssociation.is_active = true;
-        existingAssociation.updated_by = userId;
-        await this.communityTopicRepository.save(existingAssociation);
-        return this.mapTopicToResponseDto(existingAssociation);
+        const reactivated = await this.prisma.communityTopic.update({
+          where: { id: existingAssociation.id },
+          data: { is_active: true, updated_by: userId },
+          include: { topic: true },
+        });
+        return this.mapTopicToResponseDto(reactivated);
       }
     }
 
     // Create new association
-    const communityTopic = this.communityTopicRepository.create({
-      community_id: communityId,
-      topic_id: addTopicDto.topic_id,
-      is_active: true,
-      created_by: userId,
+    const savedAssociation = await this.prisma.communityTopic.create({
+      data: {
+        community_id: communityId,
+        topic_id: addTopicDto.topic_id,
+        is_active: true,
+        created_by: userId,
+      },
+      include: { topic: true },
     });
 
-    const savedAssociation = await this.communityTopicRepository.save(
-      communityTopic,
-    );
     return this.mapTopicToResponseDto(savedAssociation);
   }
 
@@ -1130,7 +1122,7 @@ export class CommunityService {
     userId: number,
   ): Promise<{ message: string }> {
     // Check if user has admin or moderator role
-    const membership = await this.communityUserRepository.findOne({
+    const membership = await this.prisma.communityUser.findFirst({
       where: {
         community_id: communityId,
         user_id: userId,
@@ -1140,15 +1132,14 @@ export class CommunityService {
 
     if (
       !membership ||
-      (membership.role !== CommunityUserRole.ADMIN &&
-        membership.role !== CommunityUserRole.MODERATOR)
+      (membership.role !== 'admin' && membership.role !== 'moderator')
     ) {
       throw new ForbiddenException(
         'Only community admins and moderators can remove topics',
       );
     }
 
-    const association = await this.communityTopicRepository.findOne({
+    const association = await this.prisma.communityTopic.findFirst({
       where: {
         community_id: communityId,
         topic_id: topicId,
@@ -1157,13 +1148,16 @@ export class CommunityService {
     });
 
     if (!association) {
-      throw new NotFoundException('Topic is not associated with this community');
+      throw new NotFoundException(
+        'Topic is not associated with this community',
+      );
     }
 
     // Soft delete
-    association.is_active = false;
-    association.updated_by = userId;
-    await this.communityTopicRepository.save(association);
+    await this.prisma.communityTopic.update({
+      where: { id: association.id },
+      data: { is_active: false, updated_by: userId },
+    });
 
     return { message: 'Topic removed from community successfully' };
   }
@@ -1172,19 +1166,19 @@ export class CommunityService {
   async getCommunityTopics(
     communityId: number,
   ): Promise<CommunityTopicResponseDto[]> {
-    const community = await this.communityRepository.findOne({
+    const community = await this.prisma.community.findUnique({
       where: { id: communityId },
-      select: ['id'],
+      select: { id: true },
     });
 
     if (!community) {
       throw new NotFoundException('Community not found');
     }
 
-    const topics = await this.communityTopicRepository.find({
+    const topics = await this.prisma.communityTopic.findMany({
       where: { community_id: communityId, is_active: true },
-      relations: ['topic'],
-      order: { created_at: 'DESC' },
+      include: { topic: true },
+      orderBy: { created_at: 'desc' },
     });
 
     return topics.map((topic) => this.mapTopicToResponseDto(topic));
@@ -1215,7 +1209,7 @@ export class CommunityService {
 
   // Helper: Map topic association to response DTO
   private mapTopicToResponseDto(
-    communityTopic: CommunityTopic,
+    communityTopic: any,
   ): CommunityTopicResponseDto {
     return {
       id: communityTopic.id,
@@ -1238,7 +1232,7 @@ export class CommunityService {
 
   // Helper: Map member to response DTO
   private mapMemberToResponseDto(
-    communityUser: CommunityUser,
+    communityUser: any,
   ): CommunityMemberResponseDto {
     return {
       id: communityUser.id,
@@ -1258,4 +1252,3 @@ export class CommunityService {
     };
   }
 }
-

@@ -45,4 +45,3 @@ export class MediaResponseDto {
   created_at: Date;
   updated_at: Date;
 }
-

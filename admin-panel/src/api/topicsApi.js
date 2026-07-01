@@ -1,16 +1,16 @@
 // src/api/topicsApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const topicsApi = {
   /**
    * Get paginated list of all topics (active and inactive)
-   * 
+   *
    * According to API_ADMIN_MODULE.md, the API only supports:
    * - page, limit, search, sort_by, sort_order
-   * 
+   *
    * Status and type filters are NOT supported server-side
    * and must be handled client-side.
-   * 
+   *
    * @param {Object} [params={}] - Query parameters
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Items per page (max 100)
@@ -25,22 +25,25 @@ const topicsApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
-      ...(params.is_active !== undefined && params.is_active !== null && { is_active: params.is_active }),
-      ...(params.parent_id !== undefined && params.parent_id !== null && { parent_id: params.parent_id }),
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
+      ...(params.is_active !== undefined &&
+        params.is_active !== null && { is_active: params.is_active }),
+      ...(params.parent_id !== undefined &&
+        params.parent_id !== null && { parent_id: params.parent_id }),
       ...(params.type && params.type !== 'all' && { type: params.type }),
-      ...(params.has_children !== undefined && params.has_children !== null && { has_children: params.has_children }),
+      ...(params.has_children !== undefined &&
+        params.has_children !== null && { has_children: params.has_children }),
       ...(params.created_from && { created_from: params.created_from }),
-      ...(params.created_to && { created_to: params.created_to })
+      ...(params.created_to && { created_to: params.created_to }),
     };
 
     // Remove undefined/null values
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/topics", { params: cleanedParams });
+    return axiosClient.get('/admin/topics', { params: cleanedParams });
   },
 
   /**
@@ -61,14 +64,15 @@ const topicsApi = {
     const isFormData = data instanceof FormData;
     if (isFormData) {
       // Let the browser/axios set Content-Type with the correct multipart boundary.
-      return axiosClient.post("/admin/topics", data);
+      return axiosClient.post('/admin/topics', data);
     }
     // For regular objects, convert is_active boolean to 'active'/'inactive' string
     const payload = { ...data };
     if (payload.is_active !== undefined) {
-      payload.is_active = payload.is_active === true || payload.is_active === 'active' ? 'active' : 'inactive';
+      payload.is_active =
+        payload.is_active === true || payload.is_active === 'active' ? 'active' : 'inactive';
     }
-    return axiosClient.post("/admin/topics", payload);
+    return axiosClient.post('/admin/topics', payload);
   },
 
   /**
@@ -86,7 +90,8 @@ const topicsApi = {
     // For regular objects, convert is_active boolean to 'active'/'inactive' string
     const payload = { ...data };
     if (payload.is_active !== undefined) {
-      payload.is_active = payload.is_active === true || payload.is_active === 'active' ? 'active' : 'inactive';
+      payload.is_active =
+        payload.is_active === true || payload.is_active === 'active' ? 'active' : 'inactive';
     }
     return axiosClient.put(`/admin/topics/${id}`, payload);
   },
@@ -102,7 +107,7 @@ const topicsApi = {
     // Ensure is_active is sent as 'active' or 'inactive' string
     const status = data.is_active === true || data.is_active === 'active' ? 'active' : 'inactive';
     const payload = {
-      is_active: status
+      is_active: status,
     };
     return axiosClient.put(`/admin/topics/${id}/status`, payload);
   },
@@ -118,11 +123,11 @@ const topicsApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/topics/${topicId}/posts`, { params: cleanedParams });
   },
@@ -138,11 +143,11 @@ const topicsApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/topics/${topicId}/communities`, { params: cleanedParams });
   },
@@ -164,22 +169,24 @@ const topicsApi = {
   exportTopics(params = {}) {
     const queryParams = {
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
-      ...(params.is_active !== undefined && params.is_active !== null && { is_active: params.is_active }),
-      ...(params.parent_id !== undefined && params.parent_id !== null && { parent_id: params.parent_id })
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
+      ...(params.is_active !== undefined &&
+        params.is_active !== null && { is_active: params.is_active }),
+      ...(params.parent_id !== undefined &&
+        params.parent_id !== null && { parent_id: params.parent_id }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/topics/export", { params: cleanedParams });
+    return axiosClient.get('/admin/topics/export', { params: cleanedParams });
   },
 
   /**
    * Get paginated list of only parent topics (parent_id = 0)
-   * 
+   *
    * @param {Object} [params={}] - Query parameters
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Items per page (max 100)
@@ -193,16 +200,16 @@ const topicsApi = {
       page: params.page || 1,
       limit: params.limit || 100,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
 
     // Remove undefined/null values
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/parent-topics", { params: cleanedParams });
+    return axiosClient.get('/admin/parent-topics', { params: cleanedParams });
   },
 
   /**
@@ -211,7 +218,7 @@ const topicsApi = {
    * @returns {Promise} Response with topics in select list format
    */
   getTopicsForSelectList() {
-    return axiosClient.get("/admin/topics/select-list");
+    return axiosClient.get('/admin/topics/select-list');
   },
 
   /**
@@ -222,7 +229,7 @@ const topicsApi = {
    */
   deleteTopic(id) {
     return axiosClient.delete(`/admin/topics/${id}`);
-  }
+  },
 };
 
 export default topicsApi;

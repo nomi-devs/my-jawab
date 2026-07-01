@@ -86,4 +86,3 @@ export class PollOption {
   })
   updated_at: Date;
 }
-

@@ -4,9 +4,7 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Support } from './entities/support.entity';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSupportDto } from './dto/create-support.dto';
 import { UpdateSupportDto } from './dto/update-support.dto';
 import { ActiveStatus } from '../admin/dto/list-users-query.dto';
@@ -15,16 +13,10 @@ import { ActiveStatus } from '../admin/dto/list-users-query.dto';
 export class SupportService {
   private readonly logger = new Logger(SupportService.name);
 
-  constructor(
-    @InjectRepository(Support)
-    private readonly supportRepository: Repository<Support>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(
-    createDto: CreateSupportDto,
-    userId: number,
-  ): Promise<Support> {
-    const existing = await this.supportRepository.findOne({ where: {} });
+  async create(createDto: CreateSupportDto, userId: number) {
+    const existing = await this.prisma.support.findFirst({});
     if (existing) {
       throw new ConflictException(
         'Support record already exists. Use update instead.',
@@ -35,27 +27,24 @@ export class SupportService {
       createDto.is_active === undefined ||
       createDto.is_active === ActiveStatus.ACTIVE;
 
-    const support = this.supportRepository.create({
-      email: createDto.email,
-      phone: createDto.phone,
-      whatsapp: createDto.whatsapp,
-      website: createDto.website,
-      address: createDto.address,
-      is_active: isActive,
-      created_by: userId,
+    const saved = await this.prisma.support.create({
+      data: {
+        email: createDto.email,
+        phone: createDto.phone,
+        whatsapp: createDto.whatsapp,
+        website: createDto.website,
+        address: createDto.address,
+        is_active: isActive,
+        created_by: userId,
+      },
     });
 
-    const saved = await this.supportRepository.save(support);
     this.logger.log(`Support record created by user ${userId}`);
     return saved;
   }
 
-  async update(
-    id: number,
-    updateDto: UpdateSupportDto,
-    userId: number,
-  ): Promise<Support> {
-    const support = await this.supportRepository.findOne({ where: { id } });
+  async update(id: number, updateDto: UpdateSupportDto, userId: number) {
+    const support = await this.prisma.support.findUnique({ where: { id } });
 
     if (!support) {
       throw new NotFoundException('Support record not found');
@@ -68,21 +57,26 @@ export class SupportService {
         updateData.is_active === ActiveStatus.ACTIVE;
     }
 
-    if (updateData.email !== undefined) support.email = updateData.email;
-    if (updateData.phone !== undefined) support.phone = updateData.phone;
-    if (updateData.whatsapp !== undefined) support.whatsapp = updateData.whatsapp;
-    if (updateData.website !== undefined) support.website = updateData.website;
-    if (updateData.address !== undefined) support.address = updateData.address;
-    if (updateData.is_active !== undefined) support.is_active = updateData.is_active;
-    support.updated_by = userId;
+    const data: Record<string, any> = { updated_by: userId };
+    if (updateData.email !== undefined) data.email = updateData.email;
+    if (updateData.phone !== undefined) data.phone = updateData.phone;
+    if (updateData.whatsapp !== undefined) data.whatsapp = updateData.whatsapp;
+    if (updateData.website !== undefined) data.website = updateData.website;
+    if (updateData.address !== undefined) data.address = updateData.address;
+    if (updateData.is_active !== undefined)
+      data.is_active = updateData.is_active;
 
-    const saved = await this.supportRepository.save(support);
+    const saved = await this.prisma.support.update({
+      where: { id },
+      data,
+    });
+
     this.logger.log(`Support record ${id} updated by user ${userId}`);
     return saved;
   }
 
-  async findActive(): Promise<Support> {
-    const support = await this.supportRepository.findOne({
+  async findActive() {
+    const support = await this.prisma.support.findFirst({
       where: { is_active: true },
     });
 
@@ -93,10 +87,9 @@ export class SupportService {
     return support;
   }
 
-  async findOne(): Promise<Support | null> {
-    return this.supportRepository.findOne({
-      where: {},
-      order: { id: 'DESC' },
+  async findOne() {
+    return this.prisma.support.findFirst({
+      orderBy: { id: 'desc' },
     });
   }
 }

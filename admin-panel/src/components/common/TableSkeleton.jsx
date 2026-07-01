@@ -27,8 +27,7 @@ const TableSkeleton = ({
     return columnWidths[i] || 'flex-1';
   });
 
-  const actionsCol =
-    typeof actionsColumnIndex === 'number' ? actionsColumnIndex : columns - 1;
+  const actionsCol = typeof actionsColumnIndex === 'number' ? actionsColumnIndex : columns - 1;
 
   return (
     <div

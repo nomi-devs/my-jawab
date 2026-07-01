@@ -17,7 +17,7 @@ const UserGrowthChart = () => {
         <div className="h-64 flex items-end space-x-2 justify-between px-2">
           {[40, 65, 45, 80, 55, 90, 75, 60, 85, 95, 70, 80].map((h, i) => (
             <div key={i} className="w-full bg-primary/10 rounded-t-lg relative group">
-              <div 
+              <div
                 className="absolute bottom-0 w-full bg-primary rounded-t-lg transition-all duration-500 group-hover:bg-primary/90"
                 style={{ height: `${h}%` }}
               ></div>
@@ -25,9 +25,11 @@ const UserGrowthChart = () => {
           ))}
         </div>
         <div className="flex justify-between mt-4 text-xs text-muted-foreground">
-          {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month) => (
-            <span key={month}>{month}</span>
-          ))}
+          {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(
+            (month) => (
+              <span key={month}>{month}</span>
+            ),
+          )}
         </div>
       </CardContent>
     </Card>

@@ -43,7 +43,9 @@ export class PostComment {
   @Index()
   parent_comment_id: number | null;
 
-  @ManyToOne(() => PostComment, (comment) => comment.replies, { nullable: true })
+  @ManyToOne(() => PostComment, (comment) => comment.replies, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'parent_comment_id' })
   parent_comment: PostComment | null;
 
@@ -114,4 +116,3 @@ export class PostComment {
   @OneToMany(() => CommentLike, (commentLike) => commentLike.comment)
   likes: CommentLike[];
 }
-

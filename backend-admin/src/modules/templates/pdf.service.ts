@@ -40,7 +40,10 @@ export class PdfService {
       // Generate PDF from HTML
       return await this.generateFromHtml(html, options);
     } catch (error) {
-      this.logger.error(`Error generating PDF from template ${templateName}:`, error);
+      this.logger.error(
+        `Error generating PDF from template ${templateName}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -62,7 +65,9 @@ export class PdfService {
     } = {},
   ): Promise<Buffer> {
     if (!puppeteer) {
-      throw new Error('Puppeteer is not installed. Install it with: npm install puppeteer');
+      throw new Error(
+        'Puppeteer is not installed. Install it with: npm install puppeteer',
+      );
     }
 
     let browser;
@@ -73,7 +78,7 @@ export class PdfService {
       });
 
       const page = await browser.newPage();
-      
+
       // Set content
       await page.setContent(html, {
         waitUntil: 'networkidle0',

@@ -87,4 +87,3 @@ export class CommunityUser {
   })
   updated_at: Date;
 }
-

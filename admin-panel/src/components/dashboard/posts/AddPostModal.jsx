@@ -1,14 +1,19 @@
 // src/components/dashboard/posts/AddPostModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, FilePlus, Hash, Tag, Image as ImageIcon, Video, Link as LinkIcon, Save } from 'lucide-react';
+import {
+  X,
+  FilePlus,
+  Hash,
+  Tag,
+  Image as ImageIcon,
+  Video,
+  Link as LinkIcon,
+  Save,
+} from 'lucide-react';
 import topicsApi from '../../../api/topicsApi';
 import TopicsPickerModal from '../../common/TopicsPickerModal';
 
-const AddPostModal = React.memo(({
-  isOpen,
-  onClose,
-  onAddPost
-}) => {
+const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
   const [formData, setFormData] = useState({
     post_slug: '',
     post_title: '',
@@ -22,7 +27,7 @@ const AddPostModal = React.memo(({
     post_link: '',
     // Use string values to match API and other components ('featured' | 'not_featured')
     is_featured: false,
-    community_ids: []
+    community_ids: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newTag, setNewTag] = useState('');
@@ -55,7 +60,7 @@ const AddPostModal = React.memo(({
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    setFormData(prev => {
+    setFormData((prev) => {
       return {
         ...prev,
         [name]: type === 'checkbox' ? checked : value,
@@ -75,26 +80,26 @@ const AddPostModal = React.memo(({
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
-      setFormData(prev => ({ ...prev, post_slug: slug }));
+      setFormData((prev) => ({ ...prev, post_slug: slug }));
     } else {
-      setFormData(prev => ({ ...prev, post_slug: '' }));
+      setFormData((prev) => ({ ...prev, post_slug: '' }));
     }
   }, [formData.post_title]);
 
   const handleAddTag = () => {
     if (newTag.trim() && !formData.post_tags.includes(newTag.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        post_tags: [...prev.post_tags, newTag.trim()]
+        post_tags: [...prev.post_tags, newTag.trim()],
       }));
       setNewTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      post_tags: prev.post_tags.filter(tag => tag !== tagToRemove)
+      post_tags: prev.post_tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
@@ -132,7 +137,7 @@ const AddPostModal = React.memo(({
         formDataToSend.append('post_status', formData.post_status);
       }
       if (formData.post_tags.length > 0) {
-        formData.post_tags.forEach(tag => {
+        formData.post_tags.forEach((tag) => {
           formDataToSend.append('post_tags[]', tag);
         });
       }
@@ -149,7 +154,7 @@ const AddPostModal = React.memo(({
         formDataToSend.append('post_link', formData.post_link);
       }
       if (formData.community_ids.length > 0) {
-        formData.community_ids.forEach(id => {
+        formData.community_ids.forEach((id) => {
           formDataToSend.append('community_ids[]', id);
         });
       }
@@ -183,7 +188,7 @@ const AddPostModal = React.memo(({
       post_audio: '',
       post_link: '',
       is_featured: false,
-      community_ids: []
+      community_ids: [],
     });
     setNewTag('');
     setSelectedFiles([]);
@@ -206,8 +211,12 @@ const AddPostModal = React.memo(({
               <FilePlus className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">Create New Post</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Fill in the post details</p>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Create New Post
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                Fill in the post details
+              </p>
             </div>
           </div>
           <button
@@ -220,7 +229,11 @@ const AddPostModal = React.memo(({
         </div>
 
         {/* Scrollable Modal Body */}
-        <form id="add-post-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form
+          id="add-post-form"
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <div className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarGutter: 'stable' }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Post Title - Full width */}
@@ -271,7 +284,9 @@ const AddPostModal = React.memo(({
                             for (const parent of topics) {
                               if (parent.id === formData.post_topic_id) return parent.name;
                               if (parent.children) {
-                                const child = parent.children.find(c => c.id === formData.post_topic_id);
+                                const child = parent.children.find(
+                                  (c) => c.id === formData.post_topic_id,
+                                );
                                 if (child) return child.name;
                               }
                             }
@@ -280,7 +295,7 @@ const AddPostModal = React.memo(({
                         </span>
                         <button
                           type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, post_topic_id: '' }))}
+                          onClick={() => setFormData((prev) => ({ ...prev, post_topic_id: '' }))}
                           className="p-0.5 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-full transition-colors"
                         >
                           <X size={12} className="text-purple-400" />
@@ -398,7 +413,10 @@ const AddPostModal = React.memo(({
                 {selectedFiles.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {selectedFiles.map((file, index) => (
-                      <span key={index} className="px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded transition-colors">
+                      <span
+                        key={index}
+                        className="px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded transition-colors"
+                      >
                         {file.name}
                       </span>
                     ))}
@@ -461,7 +479,9 @@ const AddPostModal = React.memo(({
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
                       Featured Post
                     </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Mark this post as featured</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                      Mark this post as featured
+                    </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -485,7 +505,7 @@ const AddPostModal = React.memo(({
           onClose={() => setShowTopicsModal(false)}
           initialSelectedIds={formData.post_topic_id}
           multiple={false}
-          onSave={(selectedId) => setFormData(prev => ({ ...prev, post_topic_id: selectedId }))}
+          onSave={(selectedId) => setFormData((prev) => ({ ...prev, post_topic_id: selectedId }))}
         />
 
         {/* Fixed Modal Footer */}
@@ -524,4 +544,3 @@ const AddPostModal = React.memo(({
 
 AddPostModal.displayName = 'AddPostModal';
 export default AddPostModal;
-

@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { PrivacyPolicy } from './entities/privacy-policy.entity';
 import {
   PrivacyPolicyController,
   AdminPrivacyPolicyController,
@@ -8,7 +6,7 @@ import {
 import { PrivacyPolicyService } from './privacy-policy.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PrivacyPolicy])],
+  imports: [],
   controllers: [PrivacyPolicyController, AdminPrivacyPolicyController],
   providers: [PrivacyPolicyService],
   exports: [PrivacyPolicyService],

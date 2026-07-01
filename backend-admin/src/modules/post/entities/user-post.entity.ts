@@ -33,7 +33,8 @@ export class UserPost {
     type: 'varchar',
     length: 500,
     nullable: true,
-    comment: 'Comma-separated community IDs if the post is in one or more communities',
+    comment:
+      'Comma-separated community IDs if the post is in one or more communities',
   })
   community_ids: string | null;
 
@@ -207,4 +208,3 @@ export class UserPost {
   @OneToMany(() => PostLike, (postLike) => postLike.post)
   likes: PostLike[];
 }
-

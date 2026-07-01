@@ -14,7 +14,7 @@ const AddPaymentModal = ({ isOpen, onClose, onSuccess }) => {
     payment_currency: 'USD',
     currency_id: '',
     payment_gateway: 'stripe',
-    payment_transaction_id: ''
+    payment_transaction_id: '',
   });
   const [userSubscriptions, setUserSubscriptions] = useState([]);
   const [currencies, setCurrencies] = useState([]);
@@ -34,17 +34,17 @@ const AddPaymentModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       setLoadingCurrencies(true);
       const response = await currenciesApi.getCurrencies();
-      const activeCurrencies = (response.data || []).filter(c => c.is_active);
+      const activeCurrencies = (response.data || []).filter((c) => c.is_active);
       setCurrencies(activeCurrencies);
 
       // Select default currency if available
       if (activeCurrencies.length > 0 && !formData.currency_id) {
-        const usd = activeCurrencies.find(c => c.currency_code === 'USD');
+        const usd = activeCurrencies.find((c) => c.currency_code === 'USD');
         const defaultCurrency = usd || activeCurrencies[0];
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           currency_id: defaultCurrency.id,
-          payment_currency: defaultCurrency.currency_code
+          payment_currency: defaultCurrency.currency_code,
         }));
       }
     } catch (err) {
@@ -60,7 +60,7 @@ const AddPaymentModal = ({ isOpen, onClose, onSuccess }) => {
       const response = await subscriptionsApi.getUserSubscriptions({
         page: 1,
         limit: 100,
-        subscription_status: 'active'
+        subscription_status: 'active',
       });
       setUserSubscriptions(response.data.data || []);
     } catch (err) {
@@ -76,16 +76,16 @@ const AddPaymentModal = ({ isOpen, onClose, onSuccess }) => {
     const { name, value } = e.target;
 
     if (name === 'currency_id') {
-      const selectedCurrency = currencies.find(c => c.id === parseInt(value));
-      setFormData(prev => ({
+      const selectedCurrency = currencies.find((c) => c.id === parseInt(value));
+      setFormData((prev) => ({
         ...prev,
         currency_id: value,
-        payment_currency: selectedCurrency ? selectedCurrency.currency_code : prev.payment_currency
+        payment_currency: selectedCurrency ? selectedCurrency.currency_code : prev.payment_currency,
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
@@ -100,7 +100,7 @@ const AddPaymentModal = ({ isOpen, onClose, onSuccess }) => {
         ...formData,
         users_subscriptions_id: parseInt(formData.users_subscriptions_id),
         payment_amount: parseFloat(formData.payment_amount),
-        currency_id: formData.currency_id ? parseInt(formData.currency_id) : null
+        currency_id: formData.currency_id ? parseInt(formData.currency_id) : null,
       };
 
       await paymentsApi.createPayment(submitData);
@@ -131,7 +131,11 @@ const AddPaymentModal = ({ isOpen, onClose, onSuccess }) => {
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarGutter: 'stable' }}>
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto px-6 py-5"
+          style={{ scrollbarGutter: 'stable' }}
+        >
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-xs rounded-lg">
               {error}
@@ -155,7 +159,8 @@ const AddPaymentModal = ({ isOpen, onClose, onSuccess }) => {
                 <option value="">Select subscription...</option>
                 {userSubscriptions.map((sub) => (
                   <option key={sub.id} value={sub.id}>
-                    User {sub.user_id} - {sub.subscription?.subscription_name || 'N/A'} ({sub.subscription_status})
+                    User {sub.user_id} - {sub.subscription?.subscription_name || 'N/A'} (
+                    {sub.subscription_status})
                   </option>
                 ))}
               </select>
@@ -311,4 +316,3 @@ const AddPaymentModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 export default AddPaymentModal;
-

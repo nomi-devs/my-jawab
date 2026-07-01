@@ -6,21 +6,21 @@
  * @param {string} prefix - The prefix for the keys (internal use).
  * @returns {Object} - The flattened object.
  */
-export const flattenObject = (obj, prefix = "") => {
-    return Object.keys(obj).reduce((acc, k) => {
-        const pre = prefix.length ? prefix + "." : "";
-        if (
-            typeof obj[k] === "object" &&
-            obj[k] !== null &&
-            !Array.isArray(obj[k]) &&
-            !(obj[k] instanceof Date)
-        ) {
-            Object.assign(acc, flattenObject(obj[k], pre + k));
-        } else {
-            acc[pre + k] = obj[k];
-        }
-        return acc;
-    }, {});
+export const flattenObject = (obj, prefix = '') => {
+  return Object.keys(obj).reduce((acc, k) => {
+    const pre = prefix.length ? prefix + '.' : '';
+    if (
+      typeof obj[k] === 'object' &&
+      obj[k] !== null &&
+      !Array.isArray(obj[k]) &&
+      !(obj[k] instanceof Date)
+    ) {
+      Object.assign(acc, flattenObject(obj[k], pre + k));
+    } else {
+      acc[pre + k] = obj[k];
+    }
+    return acc;
+  }, {});
 };
 
 /**
@@ -29,25 +29,25 @@ export const flattenObject = (obj, prefix = "") => {
  * @returns {string} - The CSV string.
  */
 export const convertToCSV = (data) => {
-    if (!data || !data.length) return "";
+  if (!data || !data.length) return '';
 
-    const flattenedData = data.map((item) => flattenObject(item));
-    const headers = Object.keys(flattenedData[0]);
+  const flattenedData = data.map((item) => flattenObject(item));
+  const headers = Object.keys(flattenedData[0]);
 
-    const csvRows = [
-        headers.join(","), // Header row
-        ...flattenedData.map((row) =>
-            headers
-                .map((fieldName) => {
-                    const value = row[fieldName] ?? "";
-                    const escaped = String(value).replace(/"/g, '""');
-                    return `"${escaped}"`;
-                })
-                .join(",")
-        ),
-    ];
+  const csvRows = [
+    headers.join(','), // Header row
+    ...flattenedData.map((row) =>
+      headers
+        .map((fieldName) => {
+          const value = row[fieldName] ?? '';
+          const escaped = String(value).replace(/"/g, '""');
+          return `"${escaped}"`;
+        })
+        .join(','),
+    ),
+  ];
 
-    return csvRows.join("\n");
+  return csvRows.join('\n');
 };
 
 /**
@@ -56,12 +56,12 @@ export const convertToCSV = (data) => {
  * @returns {string} - The HTML string.
  */
 export const convertToExcelHTML = (data) => {
-    if (!data || !data.length) return "";
+  if (!data || !data.length) return '';
 
-    const flattenedData = data.map((item) => flattenObject(item));
-    const headers = Object.keys(flattenedData[0]);
+  const flattenedData = data.map((item) => flattenObject(item));
+  const headers = Object.keys(flattenedData[0]);
 
-    let html = `
+  let html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
     <head>
       <meta charset="UTF-8">
@@ -89,26 +89,26 @@ export const convertToExcelHTML = (data) => {
       <table>
         <thead>
           <tr>
-            ${headers.map((h) => `<th>${h}</th>`).join("")}
+            ${headers.map((h) => `<th>${h}</th>`).join('')}
           </tr>
         </thead>
         <tbody>
           ${flattenedData
             .map(
-                (row) => `
+              (row) => `
             <tr>
-              ${headers.map((h) => `<td>${row[h] ?? ""}</td>`).join("")}
+              ${headers.map((h) => `<td>${row[h] ?? ''}</td>`).join('')}
             </tr>
-          `
+          `,
             )
-            .join("")}
+            .join('')}
         </tbody>
       </table>
     </body>
     </html>
   `;
 
-    return html;
+  return html;
 };
 
 /**
@@ -118,14 +118,14 @@ export const convertToExcelHTML = (data) => {
  * @param {string} mimeType - The MIME type of the file.
  */
 export const downloadFile = (content, fileName, mimeType) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", fileName);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+  const blob = new Blob([content], { type: mimeType });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', fileName);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 };

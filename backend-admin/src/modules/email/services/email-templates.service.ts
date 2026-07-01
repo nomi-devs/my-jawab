@@ -16,7 +16,7 @@ export class EmailTemplatesService {
     private emailQueueService: EmailQueueService,
     private templatesService: TemplatesService,
     private configService: ConfigService,
-  ) { }
+  ) {}
 
   /**
    * Send account creation email
@@ -30,7 +30,10 @@ export class EmailTemplatesService {
   }): Promise<boolean> {
     // Check if email service and feature are enabled
     const emailEnabled = this.configService.get<boolean>('email.enabled', true);
-    const featureEnabled = this.configService.get<boolean>('email.features.accountCreation', true);
+    const featureEnabled = this.configService.get<boolean>(
+      'email.features.accountCreation',
+      true,
+    );
 
     if (!emailEnabled || !featureEnabled) {
       this.logger.warn('Account creation email is disabled');
@@ -39,7 +42,10 @@ export class EmailTemplatesService {
 
     try {
       const appName = this.configService.get<string>('app.name', 'Jawab');
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
 
       const email = await this.emailService.create({
         email_type: EmailType.WELCOME,
@@ -59,7 +65,10 @@ export class EmailTemplatesService {
             'Connect with others',
           ],
         },
-        from_email: this.configService.get<string>('email.from', 'noreply@jawab.com'),
+        from_email: this.configService.get<string>(
+          'email.from',
+          'noreply@jawab.com',
+        ),
         from_name: this.configService.get<string>('email.fromName', appName),
         reply_to: this.configService.get<string>('email.replyTo'),
       });
@@ -82,7 +91,10 @@ export class EmailTemplatesService {
   }): Promise<boolean> {
     // Check if email service and feature are enabled
     const emailEnabled = this.configService.get<boolean>('email.enabled', true);
-    const featureEnabled = this.configService.get<boolean>('email.features.verification', true);
+    const featureEnabled = this.configService.get<boolean>(
+      'email.features.verification',
+      true,
+    );
 
     if (!emailEnabled || !featureEnabled) {
       this.logger.warn('Verification email is disabled');
@@ -91,8 +103,13 @@ export class EmailTemplatesService {
 
     try {
       const appName = this.configService.get<string>('app.name', 'Jawab');
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
-      const verificationUrl = data.verificationUrl || `${appUrl}/verify?code=${data.verificationCode}&email=${encodeURIComponent(data.recipientEmail)}`;
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
+      const verificationUrl =
+        data.verificationUrl ||
+        `${appUrl}/verify?code=${data.verificationCode}&email=${encodeURIComponent(data.recipientEmail)}`;
 
       const email = await this.emailService.create({
         email_type: EmailType.VERIFICATION,
@@ -107,7 +124,10 @@ export class EmailTemplatesService {
           appName,
           appUrl,
         },
-        from_email: this.configService.get<string>('email.from', 'noreply@jawab.com'),
+        from_email: this.configService.get<string>(
+          'email.from',
+          'noreply@jawab.com',
+        ),
         from_name: this.configService.get<string>('email.fromName', appName),
         reply_to: this.configService.get<string>('email.replyTo'),
       });
@@ -135,7 +155,10 @@ export class EmailTemplatesService {
   }): Promise<boolean> {
     // Check if email service and feature are enabled
     const emailEnabled = this.configService.get<boolean>('email.enabled', true);
-    const featureEnabled = this.configService.get<boolean>('email.features.passwordReset', true);
+    const featureEnabled = this.configService.get<boolean>(
+      'email.features.passwordReset',
+      true,
+    );
 
     if (!emailEnabled || !featureEnabled) {
       this.logger.warn('Password reset email is disabled');
@@ -144,8 +167,13 @@ export class EmailTemplatesService {
 
     try {
       const appName = this.configService.get<string>('app.name', 'Jawab');
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
-      const resetUrl = data.resetUrl || `${appUrl}/reset-password?code=${data.resetCode}&email=${encodeURIComponent(data.recipientEmail)}`;
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
+      const resetUrl =
+        data.resetUrl ||
+        `${appUrl}/reset-password?code=${data.resetCode}&email=${encodeURIComponent(data.recipientEmail)}`;
 
       const email = await this.emailService.create({
         email_type: EmailType.PASSWORD_RESET,
@@ -160,7 +188,10 @@ export class EmailTemplatesService {
           appName,
           appUrl,
         },
-        from_email: this.configService.get<string>('email.from', 'noreply@jawab.com'),
+        from_email: this.configService.get<string>(
+          'email.from',
+          'noreply@jawab.com',
+        ),
         from_name: this.configService.get<string>('email.fromName', appName),
         reply_to: this.configService.get<string>('email.replyTo'),
       });
@@ -188,7 +219,10 @@ export class EmailTemplatesService {
   }): Promise<boolean> {
     // Check if email service and feature are enabled
     const emailEnabled = this.configService.get<boolean>('email.enabled', true);
-    const featureEnabled = this.configService.get<boolean>('email.features.subscriptionConfirmation', true);
+    const featureEnabled = this.configService.get<boolean>(
+      'email.features.subscriptionConfirmation',
+      true,
+    );
 
     if (!emailEnabled || !featureEnabled) {
       this.logger.warn('Subscription confirmation email is disabled');
@@ -197,7 +231,10 @@ export class EmailTemplatesService {
 
     try {
       const appName = this.configService.get<string>('app.name', 'Jawab');
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
 
       const email = await this.emailService.create({
         email_type: EmailType.ADMIN,
@@ -211,22 +248,36 @@ export class EmailTemplatesService {
           subscriptionType: data.subscriptionType || data.subscriptionName,
           amount: data.amount,
           currency: data.currency,
-          startDate: typeof data.startDate === 'string' ? data.startDate : data.startDate.toISOString().split('T')[0],
-          endDate: typeof data.endDate === 'string' ? data.endDate : data.endDate.toISOString().split('T')[0],
+          startDate:
+            typeof data.startDate === 'string'
+              ? data.startDate
+              : data.startDate.toISOString().split('T')[0],
+          endDate:
+            typeof data.endDate === 'string'
+              ? data.endDate
+              : data.endDate.toISOString().split('T')[0],
           renewalDate: data.renewalDate
-            ? (typeof data.renewalDate === 'string' ? data.renewalDate : data.renewalDate.toISOString().split('T')[0])
+            ? typeof data.renewalDate === 'string'
+              ? data.renewalDate
+              : data.renewalDate.toISOString().split('T')[0]
             : null,
           appName,
           appUrl,
         },
-        from_email: this.configService.get<string>('email.from', 'noreply@jawab.com'),
+        from_email: this.configService.get<string>(
+          'email.from',
+          'noreply@jawab.com',
+        ),
         from_name: this.configService.get<string>('email.fromName', appName),
         reply_to: this.configService.get<string>('email.replyTo'),
       });
 
       return await this.sendEmail(email);
     } catch (error) {
-      this.logger.error('Error sending subscription confirmation email:', error);
+      this.logger.error(
+        'Error sending subscription confirmation email:',
+        error,
+      );
       return false;
     }
   }
@@ -242,7 +293,10 @@ export class EmailTemplatesService {
   }): Promise<boolean> {
     // Check if email service and feature are enabled
     const emailEnabled = this.configService.get<boolean>('email.enabled', true);
-    const featureEnabled = this.configService.get<boolean>('email.features.subscriptionExpired', true);
+    const featureEnabled = this.configService.get<boolean>(
+      'email.features.subscriptionExpired',
+      true,
+    );
 
     if (!emailEnabled || !featureEnabled) {
       this.logger.warn('Subscription expired email is disabled');
@@ -251,7 +305,10 @@ export class EmailTemplatesService {
 
     try {
       const appName = this.configService.get<string>('app.name', 'Jawab');
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
 
       const email = await this.emailService.create({
         email_type: EmailType.ADMIN,
@@ -262,13 +319,17 @@ export class EmailTemplatesService {
         template_data: {
           name: data.recipientName || data.recipientEmail,
           subscriptionName: data.subscriptionName,
-          expiredDate: typeof data.expiredDate === 'string'
-            ? data.expiredDate
-            : data.expiredDate.toISOString().split('T')[0],
+          expiredDate:
+            typeof data.expiredDate === 'string'
+              ? data.expiredDate
+              : data.expiredDate.toISOString().split('T')[0],
           appName,
           appUrl,
         },
-        from_email: this.configService.get<string>('email.from', 'noreply@jawab.com'),
+        from_email: this.configService.get<string>(
+          'email.from',
+          'noreply@jawab.com',
+        ),
         from_name: this.configService.get<string>('email.fromName', appName),
         reply_to: this.configService.get<string>('email.replyTo'),
       });
@@ -294,7 +355,10 @@ export class EmailTemplatesService {
   }): Promise<boolean> {
     // Check if email service and feature are enabled
     const emailEnabled = this.configService.get<boolean>('email.enabled', true);
-    const featureEnabled = this.configService.get<boolean>('email.features.subscriptionReminder', true);
+    const featureEnabled = this.configService.get<boolean>(
+      'email.features.subscriptionReminder',
+      true,
+    );
 
     if (!emailEnabled || !featureEnabled) {
       this.logger.warn('Subscription reminder email is disabled');
@@ -303,7 +367,10 @@ export class EmailTemplatesService {
 
     try {
       const appName = this.configService.get<string>('app.name', 'Jawab');
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
       const paymentUrl = data.paymentUrl || `${appUrl}/subscriptions/payment`;
 
       const email = await this.emailService.create({
@@ -321,7 +388,10 @@ export class EmailTemplatesService {
           appName,
           appUrl,
         },
-        from_email: this.configService.get<string>('email.from', 'noreply@jawab.com'),
+        from_email: this.configService.get<string>(
+          'email.from',
+          'noreply@jawab.com',
+        ),
         from_name: this.configService.get<string>('email.fromName', appName),
         reply_to: this.configService.get<string>('email.replyTo'),
       });
@@ -346,7 +416,10 @@ export class EmailTemplatesService {
   }): Promise<boolean> {
     // Check if email service and feature are enabled
     const emailEnabled = this.configService.get<boolean>('email.enabled', true);
-    const featureEnabled = this.configService.get<boolean>('email.features.notifications', true);
+    const featureEnabled = this.configService.get<boolean>(
+      'email.features.notifications',
+      true,
+    );
 
     if (!emailEnabled || !featureEnabled) {
       this.logger.warn('Notification email is disabled');
@@ -355,7 +428,10 @@ export class EmailTemplatesService {
 
     try {
       const appName = this.configService.get<string>('app.name', 'Jawab');
-      const appUrl = this.configService.get<string>('app.url', 'https://demo.jantrah.com/jawaab');
+      const appUrl = this.configService.get<string>(
+        'app.url',
+        'https://demo.jantrah.com/jawaab',
+      );
 
       const email = await this.emailService.create({
         email_type: EmailType.NOTIFICATION,
@@ -372,7 +448,10 @@ export class EmailTemplatesService {
           appName,
           appUrl,
         },
-        from_email: this.configService.get<string>('email.from', 'noreply@jawab.com'),
+        from_email: this.configService.get<string>(
+          'email.from',
+          'noreply@jawab.com',
+        ),
         from_name: this.configService.get<string>('email.fromName', appName),
         reply_to: this.configService.get<string>('email.replyTo'),
       });
@@ -395,7 +474,9 @@ export class EmailTemplatesService {
         // Add to queue for background processing
         const jobId = await this.emailQueueService.addEmailToQueue(email);
         if (jobId) {
-          this.logger.log(`Email ${email.id} added to queue with job ID: ${jobId}`);
+          this.logger.log(
+            `Email ${email.id} added to queue with job ID: ${jobId}`,
+          );
           // Update status to queued
           await this.emailService.updateStatus(email.id, EmailStatus.QUEUED, {
             queued_at: new Date(),

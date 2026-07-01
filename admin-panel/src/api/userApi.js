@@ -1,16 +1,16 @@
 // src/api/userApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const userApi = {
   /**
    * Get paginated list of all users with optional search and sorting
-   * 
+   *
    * According to API_ADMIN_MODULE.md, the API only supports:
    * - page, limit, search, sort_by, sort_order
-   * 
+   *
    * Role, status, and verification filters are NOT supported server-side
    * and must be handled client-side.
-   * 
+   *
    * @param {Object} [params={}] - Query parameters
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Items per page (max 100)
@@ -25,22 +25,24 @@ const userApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
       ...(params.role && params.role !== 'all' && { role: params.role }),
-      ...(params.is_active !== undefined && params.is_active !== null && { is_active: params.is_active }),
-      ...(params.is_verified !== undefined && params.is_verified !== null && { is_verified: params.is_verified }),
+      ...(params.is_active !== undefined &&
+        params.is_active !== null && { is_active: params.is_active }),
+      ...(params.is_verified !== undefined &&
+        params.is_verified !== null && { is_verified: params.is_verified }),
       ...(params.created_from && { created_from: params.created_from }),
       ...(params.created_to && { created_to: params.created_to }),
-      ...(params.user_id && { user_id: params.user_id })
+      ...(params.user_id && { user_id: params.user_id }),
     };
 
     // Remove undefined/null values
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/users", { params: cleanedParams });
+    return axiosClient.get('/admin/users', { params: cleanedParams });
   },
 
   /**
@@ -83,13 +85,13 @@ const userApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
-    return axiosClient.get("/admin/users/deleted", { params: cleanedParams });
+    return axiosClient.get('/admin/users/deleted', { params: cleanedParams });
   },
 
   /**
@@ -119,11 +121,11 @@ const userApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/users/${userId}/posts`, { params: cleanedParams });
   },
@@ -139,11 +141,11 @@ const userApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/users/${userId}/communities`, { params: cleanedParams });
   },
@@ -159,11 +161,11 @@ const userApi = {
       page: params.page || 1,
       limit: params.limit || 10,
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC"
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
     };
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
     return axiosClient.get(`/admin/users/${userId}/comments`, { params: cleanedParams });
   },
@@ -183,7 +185,7 @@ const userApi = {
    * This is intended for the logged-in admin/sub_admin to manage their own profile.
    */
   getOwnProfile() {
-    return axiosClient.get("/users/profile");
+    return axiosClient.get('/users/profile');
   },
 
   /**
@@ -194,15 +196,16 @@ const userApi = {
    * @param {Object|FormData} data - Profile update payload
    */
   updateOwnProfile(data) {
-    const config = data instanceof FormData
-      ? {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-      : {};
+    const config =
+      data instanceof FormData
+        ? {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        : {};
 
-    return axiosClient.put("/users/profile", data, config);
+    return axiosClient.put('/users/profile', data, config);
   },
 
   /**
@@ -221,7 +224,7 @@ const userApi = {
    * @returns {Promise} Response with created user data
    */
   createUser(data) {
-    return axiosClient.post("/admin/users", data);
+    return axiosClient.post('/admin/users', data);
   },
 
   /**
@@ -240,13 +243,14 @@ const userApi = {
    */
   updateUser(id, data) {
     // If FormData, set proper headers for multipart/form-data
-    const config = data instanceof FormData
-      ? {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-      : {};
+    const config =
+      data instanceof FormData
+        ? {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        : {};
 
     return axiosClient.put(`/admin/users/${id}`, data, config);
   },
@@ -259,22 +263,24 @@ const userApi = {
   exportUsers(params = {}) {
     const queryParams = {
       ...(params.search && params.search.trim() && { search: params.search.trim() }),
-      sort_by: params.sort_by || "created_at",
-      sort_order: params.sort_order || "DESC",
+      sort_by: params.sort_by || 'created_at',
+      sort_order: params.sort_order || 'DESC',
       ...(params.role && params.role !== 'all' && { role: params.role }),
-      ...(params.is_active !== undefined && params.is_active !== null && { is_active: params.is_active }),
-      ...(params.is_verified !== undefined && params.is_verified !== null && { is_verified: params.is_verified }),
+      ...(params.is_active !== undefined &&
+        params.is_active !== null && { is_active: params.is_active }),
+      ...(params.is_verified !== undefined &&
+        params.is_verified !== null && { is_verified: params.is_verified }),
       ...(params.created_from && { created_from: params.created_from }),
       ...(params.created_to && { created_to: params.created_to }),
-      ...(params.user_id && { user_id: params.user_id })
+      ...(params.user_id && { user_id: params.user_id }),
     };
 
     const cleanedParams = Object.fromEntries(
-      Object.entries(queryParams).filter(([_, value]) => value != null)
+      Object.entries(queryParams).filter(([_, value]) => value != null),
     );
 
-    return axiosClient.get("/admin/users/export", { params: cleanedParams });
-  }
+    return axiosClient.get('/admin/users/export', { params: cleanedParams });
+  },
 };
 
 export default userApi;

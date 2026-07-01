@@ -1,14 +1,22 @@
 // src/components/dashboard/users/EditUserModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Shield, Save, Image, Globe, MapPin, Calendar, Briefcase, Loader2, AlertCircle } from 'lucide-react';
+import {
+  X,
+  User,
+  Mail,
+  Shield,
+  Save,
+  Image,
+  Globe,
+  MapPin,
+  Calendar,
+  Briefcase,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import userApi from '../../../api/userApi';
 
-const EditUserModal = React.memo(({
-  isOpen,
-  onClose,
-  user,
-  onSave
-}) => {
+const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
   // Helper function to get today's date in YYYY-MM-DD format (max date for birthday)
   const getMaxDate = () => {
     const today = new Date();
@@ -34,7 +42,7 @@ const EditUserModal = React.memo(({
     profile_gender: '',
     profile_birthday: '',
     profile_website: '',
-    profile_location: ''
+    profile_location: '',
   });
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [profileBackgroundFile, setProfileBackgroundFile] = useState(null);
@@ -75,9 +83,11 @@ const EditUserModal = React.memo(({
             tagline: profile.tagline || '',
             profile_bio: profile.profile_bio || '',
             profile_gender: profile.profile_gender || '',
-            profile_birthday: profile.profile_birthday ? profile.profile_birthday.split('T')[0] : '',
+            profile_birthday: profile.profile_birthday
+              ? profile.profile_birthday.split('T')[0]
+              : '',
             profile_website: profile.profile_website || '',
-            profile_location: profile.profile_location || ''
+            profile_location: profile.profile_location || '',
           });
 
           // Set previews for existing images
@@ -106,9 +116,11 @@ const EditUserModal = React.memo(({
             tagline: profile.tagline || '',
             profile_bio: profile.profile_bio || '',
             profile_gender: profile.profile_gender || '',
-            profile_birthday: profile.profile_birthday ? profile.profile_birthday.split('T')[0] : '',
+            profile_birthday: profile.profile_birthday
+              ? profile.profile_birthday.split('T')[0]
+              : '',
             profile_website: profile.profile_website || '',
-            profile_location: profile.profile_location || ''
+            profile_location: profile.profile_location || '',
           });
         } finally {
           setInitialLoading(false);
@@ -121,17 +133,17 @@ const EditUserModal = React.memo(({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleTextareaChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -156,7 +168,7 @@ const EditUserModal = React.memo(({
     if (!file) {
       setProfilePictureFile(null);
       setProfilePicturePreview(null);
-      setFileErrors(prev => {
+      setFileErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.profile_picture;
         return newErrors;
@@ -166,7 +178,7 @@ const EditUserModal = React.memo(({
 
     const validationError = validateFile(file, 'profile_picture');
     if (validationError) {
-      setFileErrors(prev => ({ ...prev, ...validationError }));
+      setFileErrors((prev) => ({ ...prev, ...validationError }));
       setProfilePictureFile(null);
       setProfilePicturePreview(null);
       e.target.value = ''; // Clear the input
@@ -174,7 +186,7 @@ const EditUserModal = React.memo(({
     }
 
     setProfilePictureFile(file);
-    setFileErrors(prev => {
+    setFileErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors.profile_picture;
       return newErrors;
@@ -193,7 +205,7 @@ const EditUserModal = React.memo(({
     if (!file) {
       setProfileBackgroundFile(null);
       setProfileBackgroundPreview(null);
-      setFileErrors(prev => {
+      setFileErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.profile_background;
         return newErrors;
@@ -203,7 +215,7 @@ const EditUserModal = React.memo(({
 
     const validationError = validateFile(file, 'profile_background');
     if (validationError) {
-      setFileErrors(prev => ({ ...prev, ...validationError }));
+      setFileErrors((prev) => ({ ...prev, ...validationError }));
       setProfileBackgroundFile(null);
       setProfileBackgroundPreview(null);
       e.target.value = ''; // Clear the input
@@ -211,7 +223,7 @@ const EditUserModal = React.memo(({
     }
 
     setProfileBackgroundFile(file);
-    setFileErrors(prev => {
+    setFileErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors.profile_background;
       return newErrors;
@@ -242,7 +254,8 @@ const EditUserModal = React.memo(({
       // Add user fields
       if (formData.email) submitData.append('email', formData.email);
       if (formData.role) submitData.append('role', formData.role);
-      if (formData.status) submitData.append('is_active', formData.status === 'Active' ? 'active' : 'inactive');
+      if (formData.status)
+        submitData.append('is_active', formData.status === 'Active' ? 'active' : 'inactive');
       submitData.append('is_verified', formData.is_verified ? 'verified' : 'unverified');
 
       // Add profile fields
@@ -307,7 +320,7 @@ const EditUserModal = React.memo(({
       profile_gender: '',
       profile_birthday: '',
       profile_website: '',
-      profile_location: ''
+      profile_location: '',
     });
     setProfilePictureFile(null);
     setProfileBackgroundFile(null);
@@ -333,8 +346,12 @@ const EditUserModal = React.memo(({
               />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">Edit User</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Update user information and profile</p>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Edit User
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                Update user information and profile
+              </p>
             </div>
           </div>
           <button
@@ -347,12 +364,18 @@ const EditUserModal = React.memo(({
         </div>
 
         {/* Scrollable Modal Body */}
-        <form id="edit-user-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden relative">
+        <form
+          id="edit-user-form"
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden relative"
+        >
           {initialLoading && (
             <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-[1px] flex items-center justify-center z-10 transition-all animate-in fade-in">
               <div className="flex flex-col items-center">
                 <Loader2 className="w-8 h-8 text-purple-600 animate-spin mb-2" />
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Fetching latest user data...</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  Fetching latest user data...
+                </p>
               </div>
             </div>
           )}
@@ -374,10 +397,15 @@ const EditUserModal = React.memo(({
             </div>
           )}
 
-          <div className={`flex-1 overflow-y-auto px-6 py-5 ${initialLoading ? 'opacity-40 pointer-events-none' : ''}`} style={{ scrollbarGutter: 'stable' }}>
+          <div
+            className={`flex-1 overflow-y-auto px-6 py-5 ${initialLoading ? 'opacity-40 pointer-events-none' : ''}`}
+            style={{ scrollbarGutter: 'stable' }}
+          >
             {/* User Account Section */}
             <div className="mb-6">
-              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">Account Information</h4>
+              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+                Account Information
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Email */}
                 <div>
@@ -495,7 +523,9 @@ const EditUserModal = React.memo(({
 
             {/* Profile Section */}
             <div className="mb-6 pt-4 border-t border-purple-100 dark:border-gray-700">
-              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">Profile Information</h4>
+              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+                Profile Information
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full Name */}
                 <div className="md:col-span-2">
@@ -533,7 +563,9 @@ const EditUserModal = React.memo(({
                     disabled={isSubmitting}
                   />
                   {fileErrors.profile_picture && (
-                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fileErrors.profile_picture}</p>
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      {fileErrors.profile_picture}
+                    </p>
                   )}
                   {(profilePicturePreview || formData.profile_picture) && (
                     <div className="mt-2">
@@ -563,7 +595,9 @@ const EditUserModal = React.memo(({
                     disabled={isSubmitting}
                   />
                   {fileErrors.profile_background && (
-                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fileErrors.profile_background}</p>
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      {fileErrors.profile_background}
+                    </p>
                   )}
                   {(profileBackgroundPreview || formData.profile_background) && (
                     <div className="mt-2">

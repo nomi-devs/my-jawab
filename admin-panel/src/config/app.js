@@ -13,21 +13,21 @@
 
 // ─── SWITCH ME ───────────────────────────────────────────────
 // Change this to "local" or "live" to instantly switch all URLs.
-export const hostType = "local"; // "local" | "live"
+export const hostType = 'local'; // "local" | "live"
 // ─────────────────────────────────────────────────────────────
 
 const URLS = {
   local: {
-    API_BASE_URL: "http://localhost:3001/api",
-    MEDIA_BASE_URL: "http://localhost:3001/api",
-    BASE_URL: "http://localhost:5173",
-    BASE_PATH: "",
+    API_BASE_URL: 'http://localhost:3001/api',
+    MEDIA_BASE_URL: 'http://localhost:3001/api',
+    BASE_URL: 'http://localhost:5173',
+    BASE_PATH: '',
   },
   live: {
-    API_BASE_URL: "https://jawab.jantrah.io/backend/api",
-    MEDIA_BASE_URL: "https://jawab.jantrah.io/jawab-media/api",
-    BASE_URL: "https://jawab.jantrah.io",
-    BASE_PATH: "",
+    API_BASE_URL: 'https://jawab.jantrah.io/backend/api',
+    MEDIA_BASE_URL: 'https://jawab.jantrah.io/jawab-media/api',
+    BASE_URL: 'https://jawab.jantrah.io',
+    BASE_PATH: '',
   },
 };
 

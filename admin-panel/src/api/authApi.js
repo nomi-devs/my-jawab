@@ -1,5 +1,5 @@
 // src/api/authApi.js
-import axiosClient from "./axiosClient";
+import axiosClient from './axiosClient';
 
 const authApi = {
   /**
@@ -13,7 +13,7 @@ const authApi = {
    * @returns {Promise} Response with access_token, refresh_token, and user data
    */
   login(data) {
-    return axiosClient.post("/admin/login", data);
+    return axiosClient.post('/admin/login', data);
   },
 
   /**
@@ -22,7 +22,7 @@ const authApi = {
    * @returns {Promise} Response with success message
    */
   logout() {
-    return axiosClient.post("/admin/logout");
+    return axiosClient.post('/admin/logout');
   },
 
   /**
@@ -32,7 +32,7 @@ const authApi = {
    * @returns {Promise} Response with success message
    */
   forgotPassword(data) {
-    return axiosClient.post("/admin/forgot-password", data);
+    return axiosClient.post('/admin/forgot-password', data);
   },
 
   /**
@@ -44,7 +44,7 @@ const authApi = {
    * @returns {Promise} Response with success message
    */
   resetPassword(data) {
-    return axiosClient.post("/admin/reset-password", data);
+    return axiosClient.post('/admin/reset-password', data);
   },
 
   /**
@@ -56,8 +56,8 @@ const authApi = {
    * @returns {Promise} Response with success message
    */
   changePassword(data) {
-    return axiosClient.post("/admin/change-password", data);
-  }
+    return axiosClient.post('/admin/change-password', data);
+  },
 };
 
 export default authApi;

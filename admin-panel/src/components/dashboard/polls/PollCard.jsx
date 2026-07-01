@@ -1,20 +1,25 @@
 // src/components/dashboard/polls/PollCard.jsx
 import React from 'react';
-import { BarChart3, Users, Clock, CheckCircle, XCircle, TrendingUp, Eye, Edit, Trash2 } from 'lucide-react';
+import {
+  BarChart3,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Eye,
+  Edit,
+  Trash2,
+} from 'lucide-react';
 
-const PollCard = React.memo(({
-  poll,
-  onEdit,
-  onDelete,
-  onViewDetails
-}) => {
+const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -67,14 +72,16 @@ const PollCard = React.memo(({
               </p>
             )}
           </div>
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium flex-shrink-0
-            ${poll.is_featured
-              ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
-              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-            }`
-          }>
+          <span
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium flex-shrink-0
+            ${
+              poll.is_featured
+                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+            }`}
+          >
             <TrendingUp size={12} className="mr-1" />
-            {poll.is_featured ? "Featured" : "Not Featured"}
+            {poll.is_featured ? 'Featured' : 'Not Featured'}
           </span>
         </div>
         <div className="flex items-center justify-between">
@@ -91,11 +98,14 @@ const PollCard = React.memo(({
           <div className="space-y-2 mb-4">
             {poll.options.slice(0, 3).map((option, index) => {
               const totalVotes = getTotalVotes();
-              const percentage = totalVotes > 0 ? ((option.vote_count || 0) / totalVotes * 100).toFixed(0) : 0;
+              const percentage =
+                totalVotes > 0 ? (((option.vote_count || 0) / totalVotes) * 100).toFixed(0) : 0;
               return (
                 <div key={option.id || index} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-700 dark:text-gray-300 truncate flex-1">{option.option_text}</span>
+                    <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                      {option.option_text}
+                    </span>
                     <span className="text-gray-500 dark:text-gray-400 ml-2">{percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
@@ -114,20 +124,29 @@ const PollCard = React.memo(({
             )}
           </div>
         ) : (
-          <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">No options available</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
+            No options available
+          </p>
         )}
 
         {/* Stats */}
-        <div className={`grid gap-2 pt-3 border-t border-purple-100 dark:border-gray-700 ${(getTotalVotes() > 0 ? 1 : 0) + (poll.view_count > 0 ? 1 : 0) + 1 === 3 ? 'grid-cols-3' :
-          (getTotalVotes() > 0 ? 1 : 0) + (poll.view_count > 0 ? 1 : 0) + 1 === 2 ? 'grid-cols-2' :
-            'grid-cols-1'
-          }`}>
+        <div
+          className={`grid gap-2 pt-3 border-t border-purple-100 dark:border-gray-700 ${
+            (getTotalVotes() > 0 ? 1 : 0) + (poll.view_count > 0 ? 1 : 0) + 1 === 3
+              ? 'grid-cols-3'
+              : (getTotalVotes() > 0 ? 1 : 0) + (poll.view_count > 0 ? 1 : 0) + 1 === 2
+                ? 'grid-cols-2'
+                : 'grid-cols-1'
+          }`}
+        >
           {getTotalVotes() > 0 && (
             <div className="text-center">
               <div className="flex items-center justify-center mb-1">
                 <Users size={14} className="text-purple-500 dark:text-purple-400" />
               </div>
-              <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">{getTotalVotes()}</p>
+              <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">
+                {getTotalVotes()}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Votes</p>
             </div>
           )}
@@ -136,7 +155,9 @@ const PollCard = React.memo(({
               <div className="flex items-center justify-center mb-1">
                 <BarChart3 size={14} className="text-blue-500 dark:text-blue-400" />
               </div>
-              <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">{poll.view_count}</p>
+              <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">
+                {poll.view_count}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Views</p>
             </div>
           )}
@@ -160,20 +181,20 @@ const PollCard = React.memo(({
                       day: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
-                      second: '2-digit'
+                      second: '2-digit',
                     })}
                   >
                     {dateObj.toLocaleDateString(undefined, {
                       year: 'numeric',
                       month: 'short',
-                      day: 'numeric'
+                      day: 'numeric',
                     })}
                   </span>
                   <span className="text-[10px] font-mono text-gray-600 dark:text-gray-300">
                     {dateObj.toLocaleTimeString(undefined, {
                       hour: '2-digit',
                       minute: '2-digit',
-                      second: '2-digit'
+                      second: '2-digit',
                     })}
                   </span>
                 </div>
@@ -216,4 +237,3 @@ const PollCard = React.memo(({
 
 PollCard.displayName = 'PollCard';
 export default PollCard;
-

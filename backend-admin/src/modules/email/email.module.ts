@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
-import { Email } from './entities/email.entity';
 import { EmailService } from './email.service';
-import { EmailController, MailTestController, TestMailController } from './email.controller';
+import {
+  EmailController,
+  MailTestController,
+  TestMailController,
+} from './email.controller';
 import { EmailSenderService } from './services/email-sender.service';
 import { EmailTemplatesService } from './services/email-templates.service';
 import { EmailQueueService } from './services/email-queue.service';
@@ -15,10 +17,8 @@ import { getRedisConfig } from '../../config/services.config';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Email]),
     ConfigModule.forFeature(emailConfig),
-    TemplatesModule, // Import templates module for template rendering
-    // BullMQ Queue Configuration
+    TemplatesModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -26,10 +26,7 @@ import { getRedisConfig } from '../../config/services.config';
         connection: getRedisConfig(configService)!,
       }),
     }),
-    // Register email queue
-    BullModule.registerQueue({
-      name: 'email',
-    }),
+    BullModule.registerQueue({ name: 'email' }),
   ],
   controllers: [EmailController, MailTestController, TestMailController],
   providers: [
@@ -37,7 +34,7 @@ import { getRedisConfig } from '../../config/services.config';
     EmailSenderService,
     EmailTemplatesService,
     EmailQueueService,
-    EmailProcessor, // Queue processor
+    EmailProcessor,
   ],
   exports: [
     EmailService,
@@ -46,5 +43,4 @@ import { getRedisConfig } from '../../config/services.config';
     EmailQueueService,
   ],
 })
-export class EmailModule { }
-
+export class EmailModule {}

@@ -98,4 +98,3 @@ export class Community {
   @OneToMany(() => CommunityUser, (communityUser) => communityUser.community)
   members: CommunityUser[];
 }
-

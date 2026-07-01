@@ -7,11 +7,18 @@ import * as handlebars from 'handlebars';
 export class TemplatesService {
   private readonly logger = new Logger(TemplatesService.name);
   private readonly templatesPath: string;
-  private compiledTemplates: Map<string, HandlebarsTemplateDelegate> = new Map();
+  private compiledTemplates: Map<string, HandlebarsTemplateDelegate> =
+    new Map();
 
   constructor() {
     // Templates directory path - static files only, no database
-    this.templatesPath = join(process.cwd(), 'src', 'modules', 'templates', 'views');
+    this.templatesPath = join(
+      process.cwd(),
+      'src',
+      'modules',
+      'templates',
+      'views',
+    );
     this.logger.log(`Templates directory: ${this.templatesPath}`);
     this.registerHandlebarsHelpers();
   }
@@ -21,30 +28,39 @@ export class TemplatesService {
    */
   private registerHandlebarsHelpers() {
     // Date formatting helper
-    handlebars.registerHelper('formatDate', (date: Date | string, format?: string) => {
-      if (!date) return '';
-      const d = new Date(date);
-      const options: Intl.DateTimeFormatOptions = {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      };
-      return d.toLocaleDateString('en-US', options);
-    });
+    handlebars.registerHelper(
+      'formatDate',
+      (date: Date | string, format?: string) => {
+        if (!date) return '';
+        const d = new Date(date);
+        const options: Intl.DateTimeFormatOptions = {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        };
+        return d.toLocaleDateString('en-US', options);
+      },
+    );
 
     // Currency formatting helper
-    handlebars.registerHelper('formatCurrency', (amount: number, currency: string = 'USD') => {
-      if (amount === null || amount === undefined) return '';
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-      }).format(amount);
-    });
+    handlebars.registerHelper(
+      'formatCurrency',
+      (amount: number, currency: string = 'USD') => {
+        if (amount === null || amount === undefined) return '';
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currency,
+        }).format(amount);
+      },
+    );
 
     // Conditional helper
-    handlebars.registerHelper('ifEquals', (arg1: any, arg2: any, options: any) => {
-      return arg1 === arg2 ? options.fn(this) : options.inverse(this);
-    });
+    handlebars.registerHelper(
+      'ifEquals',
+      (arg1: any, arg2: any, options: any) => {
+        return arg1 === arg2 ? options.fn(this) : options.inverse(this);
+      },
+    );
 
     // Uppercase helper
     handlebars.registerHelper('uppercase', (str: string) => {
@@ -58,21 +74,25 @@ export class TemplatesService {
 
     // Capitalize helper
     handlebars.registerHelper('capitalize', (str: string) => {
-      return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
+      return str
+        ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+        : '';
     });
   }
 
   /**
    * Load and compile a template
    */
-  private async loadTemplate(templateName: string): Promise<HandlebarsTemplateDelegate> {
+  private async loadTemplate(
+    templateName: string,
+  ): Promise<HandlebarsTemplateDelegate> {
     // Check if template is already compiled and cached
     if (this.compiledTemplates.has(templateName)) {
       return this.compiledTemplates.get(templateName)!;
     }
 
     const templatePath = join(this.templatesPath, `${templateName}.hbs`);
-    
+
     if (!existsSync(templatePath)) {
       throw new Error(`Template not found: ${templateName} at ${templatePath}`);
     }
@@ -80,10 +100,10 @@ export class TemplatesService {
     try {
       const templateContent = readFileSync(templatePath, 'utf-8');
       const compiled = handlebars.compile(templateContent);
-      
+
       // Cache the compiled template
       this.compiledTemplates.set(templateName, compiled);
-      
+
       this.logger.debug(`Template loaded and compiled: ${templateName}`);
       return compiled;
     } catch (error) {
@@ -95,7 +115,10 @@ export class TemplatesService {
   /**
    * Render a template with data
    */
-  async render(templateName: string, data: Record<string, any> = {}): Promise<string> {
+  async render(
+    templateName: string,
+    data: Record<string, any> = {},
+  ): Promise<string> {
     try {
       const template = await this.loadTemplate(templateName);
       return template(data);
@@ -108,7 +131,10 @@ export class TemplatesService {
   /**
    * Render email template (wrapper for email-specific rendering)
    */
-  async renderEmail(templateName: string, data: Record<string, any> = {}): Promise<string> {
+  async renderEmail(
+    templateName: string,
+    data: Record<string, any> = {},
+  ): Promise<string> {
     // Add common email data
     const emailData = {
       ...data,
@@ -142,14 +168,16 @@ export class TemplatesService {
   getAvailableTemplates(): string[] {
     try {
       if (!existsSync(this.templatesPath)) {
-        this.logger.warn(`Templates directory does not exist: ${this.templatesPath}`);
+        this.logger.warn(
+          `Templates directory does not exist: ${this.templatesPath}`,
+        );
         return [];
       }
 
       const files = readdirSync(this.templatesPath);
       return files
-        .filter(file => file.endsWith('.hbs'))
-        .map(file => file.replace('.hbs', ''));
+        .filter((file) => file.endsWith('.hbs'))
+        .map((file) => file.replace('.hbs', ''));
     } catch (error) {
       this.logger.error('Error reading templates directory:', error);
       return [];
@@ -159,7 +187,10 @@ export class TemplatesService {
   /**
    * Render email subject (if template has subject variable)
    */
-  async renderSubject(templateName: string, data: Record<string, any> = {}): Promise<string> {
+  async renderSubject(
+    templateName: string,
+    data: Record<string, any> = {},
+  ): Promise<string> {
     // If subject is provided in data, render it
     if (data.subject) {
       const subjectTemplate = handlebars.compile(data.subject);

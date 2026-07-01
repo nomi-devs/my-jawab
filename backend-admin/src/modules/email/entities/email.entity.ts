@@ -64,7 +64,12 @@ export class Email {
   @Index()
   recipient_email: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'Recipient name' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'Recipient name',
+  })
   recipient_name: string | null;
 
   // Email content
@@ -77,20 +82,39 @@ export class Email {
   @Column({ type: 'text', nullable: true, comment: 'Email plain text body' })
   body_text: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'Email template name used' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'Email template name used',
+  })
   template_name: string | null;
 
-  @Column({ type: 'json', nullable: true, comment: 'Template data/variables used' })
+  @Column({
+    type: 'json',
+    nullable: true,
+    comment: 'Template data/variables used',
+  })
   template_data: Record<string, any> | null;
 
   // Sender information
   @Column({ type: 'varchar', length: 255, comment: 'Sender email address' })
   from_email: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'Sender name' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'Sender name',
+  })
   from_name: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'Reply-to email address' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'Reply-to email address',
+  })
   reply_to: string | null;
 
   @Column({ type: 'json', nullable: true, comment: 'CC email addresses' })
@@ -112,11 +136,21 @@ export class Email {
   @Index()
   status: EmailStatus;
 
-  @Column({ type: 'varchar', length: 100, nullable: true, comment: 'Email provider used' })
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+    comment: 'Email provider used',
+  })
   @Index()
   provider: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'Provider message ID' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'Provider message ID',
+  })
   provider_message_id: string | null;
 
   @Column({ type: 'text', nullable: true, comment: 'Error message if failed' })
@@ -126,13 +160,25 @@ export class Email {
   @Column({ type: 'timestamp', nullable: true, comment: 'When email was sent' })
   sent_at: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When email was delivered' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When email was delivered',
+  })
   delivered_at: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When email was opened' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When email was opened',
+  })
   opened_at: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'When email link was clicked' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'When email link was clicked',
+  })
   clicked_at: Date | null;
 
   // Retry mechanism
@@ -142,7 +188,11 @@ export class Email {
   @Column({ type: 'int', default: 3, comment: 'Maximum retry attempts' })
   max_retries: number;
 
-  @Column({ type: 'timestamp', nullable: true, comment: 'Next retry attempt time' })
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'Next retry attempt time',
+  })
   @Index()
   next_retry_at: Date | null;
 
@@ -172,4 +222,3 @@ export class Email {
   @OneToMany(() => Job, (job) => job.email)
   jobs: Job[];
 }
-

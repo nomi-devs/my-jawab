@@ -6,7 +6,7 @@ import { Email, EmailType } from '../entities/email.entity';
 
 /**
  * Email Queue Service
- * 
+ *
  * Handles adding emails to the queue for background processing.
  * When queue is enabled, emails are added to the queue instead of being sent immediately.
  */
@@ -19,7 +19,10 @@ export class EmailQueueService {
     @InjectQueue('email') private readonly emailQueue: Queue,
     private readonly configService: ConfigService,
   ) {
-    this.queueEnabled = this.configService.get<boolean>('email.queue.enabled', false);
+    this.queueEnabled = this.configService.get<boolean>(
+      'email.queue.enabled',
+      false,
+    );
   }
 
   /**
@@ -29,13 +32,21 @@ export class EmailQueueService {
    */
   async addEmailToQueue(email: Email): Promise<string | null> {
     if (!this.queueEnabled) {
-      this.logger.debug('Email queue is disabled, email will be sent immediately');
+      this.logger.debug(
+        'Email queue is disabled, email will be sent immediately',
+      );
       return null;
     }
 
     try {
-      const maxConcurrent = this.configService.get<number>('email.queue.maxConcurrent', 5);
-      const batchSize = this.configService.get<number>('email.queue.batchSize', 10);
+      const maxConcurrent = this.configService.get<number>(
+        'email.queue.maxConcurrent',
+        5,
+      );
+      const batchSize = this.configService.get<number>(
+        'email.queue.batchSize',
+        10,
+      );
 
       // Add job to queue with priority (higher priority = sent first)
       // You can set priority based on email type if needed
@@ -50,7 +61,10 @@ export class EmailQueueService {
           attempts: this.configService.get<number>('email.retry.maxRetries', 3),
           backoff: {
             type: 'exponential',
-            delay: this.configService.get<number>('email.retry.retryDelay', 5000),
+            delay: this.configService.get<number>(
+              'email.retry.retryDelay',
+              5000,
+            ),
           },
           removeOnComplete: {
             age: 24 * 3600, // Keep completed jobs for 24 hours
@@ -62,11 +76,16 @@ export class EmailQueueService {
         },
       );
 
-      this.logger.log(`Email ${email.id} added to queue with job ID: ${job.id}`);
+      this.logger.log(
+        `Email ${email.id} added to queue with job ID: ${job.id}`,
+      );
 
       return job.id as string;
     } catch (error) {
-      this.logger.error(`Failed to add email ${email.id} to queue:`, error.message);
+      this.logger.error(
+        `Failed to add email ${email.id} to queue:`,
+        error.message,
+      );
       throw error;
     }
   }

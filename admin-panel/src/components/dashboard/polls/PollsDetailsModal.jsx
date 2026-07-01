@@ -1,9 +1,32 @@
 // src/components/dashboard/polls/PollsDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, BarChart3, Calendar, User, Users, Edit, Trash2, CheckCircle, XCircle, Loader2, Settings, TrendingUp, Save, Star } from 'lucide-react';
+import {
+  X,
+  BarChart3,
+  Calendar,
+  User,
+  Users,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Settings,
+  TrendingUp,
+  Save,
+  Star,
+} from 'lucide-react';
 import pollsApi from '../../../api/pollsApi';
 
-const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, onEdit, onDelete }) => {
+const PollsDetailsModal = ({
+  isOpen,
+  onClose,
+  pollId,
+  pollData,
+  onUpdateStatus,
+  onEdit,
+  onDelete,
+}) => {
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(true);
   const [pollDetails, setPollDetails] = useState(null);
@@ -34,7 +57,7 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
 
       setPollDetails({
         ...pollData,
-        poll_status: normalizedStatus
+        poll_status: normalizedStatus,
       });
       setPendingStatus(normalizedStatus);
       setPendingIsFeatured(!!pollData.is_featured);
@@ -43,14 +66,16 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
       setError('Failed to load poll details');
       // Use provided pollData as fallback
       if (pollData) {
-        const fallbackStatus = normalizePollStatus(pollData.poll_status || pollData.status || 'draft');
+        const fallbackStatus = normalizePollStatus(
+          pollData.poll_status || pollData.status || 'draft',
+        );
         setPollDetails({
           ...pollData,
           poll_title: pollData.poll_title || pollData.title,
           poll_description: pollData.poll_description || pollData.description,
           poll_status: fallbackStatus,
           is_featured: pollData.is_featured || false,
-          is_expired: pollData.is_expired || false
+          is_expired: pollData.is_expired || false,
         });
         setPendingStatus(fallbackStatus);
         setPendingIsFeatured(!!pollData.is_featured);
@@ -87,11 +112,11 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
       await pollsApi.updatePoll(pollId, updateData);
 
       // Update local state
-      setPollDetails(prev => ({
+      setPollDetails((prev) => ({
         ...prev,
         ...updateData,
         poll_status: updateData.poll_status || prev.poll_status,
-        is_featured: updateData.is_featured || prev.is_featured
+        is_featured: updateData.is_featured || prev.is_featured,
       }));
 
       // Call parent callback if provided
@@ -117,7 +142,7 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -131,7 +156,9 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
   if (!isOpen) return null;
 
   const poll = pollDetails || pollData;
-  const rawStatus = poll ? normalizePollStatus(poll.poll_status || poll.status || 'draft') : 'draft';
+  const rawStatus = poll
+    ? normalizePollStatus(poll.poll_status || poll.status || 'draft')
+    : 'draft';
   const isExpired = !!poll?.is_expired;
   const isEnded = isExpired || rawStatus === 'ended';
   const currentStatus = rawStatus || 'draft';
@@ -142,7 +169,7 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
 
   const tabs = [
     { id: 'details', label: 'Details', icon: BarChart3 },
-    { id: 'actions', label: 'Actions', icon: Settings }
+    { id: 'actions', label: 'Actions', icon: Settings },
   ];
 
   const getStatusBadge = () => {
@@ -195,7 +222,7 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 truncate">
-                      {loading ? 'Loading...' : (poll.poll_title || poll.title || 'Poll Details')}
+                      {loading ? 'Loading...' : poll.poll_title || poll.title || 'Poll Details'}
                     </h2>
                   </div>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -227,10 +254,11 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors relative ${activeTab === tab.id
-                  ? 'text-purple-600 dark:text-purple-400 bg-white dark:bg-gray-800'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
-                  }`}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors relative ${
+                  activeTab === tab.id
+                    ? 'text-purple-600 dark:text-purple-400 bg-white dark:bg-gray-800'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+                }`}
               >
                 <Icon size={18} />
                 {tab.label}
@@ -260,7 +288,9 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                   {/* Description */}
                   {poll.poll_description && (
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Description</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Description
+                      </h3>
                       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                         <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                           {poll.poll_description}
@@ -272,16 +302,26 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                   {/* Poll Options */}
                   {poll.options && Array.isArray(poll.options) && poll.options.length > 0 && (
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Options & Results</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Options & Results
+                      </h3>
                       <div className="space-y-3">
                         {poll.options.map((option, index) => {
                           const totalVotes = getTotalVotes();
-                          const percentage = totalVotes > 0 ? ((option.vote_count || 0) / totalVotes * 100).toFixed(1) : 0;
+                          const percentage =
+                            totalVotes > 0
+                              ? (((option.vote_count || 0) / totalVotes) * 100).toFixed(1)
+                              : 0;
                           return (
-                            <div key={option.id || index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                            <div
+                              key={option.id || index}
+                              className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4"
+                            >
                               <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-gray-800 dark:text-gray-200">{option.option_text || option.text}</span>
-                                {(option.vote_count > 0) && (
+                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                  {option.option_text || option.text}
+                                </span>
+                                {option.vote_count > 0 && (
                                   <span className="text-sm text-gray-600 dark:text-gray-400">
                                     {option.vote_count} votes ({percentage}%)
                                   </span>
@@ -311,18 +351,22 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                       <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
                         <div className="flex items-center gap-1.5 mb-1">
                           <Users size={14} className="text-purple-500" />
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Total Votes</span>
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            Total Votes
+                          </span>
                         </div>
                         <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
                           {getTotalVotes()}
                         </p>
                       </div>
                     )}
-                    {(poll.view_count !== undefined) && (
+                    {poll.view_count !== undefined && (
                       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                         <div className="flex items-center gap-1.5 mb-1">
                           <BarChart3 size={14} className="text-blue-500" />
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Views</span>
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            Views
+                          </span>
                         </div>
                         <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
                           {poll.view_count || 0}
@@ -333,7 +377,9 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                       <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                         <div className="flex items-center gap-1.5 mb-1">
                           <BarChart3 size={14} className="text-green-500" />
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Options</span>
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            Options
+                          </span>
                         </div>
                         <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
                           {poll.options.length}
@@ -343,7 +389,9 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                     <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <Calendar size={14} className="text-amber-500" />
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Expires</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                          Expires
+                        </span>
                       </div>
                       <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                         {formatDate(poll.poll_expires_at || poll.expires_at)}
@@ -354,7 +402,9 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                   {/* Metadata */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Created</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                        Created
+                      </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Calendar size={14} />
                         <span>{formatDate(poll.created_at)}</span>
@@ -362,7 +412,9 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                     </div>
                     {poll.user && (
                       <div>
-                        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Author</h3>
+                        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                          Author
+                        </h3>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center border-2 border-purple-200 dark:border-purple-700">
                             <span className="text-purple-600 dark:text-purple-400 font-semibold">
@@ -388,7 +440,9 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
               {activeTab === 'actions' && poll && (
                 <div className="px-6 py-5 space-y-4">
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Status Management</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                      Status Management
+                    </h3>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
                       Current status:{' '}
                       <span className="font-semibold text-gray-700 dark:text-gray-200 capitalize">
@@ -402,14 +456,21 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <button
-                        onClick={() => pendingUiStatus !== 'ended' && handleStatusChange('published')}
-                        disabled={updatingStatus || pendingUiStatus === 'published' || pendingUiStatus === 'ended'}
-                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${pendingUiStatus === 'published'
-                          ? 'border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-bold shadow-sm ring-1 ring-green-500/20'
-                          : pendingUiStatus === 'ended'
-                            ? 'border-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                            : 'border-2 border-gray-100 dark:border-gray-700 hover:border-green-200 dark:hover:border-green-800 hover:bg-green-50/30 dark:hover:bg-green-900/10 text-gray-600 dark:text-gray-400'
-                          } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={() =>
+                          pendingUiStatus !== 'ended' && handleStatusChange('published')
+                        }
+                        disabled={
+                          updatingStatus ||
+                          pendingUiStatus === 'published' ||
+                          pendingUiStatus === 'ended'
+                        }
+                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${
+                          pendingUiStatus === 'published'
+                            ? 'border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-bold shadow-sm ring-1 ring-green-500/20'
+                            : pendingUiStatus === 'ended'
+                              ? 'border-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                              : 'border-2 border-gray-100 dark:border-gray-700 hover:border-green-200 dark:hover:border-green-800 hover:bg-green-50/30 dark:hover:bg-green-900/10 text-gray-600 dark:text-gray-400'
+                        } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <CheckCircle size={16} />
                         <span>Publish</span>
@@ -417,13 +478,18 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
 
                       <button
                         onClick={() => pendingUiStatus !== 'ended' && handleStatusChange('draft')}
-                        disabled={updatingStatus || pendingUiStatus === 'draft' || pendingUiStatus === 'ended'}
-                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${pendingUiStatus === 'draft'
-                          ? 'border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-bold shadow-sm ring-1 ring-yellow-500/20'
-                          : pendingUiStatus === 'ended'
-                            ? 'border-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                            : 'border-2 border-gray-100 dark:border-gray-700 hover:border-yellow-200 dark:hover:border-yellow-800 hover:bg-yellow-50/30 dark:hover:bg-yellow-900/10 text-gray-600 dark:text-gray-400'
-                          } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={
+                          updatingStatus ||
+                          pendingUiStatus === 'draft' ||
+                          pendingUiStatus === 'ended'
+                        }
+                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${
+                          pendingUiStatus === 'draft'
+                            ? 'border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-bold shadow-sm ring-1 ring-yellow-500/20'
+                            : pendingUiStatus === 'ended'
+                              ? 'border-2 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                              : 'border-2 border-gray-100 dark:border-gray-700 hover:border-yellow-200 dark:hover:border-yellow-800 hover:bg-yellow-50/30 dark:hover:bg-yellow-900/10 text-gray-600 dark:text-gray-400'
+                        } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <BarChart3 size={16} />
                         <span>Draft</span>
@@ -432,10 +498,11 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                       <button
                         onClick={() => handleStatusChange('ended')}
                         disabled={updatingStatus || pendingUiStatus === 'ended'}
-                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${pendingUiStatus === 'ended'
-                          ? 'border-2 border-gray-500 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold shadow-sm ring-1 ring-gray-500/20'
-                          : 'border-2 border-gray-100 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
-                          } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-xs font-medium ${
+                          pendingUiStatus === 'ended'
+                            ? 'border-2 border-gray-500 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold shadow-sm ring-1 ring-gray-500/20'
+                            : 'border-2 border-gray-100 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <XCircle size={16} />
                         <span>End</span>
@@ -444,14 +511,17 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
                   </div>
 
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">Featured Status</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
+                      Featured Status
+                    </h3>
                     <button
                       onClick={() => setPendingIsFeatured(!pendingIsFeatured)}
                       disabled={updatingStatus}
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all text-xs font-medium ${pendingIsFeatured
-                        ? 'border-2 border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-bold shadow-sm ring-1 ring-purple-500/20'
-                        : 'border-2 border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-800 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 text-gray-600 dark:text-gray-400'
-                        } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all text-xs font-medium ${
+                        pendingIsFeatured
+                          ? 'border-2 border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-bold shadow-sm ring-1 ring-purple-500/20'
+                          : 'border-2 border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-800 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 text-gray-600 dark:text-gray-400'
+                      } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Star size={16} className={pendingIsFeatured ? 'fill-purple-500' : ''} />
                       <span>{pendingIsFeatured ? 'Remove Featured' : 'Mark as Featured'}</span>
@@ -521,4 +591,3 @@ const PollsDetailsModal = ({ isOpen, onClose, pollId, pollData, onUpdateStatus, 
 };
 
 export default PollsDetailsModal;
-

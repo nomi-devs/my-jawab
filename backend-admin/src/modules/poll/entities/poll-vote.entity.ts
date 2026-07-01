@@ -73,4 +73,3 @@ export class PollVote {
   })
   updated_at: Date;
 }
-

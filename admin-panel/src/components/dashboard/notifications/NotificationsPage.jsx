@@ -128,15 +128,14 @@ const NotificationsPage = () => {
               <Bell className="w-6 h-6 text-purple-400 dark:text-purple-500" />
             </div>
             <p className="text-gray-500 dark:text-gray-400">No notifications</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-              You're all caught up!
-            </p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">You're all caught up!</p>
           </div>
         ) : (
           <>
             <div className="px-4 py-3 border-b border-purple-50 dark:border-gray-700 flex items-center justify-between">
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                {notifications.length} total notifications{unreadCount ? ` • ${unreadCount} unread` : ''}
+                {notifications.length} total notifications
+                {unreadCount ? ` • ${unreadCount} unread` : ''}
               </p>
             </div>
             <div className="divide-y divide-purple-50 dark:divide-gray-700">
@@ -177,5 +176,3 @@ const NotificationsPage = () => {
 };
 
 export default NotificationsPage;
-
-

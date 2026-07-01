@@ -37,7 +37,8 @@ export class UserPoll {
     type: 'varchar',
     length: 500,
     nullable: true,
-    comment: 'Comma-separated community IDs if the poll is in one or more communities',
+    comment:
+      'Comma-separated community IDs if the poll is in one or more communities',
   })
   community_ids: string | null;
 
@@ -153,4 +154,3 @@ export class UserPoll {
   @OneToMany(() => PollLike, (like) => like.poll)
   likes: PollLike[];
 }
-

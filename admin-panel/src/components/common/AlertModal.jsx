@@ -9,7 +9,7 @@ const AlertModal = ({
   title,
   message,
   duration = 3000,
-  showCloseButton = true
+  showCloseButton = true,
 }) => {
   useEffect(() => {
     if (isOpen && duration > 0 && onClose) {
@@ -55,29 +55,43 @@ const AlertModal = ({
   };
 
   const style = typeStyles[type] || typeStyles.success;
-  const defaultTitle = {
-    success: 'Success',
-    error: 'Error',
-    warning: 'Warning',
-    info: 'Information',
-  }[type] || 'Alert';
+  const defaultTitle =
+    {
+      success: 'Success',
+      error: 'Error',
+      warning: 'Warning',
+      info: 'Information',
+    }[type] || 'Alert';
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
-      <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border ${style.border} transition-colors animate-in zoom-in-95 duration-300`}>
+      <div
+        className={`bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border ${style.border} transition-colors animate-in zoom-in-95 duration-300`}
+      >
         {/* Modal Header */}
         <div className="px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
           <div className="flex items-center space-x-2.5">
-            <div className={`p-1.5 rounded-lg ${type === 'error' ? 'bg-red-100 dark:bg-red-900/30' :
-              type === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30' :
-                type === 'info' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                  'bg-green-100 dark:bg-green-900/30'}`}>
+            <div
+              className={`p-1.5 rounded-lg ${
+                type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : type === 'warning'
+                    ? 'bg-amber-100 dark:bg-amber-900/30'
+                    : type === 'info'
+                      ? 'bg-blue-100 dark:bg-blue-900/30'
+                      : 'bg-green-100 dark:bg-green-900/30'
+              }`}
+            >
               {React.cloneElement(style.icon, {
-                className: type === 'error' ? 'text-red-600 dark:text-red-400' :
-                  type === 'warning' ? 'text-amber-600 dark:text-amber-400' :
-                    type === 'info' ? 'text-blue-600 dark:text-blue-400' :
-                      'text-green-600 dark:text-green-400',
-                size: 18
+                className:
+                  type === 'error'
+                    ? 'text-red-600 dark:text-red-400'
+                    : type === 'warning'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : type === 'info'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-green-600 dark:text-green-400',
+                size: 18,
               })}
             </div>
             <div>
@@ -100,7 +114,9 @@ const AlertModal = ({
 
         {/* Modal Body */}
         <div className={`px-6 py-5 bg-white dark:bg-gray-800 transition-colors`}>
-          <p className={`text-sm text-gray-600 dark:text-gray-300 leading-relaxed transition-colors`}>
+          <p
+            className={`text-sm text-gray-600 dark:text-gray-300 leading-relaxed transition-colors`}
+          >
             {message}
           </p>
         </div>
@@ -110,10 +126,15 @@ const AlertModal = ({
           <button
             type="button"
             onClick={onClose}
-            className={`px-6 py-2 rounded-lg font-semibold transition-all text-xs shadow-sm active:scale-95 ${type === 'error' ? 'bg-red-600 text-white hover:bg-red-700' :
-              type === 'warning' ? 'bg-amber-500 text-white hover:bg-amber-600' :
-                type === 'info' ? 'bg-blue-600 text-white hover:bg-blue-700' :
-                  'bg-green-600 text-white hover:bg-green-700'}`}
+            className={`px-6 py-2 rounded-lg font-semibold transition-all text-xs shadow-sm active:scale-95 ${
+              type === 'error'
+                ? 'bg-red-600 text-white hover:bg-red-700'
+                : type === 'warning'
+                  ? 'bg-amber-500 text-white hover:bg-amber-600'
+                  : type === 'info'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
           >
             Dismiss
           </button>
@@ -124,4 +145,3 @@ const AlertModal = ({
 };
 
 export default React.memo(AlertModal);
-

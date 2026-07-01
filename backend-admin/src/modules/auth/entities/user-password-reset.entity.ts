@@ -86,4 +86,3 @@ export class UserPasswordReset {
   })
   updated_at: Date;
 }
-

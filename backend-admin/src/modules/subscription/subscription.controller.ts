@@ -11,6 +11,12 @@ import {
   HttpStatus,
   ParseIntPipe,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 import { SubscriptionService } from './subscription.service';
 import { CreateUserSubscriptionDto } from './dto/create-user-subscription.dto';
 import { UserSubscriptionResponseDto } from './dto/user-subscription-response.dto';
@@ -25,12 +31,15 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { SubscriptionStatus } from './entities/user-subscription.entity';
 import { ActiveStatus } from '../admin/dto/list-users-query.dto';
 
+@ApiTags('Subscriptions')
+@ApiBearerAuth('JWT-auth')
 @Controller('subscriptions')
 @UseGuards(JwtAuthGuard)
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 
   // Get all available subscriptions (active only for users)
+  @ApiOperation({ summary: 'List active subscription plans' })
   @Get()
   @HttpCode(HttpStatus.OK)
   async getSubscriptions(
@@ -52,6 +61,7 @@ export class SubscriptionController {
   }
 
   // Get active subscriptions only
+  @ApiOperation({ summary: 'Get active plans' })
   @Get('active')
   @HttpCode(HttpStatus.OK)
   async getActiveSubscriptions(): Promise<SubscriptionResponseDto[]> {
@@ -59,6 +69,8 @@ export class SubscriptionController {
   }
 
   // Get subscription by ID
+  @ApiOperation({ summary: 'Get plan by ID' })
+  @ApiParam({ name: 'id', type: Number })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getSubscriptionById(
@@ -70,6 +82,7 @@ export class SubscriptionController {
   // ========== User Subscription Endpoints ==========
 
   // Create user subscription
+  @ApiOperation({ summary: 'Subscribe to a plan' })
   @Post('subscribe')
   @HttpCode(HttpStatus.CREATED)
   async createUserSubscription(
@@ -83,6 +96,7 @@ export class SubscriptionController {
   }
 
   // Get user's subscriptions
+  @ApiOperation({ summary: 'Get my subscriptions' })
   @Get('my/subscriptions')
   @HttpCode(HttpStatus.OK)
   async getMySubscriptions(
@@ -97,10 +111,15 @@ export class SubscriptionController {
       total_pages: number;
     };
   }> {
-    return this.subscriptionService.getUserSubscriptions(listQueryDto, user.userId);
+    return this.subscriptionService.getUserSubscriptions(
+      listQueryDto,
+      user.userId,
+    );
   }
 
   // Get user subscription by ID
+  @ApiOperation({ summary: 'Get my subscription by ID' })
+  @ApiParam({ name: 'id', type: Number })
   @Get('my/subscriptions/:id')
   @HttpCode(HttpStatus.OK)
   async getMySubscriptionById(
@@ -111,6 +130,8 @@ export class SubscriptionController {
   }
 
   // Cancel user subscription
+  @ApiOperation({ summary: 'Cancel my subscription' })
+  @ApiParam({ name: 'id', type: Number })
   @Put('my/subscriptions/:id/cancel')
   @HttpCode(HttpStatus.OK)
   async cancelMySubscription(
@@ -123,16 +144,21 @@ export class SubscriptionController {
   // ========== Payment Endpoints ==========
 
   // Create payment
+  @ApiOperation({ summary: 'Create payment' })
   @Post('payments')
   @HttpCode(HttpStatus.CREATED)
   async createPayment(
     @GetUser() user: any,
     @Body() createPaymentDto: CreatePaymentDto,
   ): Promise<PaymentResponseDto> {
-    return this.subscriptionService.createPayment(createPaymentDto, user.userId);
+    return this.subscriptionService.createPayment(
+      createPaymentDto,
+      user.userId,
+    );
   }
 
   // Get user's payments
+  @ApiOperation({ summary: 'Get my payments' })
   @Get('my/payments')
   @HttpCode(HttpStatus.OK)
   async getMyPayments(
@@ -151,6 +177,8 @@ export class SubscriptionController {
   }
 
   // Get payment by ID
+  @ApiOperation({ summary: 'Get my payment by ID' })
+  @ApiParam({ name: 'id', type: Number })
   @Get('my/payments/:id')
   @HttpCode(HttpStatus.OK)
   async getMyPaymentById(
@@ -160,4 +188,3 @@ export class SubscriptionController {
     return this.subscriptionService.getPaymentById(id, user.userId);
   }
 }
-

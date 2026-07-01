@@ -31,11 +31,18 @@ export class MediaClientService {
     return this.mediaService.getMediaById(id, userId);
   }
 
-  async getMediaByUuid(uuid: string, userId?: number): Promise<MediaResponseDto> {
+  async getMediaByUuid(
+    uuid: string,
+    userId?: number,
+  ): Promise<MediaResponseDto> {
     return this.mediaService.getMediaByUuid(uuid, userId);
   }
 
-  async getFileUrl(id: number, optimized: boolean = false, expiresIn: number = 3600): Promise<string> {
+  async getFileUrl(
+    id: number,
+    optimized: boolean = false,
+    expiresIn: number = 3600,
+  ): Promise<string> {
     return this.mediaService.getFileUrl(id, optimized, expiresIn);
   }
 
@@ -53,7 +60,12 @@ export class MediaClientService {
 
   async optimizeImage(
     id: number,
-    options: { width?: number; height?: number; quality?: number; format?: 'webp' | 'avif' | 'jpeg' | 'png' } = {},
+    options: {
+      width?: number;
+      height?: number;
+      quality?: number;
+      format?: 'webp' | 'avif' | 'jpeg' | 'png';
+    } = {},
     userId?: number,
   ): Promise<MediaResponseDto> {
     return this.mediaService.optimizeImage(id, options as any, userId);

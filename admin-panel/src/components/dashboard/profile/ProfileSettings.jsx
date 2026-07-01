@@ -1,6 +1,18 @@
 // src/components/dashboard/profile/ProfileSettings.jsx
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Save, Eye, EyeOff, Shield, CheckCircle, XCircle, Image as ImageIcon, MapPin, Link as LinkIcon } from 'lucide-react';
+import {
+  User,
+  Lock,
+  Save,
+  Eye,
+  EyeOff,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Image as ImageIcon,
+  MapPin,
+  Link as LinkIcon,
+} from 'lucide-react';
 import { useProfile, useProfileActions } from '../../../hooks/useProfile';
 import AlertModal from '../../common/AlertModal';
 
@@ -19,13 +31,13 @@ const ProfileSettings = () => {
     email: '',
     role: '',
     is_active: true,
-    is_verified: true
+    is_verified: true,
   });
 
   const [passwordData, setPasswordData] = useState({
     old_password: '',
     new_password: '',
-    confirm_password: ''
+    confirm_password: '',
   });
 
   const [showOldPassword, setShowOldPassword] = useState(false);
@@ -41,27 +53,20 @@ const ProfileSettings = () => {
     profile_website: '',
     profile_location: '',
     profile_picture: null,
-    profile_background: null
+    profile_background: null,
   });
   const [profilePreview, setProfilePreview] = useState({
     profile_picture: '',
-    profile_background: ''
+    profile_background: '',
   });
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
 
-  const {
-    data: profileDataFetched,
-    isLoading: isLoadingProfile
-  } = useProfile();
+  const { data: profileDataFetched, isLoading: isLoadingProfile } = useProfile();
 
-  const {
-    updateProfile,
-    changePassword,
-    isUpdatingProfile,
-    isChangingPassword
-  } = useProfileActions();
+  const { updateProfile, changePassword, isUpdatingProfile, isChangingPassword } =
+    useProfileActions();
 
   // Load user info from localStorage or sessionStorage
   useEffect(() => {
@@ -69,43 +74,47 @@ const ProfileSettings = () => {
     const username = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
     const email = localStorage.getItem('email') || sessionStorage.getItem('email') || '';
     const role = localStorage.getItem('role') || sessionStorage.getItem('role') || 'admin';
-    const is_active = (localStorage.getItem('is_active') || sessionStorage.getItem('is_active')) !== 'false';
-    const is_verified = (localStorage.getItem('is_verified') || sessionStorage.getItem('is_verified')) !== 'false';
+    const is_active =
+      (localStorage.getItem('is_active') || sessionStorage.getItem('is_active')) !== 'false';
+    const is_verified =
+      (localStorage.getItem('is_verified') || sessionStorage.getItem('is_verified')) !== 'false';
 
     setUserInfo({
       username,
       email,
       role,
       is_active,
-      is_verified
+      is_verified,
     });
   }, []);
 
   // Update form data when profile fetch completes
   useEffect(() => {
     if (profileDataFetched) {
-      setProfileData(prev => ({
+      setProfileData((prev) => ({
         ...prev,
         full_name: profileDataFetched.full_name || '',
         tagline: profileDataFetched.tagline || '',
         profile_bio: profileDataFetched.profile_bio || '',
         profile_gender: profileDataFetched.profile_gender || '',
-        profile_birthday: profileDataFetched.profile_birthday ? profileDataFetched.profile_birthday.substring(0, 10) : '',
+        profile_birthday: profileDataFetched.profile_birthday
+          ? profileDataFetched.profile_birthday.substring(0, 10)
+          : '',
         profile_website: profileDataFetched.profile_website || '',
-        profile_location: profileDataFetched.profile_location || ''
+        profile_location: profileDataFetched.profile_location || '',
       }));
       setProfilePreview({
         profile_picture: profileDataFetched.profile_picture || '',
-        profile_background: profileDataFetched.profile_background || ''
+        profile_background: profileDataFetched.profile_background || '',
       });
     }
   }, [profileDataFetched]);
 
   const handleProfileInputChange = (e) => {
     const { name, value } = e.target;
-    setProfileData(prev => ({
+    setProfileData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -114,16 +123,16 @@ const ProfileSettings = () => {
     const file = files && files[0];
     if (!file) return;
 
-    setProfileData(prev => ({
+    setProfileData((prev) => ({
       ...prev,
-      [name]: file
+      [name]: file,
     }));
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setProfilePreview(prev => ({
+      setProfilePreview((prev) => ({
         ...prev,
-        [name]: reader.result
+        [name]: reader.result,
       }));
     };
     reader.readAsDataURL(file);
@@ -194,9 +203,9 @@ const ProfileSettings = () => {
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
-    setPasswordData(prev => ({
+    setPasswordData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -206,7 +215,11 @@ const ProfileSettings = () => {
     setSuccessMessage('');
 
     // Validation
-    if (!passwordData.old_password || !passwordData.new_password || !passwordData.confirm_password) {
+    if (
+      !passwordData.old_password ||
+      !passwordData.new_password ||
+      !passwordData.confirm_password
+    ) {
       setError('All password fields are required');
       return;
     }
@@ -231,19 +244,20 @@ const ProfileSettings = () => {
     try {
       await changePassword({
         old_password: passwordData.old_password,
-        new_password: passwordData.new_password
+        new_password: passwordData.new_password,
       });
 
       setSuccessMessage('Password changed successfully!');
       setPasswordData({
         old_password: '',
         new_password: '',
-        confirm_password: ''
+        confirm_password: '',
       });
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error changing password:', err);
-      const errorMessage = err.response?.data?.message ||
+      const errorMessage =
+        err.response?.data?.message ||
         err.response?.data?.error ||
         'Failed to change password. Please check your old password.';
       setError(errorMessage);
@@ -281,8 +295,12 @@ const ProfileSettings = () => {
               <User className="text-purple-600 dark:text-purple-400" size={20} />
             </div>
             <div>
-              <h2 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-100 transition-colors">Profile Settings</h2>
-              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 transition-colors">Manage your account settings and password</p>
+              <h2 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Profile Settings
+              </h2>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 transition-colors">
+                Manage your account settings and password
+              </p>
             </div>
           </div>
         </div>
@@ -307,7 +325,9 @@ const ProfileSettings = () => {
                   disabled
                   className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed transition-colors text-sm"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Username cannot be changed</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Username cannot be changed
+                </p>
               </div>
 
               {/* Email */}
@@ -321,7 +341,9 @@ const ProfileSettings = () => {
                   disabled
                   className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed transition-colors text-sm"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Email cannot be changed</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Email cannot be changed
+                </p>
               </div>
 
               {/* Role */}
@@ -332,7 +354,11 @@ const ProfileSettings = () => {
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    value={userInfo.role ? userInfo.role.charAt(0).toUpperCase() + userInfo.role.slice(1) : 'Admin'}
+                    value={
+                      userInfo.role
+                        ? userInfo.role.charAt(0).toUpperCase() + userInfo.role.slice(1)
+                        : 'Admin'
+                    }
                     disabled
                     className="flex-1 px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed transition-colors text-sm"
                   />
@@ -416,7 +442,9 @@ const ProfileSettings = () => {
                       />
                     </label>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Recommended size: 128x128px</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Recommended size: 128x128px
+                  </p>
                 </div>
 
                 <div>
@@ -446,7 +474,9 @@ const ProfileSettings = () => {
                       />
                     </label>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Shown on your profile header</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Shown on your profile header
+                  </p>
                 </div>
               </div>
 
@@ -644,7 +674,9 @@ const ProfileSettings = () => {
                       {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Minimum 6 characters</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Minimum 6 characters
+                  </p>
                 </div>
 
                 {/* Confirm Password */}
@@ -704,4 +736,3 @@ const ProfileSettings = () => {
 };
 
 export default ProfileSettings;
-

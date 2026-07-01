@@ -4,12 +4,7 @@ import { X, Save, Hash, FilePlus, Tag, Hash as Hashtag, AlertCircle } from 'luci
 import topicsApi from '../../../api/topicsApi';
 import TopicsPickerModal from '../../common/TopicsPickerModal';
 
-const EditPostModal = React.memo(({
-  isOpen,
-  onClose,
-  post,
-  onSave
-}) => {
+const EditPostModal = React.memo(({ isOpen, onClose, post, onSave }) => {
   const [formData, setFormData] = useState({
     post_title: '',
     post_content: '',
@@ -22,7 +17,7 @@ const EditPostModal = React.memo(({
     post_audio: '',
     post_link: '',
     community_ids: [],
-    is_featured: false
+    is_featured: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newTag, setNewTag] = useState('');
@@ -61,24 +56,34 @@ const EditPostModal = React.memo(({
         post_slug: post.post_slug || post.raw?.post_slug || '',
         post_topic_id: post.post_topic_id || post.raw?.post_topic_id || '',
         post_status: post.post_status || post.raw?.post_status || 'published',
-        post_tags: post.tags || post.post_tags || (post.raw?.post_tags ? (typeof post.raw.post_tags === 'string' ? post.raw.post_tags.split(',').map(t => t.trim()).filter(Boolean) : post.raw.post_tags) : []),
+        post_tags:
+          post.tags ||
+          post.post_tags ||
+          (post.raw?.post_tags
+            ? typeof post.raw.post_tags === 'string'
+              ? post.raw.post_tags
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter(Boolean)
+              : post.raw.post_tags
+            : []),
         post_image: post.post_image || post.raw?.post_image || '',
         post_video: post.post_video || post.raw?.post_video || '',
         post_audio: post.post_audio || post.raw?.post_audio || '',
         post_link: post.post_link || post.raw?.post_link || '',
         community_ids: post.community_ids || post.raw?.community_ids || [],
-        is_featured: !!(post.is_featured || post.raw?.is_featured)
+        is_featured: !!(post.is_featured || post.raw?.is_featured),
       });
     }
   }, [post]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => {
+    setFormData((prev) => {
       let updated;
       updated = {
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]: type === 'checkbox' ? checked : value,
       };
 
       // Auto-generate slug from title
@@ -95,18 +100,18 @@ const EditPostModal = React.memo(({
 
   const handleAddTag = () => {
     if (newTag.trim() && !formData.post_tags.includes(newTag.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        post_tags: [...prev.post_tags, newTag.trim()]
+        post_tags: [...prev.post_tags, newTag.trim()],
       }));
       setNewTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      post_tags: prev.post_tags.filter(tag => tag !== tagToRemove)
+      post_tags: prev.post_tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
@@ -142,8 +147,12 @@ const EditPostModal = React.memo(({
       if (formData.post_status) {
         formDataToSend.append('post_status', formData.post_status);
       }
-      if (formData.post_tags && Array.isArray(formData.post_tags) && formData.post_tags.length > 0) {
-        formData.post_tags.forEach(tag => {
+      if (
+        formData.post_tags &&
+        Array.isArray(formData.post_tags) &&
+        formData.post_tags.length > 0
+      ) {
+        formData.post_tags.forEach((tag) => {
           formDataToSend.append('post_tags[]', tag);
         });
       }
@@ -159,8 +168,12 @@ const EditPostModal = React.memo(({
       if (formData.post_link) {
         formDataToSend.append('post_link', formData.post_link);
       }
-      if (formData.community_ids && Array.isArray(formData.community_ids) && formData.community_ids.length > 0) {
-        formData.community_ids.forEach(id => {
+      if (
+        formData.community_ids &&
+        Array.isArray(formData.community_ids) &&
+        formData.community_ids.length > 0
+      ) {
+        formData.community_ids.forEach((id) => {
           formDataToSend.append('community_ids[]', id);
         });
       }
@@ -174,7 +187,10 @@ const EditPostModal = React.memo(({
       onClose();
     } catch (err) {
       console.error('Error updating post:', err);
-      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Failed to update post. Please try again.';
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        'Failed to update post. Please try again.';
       setError(errorMsg);
       setTimeout(() => setError(null), 5000);
     } finally {
@@ -195,7 +211,7 @@ const EditPostModal = React.memo(({
       post_audio: '',
       post_link: '',
       community_ids: [],
-      is_featured: false
+      is_featured: false,
     });
     setNewTag('');
     onClose();
@@ -211,14 +227,21 @@ const EditPostModal = React.memo(({
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-100 dark:border-gray-700">
               <img
-                src={post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'user'}`}
+                src={
+                  post.author?.avatar ||
+                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'user'}`
+                }
                 alt={post.author?.name || 'User'}
                 className="w-full h-full object-cover"
               />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">Edit Post</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Update post content and settings</p>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
+                Edit Post
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                Update post content and settings
+              </p>
             </div>
           </div>
           <button
@@ -231,7 +254,11 @@ const EditPostModal = React.memo(({
         </div>
 
         {/* Scrollable Modal Body */}
-        <form id="edit-post-form" onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form
+          id="edit-post-form"
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           {error && (
             <div className="mx-6 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
@@ -288,7 +315,9 @@ const EditPostModal = React.memo(({
                             for (const parent of topics) {
                               if (parent.id === formData.post_topic_id) return parent.name;
                               if (parent.children) {
-                                const child = parent.children.find(c => c.id === formData.post_topic_id);
+                                const child = parent.children.find(
+                                  (c) => c.id === formData.post_topic_id,
+                                );
                                 if (child) return child.name;
                               }
                             }
@@ -297,7 +326,7 @@ const EditPostModal = React.memo(({
                         </span>
                         <button
                           type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, post_topic_id: '' }))}
+                          onClick={() => setFormData((prev) => ({ ...prev, post_topic_id: '' }))}
                           className="p-0.5 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-full transition-colors"
                         >
                           <X size={12} className="text-purple-400" />
@@ -406,7 +435,9 @@ const EditPostModal = React.memo(({
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
                       Featured Post
                     </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Mark this post as featured</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                      Mark this post as featured
+                    </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -460,7 +491,7 @@ const EditPostModal = React.memo(({
           onClose={() => setShowTopicsModal(false)}
           initialSelectedIds={formData.post_topic_id}
           multiple={false}
-          onSave={(selectedId) => setFormData(prev => ({ ...prev, post_topic_id: selectedId }))}
+          onSave={(selectedId) => setFormData((prev) => ({ ...prev, post_topic_id: selectedId }))}
         />
       </div>
     </div>
