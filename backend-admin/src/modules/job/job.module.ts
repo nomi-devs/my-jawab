@@ -6,7 +6,7 @@ import { JobController } from './job.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Job], 'notification'),
+    TypeOrmModule.forFeature([Job]),
   ],
   controllers: [JobController],
   providers: [JobService],

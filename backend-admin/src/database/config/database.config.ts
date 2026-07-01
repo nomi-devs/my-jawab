@@ -5,12 +5,10 @@ export const getDatabaseConfig = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => ({
   type: 'mysql',
-  // host: configService.get<string>('NOTIFICATION_DB_HOST', 'localhost'),
-  host: configService.get<string>('NOTIFICATION_DB_HOST', 'sql_container'),
-  port: configService.get<number>('NOTIFICATION_DB_PORT', 3306),
-  username: configService.get<string>('NOTIFICATION_DB_USERNAME', 'root'),
-  // password: configService.get<string>('NOTIFICATION_DB_PASSWORD', ''),
-  password: configService.get<string>('NOTIFICATION_DB_PASSWORD', 'Kj9#f2Lp!7Xm99'),
+  host: configService.get<string>('DB_HOST', 'sql_container'),
+  port: configService.get<number>('DB_PORT', 3306),
+  username: configService.get<string>('DB_USERNAME', 'root'),
+  password: configService.get<string>('DB_PASSWORD', ''),
   database: configService.get<string>('DB_NAME', 'db_jawab'),
   // Entities are auto-loaded from modules using autoLoadEntities: true
   // Entities are co-located with their modules (e.g., src/modules/auth/entities/)

@@ -19,7 +19,6 @@ import { FeedModule } from './modules/feed/feed.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { getDatabaseConfig } from './database/config/database.config';
-import { getNotificationDatabaseConfig } from './database/config/notification-database.config';
 import { NotificationModule } from './modules/notification/notification.module';
 import { EmailModule } from './modules/email/email.module';
 import { JobModule } from './modules/job/job.module';
@@ -50,13 +49,6 @@ import { MediaModule } from './modules/media/media.module';
       name: 'default',
       imports: [ConfigModule],
       useFactory: getDatabaseConfig,
-      inject: [ConfigService],
-    }),
-    // Notification Database Configuration (Separate Database)
-    TypeOrmModule.forRootAsync({
-      name: 'notification',
-      imports: [ConfigModule],
-      useFactory: getNotificationDatabaseConfig,
       inject: [ConfigService],
     }),
     // Rate Limiting Configuration

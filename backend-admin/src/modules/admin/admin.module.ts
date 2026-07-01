@@ -61,9 +61,8 @@ import { Notification } from '../notification/entities/notification.entity';
       Subscription,
       UserSubscription,
       Payment,
+      Notification,
     ]),
-    // Notification entity from separate database (required for direct repository injection)
-    TypeOrmModule.forFeature([Notification], 'notification'),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService): JwtModuleOptions => {

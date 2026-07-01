@@ -12,7 +12,7 @@ export class TemplateService {
   private readonly templatesPath = path.join(process.cwd(), 'templates');
 
   constructor(
-    @InjectRepository(Template, 'notification')
+    @InjectRepository(Template)
     private templateRepository: Repository<Template>,
   ) {
     // Register Handlebars helpers

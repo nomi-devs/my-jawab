@@ -5,8 +5,7 @@ React + Vite admin dashboard for the Jawab platform. Runs on **port 5173**.
 ## Prerequisites
 
 - Node.js 18+
-- `backend-admin` running on port 3001
-- `media-service-admin` running on port 3000
+- `backend-admin` running on port 3001 (handles both API and file uploads)
 
 ## Setup
 
@@ -25,10 +24,10 @@ Edit `src/config/app.js`:
 export const hostType = "local"; // "local" | "live"
 ```
 
-| Value | Backend API | Media Service | Frontend |
+| Value | Backend API | Media | Frontend |
 |---|---|---|---|
-| `"local"` | http://localhost:3001/api | http://localhost:3000/api | http://localhost:5173 |
-| `"live"` | https://jawab.jantrah.io/backend/api | https://jawab.jantrah.io/jawab-media/api | https://jawab.jantrah.io |
+| `"local"` | http://localhost:3001/api | http://localhost:3001/api | http://localhost:5173 |
+| `"live"` | https://jawab.jantrah.io/backend/api | https://jawab.jantrah.io/backend/api | https://jawab.jantrah.io |
 
 All URLs in the app derive from this single flag — do not hardcode URLs elsewhere.
 

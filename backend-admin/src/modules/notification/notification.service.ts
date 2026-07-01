@@ -6,7 +6,7 @@ import { Notification, NotificationType, NotificationPriority } from './entities
 @Injectable()
 export class NotificationService {
   constructor(
-    @InjectRepository(Notification, 'notification')
+    @InjectRepository(Notification)
     private notificationRepository: Repository<Notification>,
   ) {}
 

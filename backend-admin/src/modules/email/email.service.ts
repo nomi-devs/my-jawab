@@ -6,7 +6,7 @@ import { Email, EmailType, EmailStatus } from './entities/email.entity';
 @Injectable()
 export class EmailService {
   constructor(
-    @InjectRepository(Email, 'notification')
+    @InjectRepository(Email)
     private emailRepository: Repository<Email>,
   ) {}
 

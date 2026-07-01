@@ -4,9 +4,7 @@ NestJS REST API for the Jawab admin platform. Runs on **port 3001**.
 
 ## Architecture
 
-Two TypeORM database connections:
-- **`default`** → `db_jawab` — users, posts, comments, polls, communities, topics, subscriptions, payments, **media**
-- **`notification`** → `db_jawab_notify` — notifications, emails, jobs, email templates
+One TypeORM database connection (`db_jawab`) — all tables live here: users, posts, comments, polls, communities, topics, subscriptions, payments, media, notifications, emails, jobs, and email templates.
 
 Redis is required for BullMQ (email queue) and `@nestjs/cache-manager`. The service will not start without it.
 
@@ -31,19 +29,26 @@ brew services start redis
 npm install
 ```
 
-### 2. Create databases
+### 2. Create database
 
 ```bash
 mysql -u root -e "
   CREATE DATABASE IF NOT EXISTS db_jawab CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-  CREATE DATABASE IF NOT EXISTS db_jawab_notify CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 "
 ```
 
 ### 3. Create `.env`
 
+Copy `.env.example` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Key variables:
+
 ```env
-# Main Database
+# Database
 DB_HOST=localhost
 DB_PORT=3306
 DB_USERNAME=root
@@ -51,15 +56,7 @@ DB_PASSWORD=
 DB_NAME=db_jawab
 DB_SYNCHRONIZE=true
 
-# Notification Database
-NOTIFICATION_DB_HOST=localhost
-NOTIFICATION_DB_PORT=3306
-NOTIFICATION_DB_USERNAME=root
-NOTIFICATION_DB_PASSWORD=
-NOTIFICATION_DB_NAME=db_jawab_notify
-NOTIFICATION_DB_SYNCHRONIZE=true
-
-# SMTP (Hostinger example)
+# SMTP
 SMTP_ENABLED=true
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=465
@@ -67,15 +64,31 @@ SMTP_SECURE=true
 SMTP_USER=your@email.com
 SMTP_PASSWORD=yourpassword
 
-# Google OAuth
+# OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
+APPLE_CLIENT_ID=com.yourcompany.yourapp
 
-# Media / File Uploads
-UPLOAD_DIR=./uploads
+# App URLs (used by media module to build file URLs)
 APP_URL=http://localhost:3001
 API_URL=http://localhost:3001/api
+
+# File Storage
+UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=52428800
 ALLOWED_MIME_TYPES=image/*,video/*,application/pdf
+
+# Media Processing
+MAX_IMAGE_SIZE=2048
+MAX_THUMBNAIL_SIZE=300
+THUMBNAIL_QUALITY=80
+SUPPORT_WEBP=true
+SUPPORT_AVIF=false
+
+# AWS S3 (optional — leave blank to use local storage)
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
+# AWS_REGION=
+# S3_BUCKET_NAME=
 ```
 
 > `DB_SYNCHRONIZE=true` auto-creates tables from entities. Set to `false` in production and use migrations.
@@ -88,8 +101,8 @@ Edit `src/config/services.config.ts`:
 export const hostType: 'local' | 'live' = 'local';
 ```
 
-- `local` → Redis at `localhost:6379`, media service at `http://localhost:3000`
-- `live` → Redis at `redis_container`, media service at production URL
+- `local` → Redis at `localhost:6379`
+- `live` → Redis at `redis_container`
 
 ## Running
 
@@ -140,9 +153,7 @@ If you get `Duplicate key name` errors, tables from a previous failed run exist.
 ```bash
 mysql -u root -e "
   DROP DATABASE IF EXISTS db_jawab;
-  DROP DATABASE IF EXISTS db_jawab_notify;
   CREATE DATABASE db_jawab CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-  CREATE DATABASE db_jawab_notify CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 "
 ```
 
@@ -262,7 +273,7 @@ npm run test:cov      # coverage report
 | `subscription_renewal_currency` | varchar(10) | |
 | `subscription_renewal_gateway` | varchar(255) | |
 
-### `db_jawab_notify` (notification database)
+### Notification tables (in `db_jawab`)
 
 **`notifications`**
 | Column | Type | Notes |
@@ -309,4 +320,5 @@ npm run test:cov      # coverage report
 | `notification` | Push/in-app/email notifications (uses `notification` DB connection) |
 | `email` | Email queue via BullMQ (uses `notification` DB connection) |
 | `templates` | Email/PDF templates (uses `notification` DB connection) |
-| `shared` | `MediaClientService` — HTTP client for media-service-admin |
+| `media` | File uploads, image optimization (WebP/AVIF), thumbnail generation, local/S3 storage |
+| `shared` | `MediaClientService` — thin wrapper around `MediaService` for callers across the app |

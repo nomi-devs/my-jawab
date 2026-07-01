@@ -15,7 +15,7 @@ import { getRedisConfig } from '../../config/services.config';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Email], 'notification'),
+    TypeOrmModule.forFeature([Email]),
     ConfigModule.forFeature(emailConfig),
     TemplatesModule, // Import templates module for template rendering
     // BullMQ Queue Configuration

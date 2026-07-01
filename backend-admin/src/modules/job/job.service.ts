@@ -6,7 +6,7 @@ import { Job, JobType, JobStatus } from './entities/job.entity';
 @Injectable()
 export class JobService {
   constructor(
-    @InjectRepository(Job, 'notification')
+    @InjectRepository(Job)
     private jobRepository: Repository<Job>,
   ) {}
 
