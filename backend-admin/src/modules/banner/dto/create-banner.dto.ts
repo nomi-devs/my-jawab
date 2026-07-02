@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { BannerType } from '../entities/banner.entity';
+import { BannerType } from '@prisma/client';
 import { ActiveStatus } from '../../admin/dto/list-users-query.dto';
 
 export class CreateBannerDto {

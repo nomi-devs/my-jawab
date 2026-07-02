@@ -18,9 +18,9 @@ import { FeedResponseDto } from './dto/feed-item.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
-@ApiTags('Feed')
+@ApiTags('MA / Feed')
 @ApiBearerAuth('JWT-auth')
-@Controller('feed')
+@Controller('ma/feed')
 @UseGuards(JwtAuthGuard)
 export class FeedController {
   constructor(private readonly feedService: FeedService) {}

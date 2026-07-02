@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TemplateService } from '../template.service';
 import { EmailService } from '../../email/email.service';
 import { EmailSenderService } from '../../email/services/email-sender.service';
-import { EmailType } from '../../email/entities/email.entity';
+import { EmailType } from '@prisma/client';
 
 @Injectable()
 export class EmailTemplateService {
@@ -46,7 +46,7 @@ export class EmailTemplateService {
 
     // Create email record
     const email = await this.emailService.create({
-      email_type: options?.emailType || EmailType.NOTIFICATION,
+      email_type: options?.emailType || EmailType.notification,
       recipient_email: recipientEmail,
       recipient_name: options?.recipientName,
       subject: subject || 'No Subject',

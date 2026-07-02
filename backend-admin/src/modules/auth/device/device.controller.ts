@@ -21,9 +21,9 @@ import { RegisterDeviceDto, UpdateDeviceDto } from '../dto/device.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GetUser } from '../decorators/get-user.decorator';
 
-@ApiTags('Devices')
+@ApiTags('MA / Devices')
 @ApiBearerAuth('JWT-auth')
-@Controller('devices')
+@Controller('ma/devices')
 @UseGuards(JwtAuthGuard)
 export class DeviceController {
   constructor(private readonly deviceService: DeviceService) {}

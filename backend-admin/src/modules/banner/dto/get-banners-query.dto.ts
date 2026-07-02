@@ -1,7 +1,7 @@
 import { IsOptional, IsString, IsEnum, Length } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { BannerType } from '../entities/banner.entity';
+import { BannerType } from '@prisma/client';
 
 /**
  * Query DTO for the public banner endpoint.

@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SubscriptionRenewalType } from '../entities/user-subscription.entity';
+import { SubscriptionRenewalType } from '@prisma/client';
 
 export class CreateUserSubscriptionDto {
   @ApiProperty({ example: 1 })

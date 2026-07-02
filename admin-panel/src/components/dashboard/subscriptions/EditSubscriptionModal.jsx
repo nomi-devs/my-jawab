@@ -77,8 +77,25 @@ const EditSubscriptionModal = ({ isOpen, onClose, subscription, onSuccess }) => 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setError(null);
-    // isUpdating is handled by hook
+
+    const validationErrors = [];
+    if (!formData.subscription_name.trim()) validationErrors.push('Subscription name is required');
+    if (formData.subscription_price === '' || formData.subscription_price === null) {
+      validationErrors.push('Price is required');
+    } else if (parseFloat(formData.subscription_price) < 0) {
+      validationErrors.push('Price must be 0 or greater');
+    }
+    if (formData.subscription_duration === '' || formData.subscription_duration === null) {
+      validationErrors.push('Duration is required');
+    } else if (parseInt(formData.subscription_duration) < 1) {
+      validationErrors.push('Duration must be at least 1');
+    }
+    if (!formData.subscription_currency) validationErrors.push('Currency is required');
+
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join('. '));
+      return;
+    }
 
     try {
       const submitData = {

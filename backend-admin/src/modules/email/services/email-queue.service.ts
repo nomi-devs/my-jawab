@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
-import { Email, EmailType } from '../entities/email.entity';
+import { Email, EmailType } from '@prisma/client';
 
 /**
  * Email Queue Service
@@ -193,16 +193,16 @@ export class EmailQueueService {
     // 1: Low (newsletters, marketing)
 
     switch (email.email_type) {
-      case EmailType.VERIFICATION:
-      case EmailType.PASSWORD_RESET:
+      case EmailType.verification:
+      case EmailType.password_reset:
         return 100;
-      case EmailType.NOTIFICATION:
-      case EmailType.ADMIN:
+      case EmailType.notification:
+      case EmailType.admin:
         return 50;
-      case EmailType.WELCOME:
-      case EmailType.SYSTEM:
+      case EmailType.welcome:
+      case EmailType.system:
         return 10;
-      case EmailType.BULK:
+      case EmailType.bulk:
       default:
         return 1;
     }

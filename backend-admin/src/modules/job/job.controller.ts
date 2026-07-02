@@ -9,13 +9,13 @@ import { JobService } from './job.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 
 @ApiTags('Jobs')
 @ApiBearerAuth('JWT-auth')
 @Controller('jobs')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.admin)
 export class JobController {
   constructor(private readonly jobService: JobService) {}
 

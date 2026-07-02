@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ProfileGender } from '../entities/user-profile.entity';
+import { ProfileGender } from '@prisma/client';
 
 export class CreateProfileDto {
   @ApiPropertyOptional({ maxLength: 255, example: 'John Doe' })

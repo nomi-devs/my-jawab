@@ -1,5 +1,5 @@
 import { IsEnum } from 'class-validator';
-import { CommunityUserRole } from '../entities/community-user.entity';
+import { CommunityUserRole } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateMemberRoleDto {

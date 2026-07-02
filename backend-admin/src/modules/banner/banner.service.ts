@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { Banner, BannerType } from './entities/banner.entity';
+import { Banner, BannerType } from '@prisma/client';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
 import { ListBannersQueryDto } from './dto/list-banners-query.dto';

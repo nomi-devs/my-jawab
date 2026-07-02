@@ -33,10 +33,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 
-@ApiTags('Topics')
-@Controller('topics')
+@ApiTags('MA / Topics')
+@Controller('ma/topics')
 @UseGuards(JwtAuthGuard)
 export class GeneralController {
   constructor(private readonly generalService: GeneralService) {}
@@ -118,7 +118,7 @@ export class GeneralController {
   })
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FileInterceptor('topic_image', {
@@ -152,7 +152,7 @@ export class GeneralController {
   })
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FileInterceptor('topic_image', {
@@ -178,7 +178,7 @@ export class GeneralController {
   @ApiParam({ name: 'id', type: Number })
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async deleteTopic(
     @Param('id', ParseIntPipe) id: number,

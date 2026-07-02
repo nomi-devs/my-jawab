@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentStatus, PaymentMethod } from '../entities/payment.entity';
+import { PaymentStatus, PaymentMethod } from '@prisma/client';
 
 export class CreatePaymentDto {
   @ApiProperty({ example: 1 })

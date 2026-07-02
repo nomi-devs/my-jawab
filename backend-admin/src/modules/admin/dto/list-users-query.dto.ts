@@ -2,7 +2,7 @@ import { IsOptional, IsEnum, IsInt, IsDateString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ListQueryDto } from './list-query.dto';
-import { UserRole } from '../../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 
 export enum ActiveStatus {
   ACTIVE = 'active',

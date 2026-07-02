@@ -1,7 +1,4 @@
-import {
-  SubscriptionRenewalType,
-  SubscriptionStatus,
-} from '../entities/user-subscription.entity';
+import { SubscriptionRenewalType, SubscriptionStatus } from '@prisma/client';
 import { SubscriptionResponseDto } from './subscription-response.dto';
 
 export class UserSubscriptionResponseDto {

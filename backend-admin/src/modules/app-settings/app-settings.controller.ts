@@ -22,7 +22,7 @@ import { UpdateAppSettingDto } from './dto/update-app-setting.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
 @ApiTags('App Settings')
@@ -34,7 +34,7 @@ export class AppSettingsController {
   @ApiOperation({ summary: 'Create app setting' })
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   create(
     @Body() createAppSettingDto: CreateAppSettingDto,
     @GetUser() user: any,
@@ -60,7 +60,7 @@ export class AppSettingsController {
   @ApiParam({ name: 'key', type: String })
   @Patch(':key')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   update(
     @Param('key') key: string,
     @Body() updateAppSettingDto: UpdateAppSettingDto,
@@ -77,7 +77,7 @@ export class AppSettingsController {
   @ApiParam({ name: 'key', type: String })
   @Delete(':key')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   remove(@Param('key') key: string) {
     return this.appSettingsService.remove(key);
   }

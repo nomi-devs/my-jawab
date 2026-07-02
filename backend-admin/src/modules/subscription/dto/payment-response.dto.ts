@@ -1,4 +1,4 @@
-import { PaymentStatus, PaymentMethod } from '../entities/payment.entity';
+import { PaymentStatus, PaymentMethod } from '@prisma/client';
 import { UserSubscriptionResponseDto } from './user-subscription-response.dto';
 
 export class PaymentResponseDto {

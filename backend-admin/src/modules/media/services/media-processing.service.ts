@@ -7,7 +7,7 @@ import * as os from 'os';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import { StorageService } from './storage.service';
-import { StorageType, MediaType } from '../entities/media.entity';
+import { StorageType, MediaType } from '@prisma/client';
 import { OptimizeImageDto } from '../dto/optimize-image.dto';
 
 if (ffmpegInstaller && ffmpegInstaller.path) {
@@ -242,18 +242,18 @@ export class MediaProcessingService {
     mimeType: string,
     fileName: string,
   ): Promise<MediaType> {
-    if (mimeType.startsWith('image/')) return MediaType.IMAGE;
-    if (mimeType.startsWith('video/')) return MediaType.VIDEO;
-    if (mimeType.startsWith('audio/')) return MediaType.AUDIO;
+    if (mimeType.startsWith('image/')) return MediaType.image;
+    if (mimeType.startsWith('video/')) return MediaType.video;
+    if (mimeType.startsWith('audio/')) return MediaType.audio;
     if (
       mimeType.includes('pdf') ||
       mimeType.includes('document') ||
       mimeType.includes('text') ||
       fileName.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt)$/i)
     ) {
-      return MediaType.DOCUMENT;
+      return MediaType.document;
     }
-    return MediaType.OTHER;
+    return MediaType.other;
   }
 
   async validateFile(file: Express.Multer.File): Promise<void> {

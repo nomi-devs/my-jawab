@@ -11,9 +11,8 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AuthType, UserRole } from '../../auth/entities/user.entity';
+import { AuthType, UserRole, ProfileGender } from '@prisma/client';
 import { ActiveStatus, VerifiedStatus } from './list-users-query.dto';
-import { ProfileGender } from '../../user/entities/user-profile.entity';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'johndoe' })
@@ -35,7 +34,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ example: 'Secret@123' })
   @ValidateIf(
-    (o) => o.auth_type === AuthType.EMAIL || o.auth_type === AuthType.PHONE,
+    (o) => o.auth_type === AuthType.email || o.auth_type === AuthType.phone,
   )
   @IsOptional()
   @IsString()

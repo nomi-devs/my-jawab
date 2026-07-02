@@ -2,7 +2,7 @@ import { IsOptional, IsEnum, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ListQueryDto } from '../../admin/dto/list-query.dto';
-import { SubscriptionStatus } from '../entities/user-subscription.entity';
+import { SubscriptionStatus } from '@prisma/client';
 import { ActiveStatus } from '../../admin/dto/list-users-query.dto';
 
 export class ListUserSubscriptionsQueryDto extends ListQueryDto {

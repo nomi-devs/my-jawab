@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PostStatus, PostType } from '../entities/user-post.entity';
+import { PostStatus, PostType } from '@prisma/client';
 
 export class UpdatePostDto {
   @ApiPropertyOptional({ type: [Number], example: [1, 2] })
@@ -65,12 +65,12 @@ export class UpdatePostDto {
   @MaxLength(500)
   post_link?: string;
 
-  @ApiPropertyOptional({ enum: PostStatus, example: PostStatus.PUBLISHED })
+  @ApiPropertyOptional({ enum: PostStatus, example: PostStatus.published })
   @IsOptional()
   @IsEnum(PostStatus)
   post_status?: PostStatus;
 
-  @ApiPropertyOptional({ enum: PostType, example: PostType.POST })
+  @ApiPropertyOptional({ enum: PostType, example: PostType.post })
   @IsOptional()
   @IsEnum(PostType)
   post_type?: PostType;

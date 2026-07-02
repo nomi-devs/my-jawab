@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PollStatus } from '../entities/user-poll.entity';
+import { PollStatus } from '@prisma/client';
 
 export class CreatePollOptionDto {
   @ApiProperty({ minLength: 1, maxLength: 255, example: 'Option A' })

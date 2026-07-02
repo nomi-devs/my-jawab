@@ -14,7 +14,7 @@ import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 import { LikePostDto } from './dto/like-post.dto';
 import { MediaClientService } from '../shared/services/media-client.service';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '../notification/entities/notification.entity';
+import { NotificationType } from '@prisma/client';
 import { QuotaService } from '../entitlements/quota.service';
 
 @Injectable()
@@ -656,7 +656,7 @@ export class PostService {
       await this.safeNotify({
         user_id: post.user_id,
         actor_id: userId,
-        notification_type: NotificationType.LIKE,
+        notification_type: NotificationType.like,
         title: 'Someone liked your post',
         body: `${actorName} liked your post "${post.post_title}"`,
         action_url: `/posts/${post.post_slug}`,

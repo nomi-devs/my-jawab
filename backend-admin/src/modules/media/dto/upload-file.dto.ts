@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { MediaType, StorageType } from '../entities/media.entity';
+import { MediaType, StorageType } from '@prisma/client';
 
 export class UploadFileDto {
   @ApiPropertyOptional({ example: 'posts' })

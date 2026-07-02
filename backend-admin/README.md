@@ -1,324 +1,281 @@
 # backend-admin
 
-NestJS REST API for the Jawab admin platform. Runs on **port 3001**.
-
-## Architecture
-
-One TypeORM database connection (`db_jawab`) — all tables live here: users, posts, comments, polls, communities, topics, subscriptions, payments, media, notifications, emails, jobs, and email templates.
-
-Redis is required for BullMQ (email queue) and `@nestjs/cache-manager`. The service will not start without it.
-
-File uploads are handled by the built-in `MediaModule` — no separate media service needed. Files are stored in `./uploads/` by default (configurable via `UPLOAD_DIR`).
-
-## Prerequisites
-
-- Node.js 18+
-- MySQL with `db_jawab` and `db_jawab_notify` databases created
-- Redis running on `localhost:6379`
-
-```bash
-brew services start mysql
-brew services start redis
-```
+NestJS REST API for the Jawab admin platform. **Port 3001**, PostgreSQL via Prisma (`db_jawab`), Redis required for the email queue/cache.
 
 ## Setup
 
-### 1. Install dependencies
-
 ```bash
 npm install
+createdb db_jawab
+cp .env.example .env          # set DATABASE_URL etc.
+npx prisma migrate dev        # create tables
+npm run seed                  # creates admin@jawab.com / Admin@123 (+ 3 other roles)
+npm run start:dev             # http://localhost:3001/api, docs at /api/docs
 ```
 
-### 2. Create database
+## Database & Relations
 
-```bash
-mysql -u root -e "
-  CREATE DATABASE IF NOT EXISTS db_jawab CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-"
+Full schema: `prisma/schema.prisma` (33 models, PostgreSQL). Every table has `id`, `created_at`/`updated_at`, and plain-`Int` audit columns `created_by`/`updated_by` (not real FKs). No cascade deletes are declared anywhere.
+
+```mermaid
+erDiagram
+    User {
+        int id PK
+        UserRole role
+        string username
+        string email
+        string password_hash
+        AuthType auth_type
+        boolean is_active
+        boolean is_verified
+        boolean is_deleted
+    }
+    UserProfile {
+        int id PK
+        int user_id FK
+        string full_name
+        string profile_picture
+        ProfileGender profile_gender
+        date profile_birthday
+    }
+    UserVerification {
+        int id PK
+        int user_id FK
+        string verification_code
+        datetime expires_at
+        boolean is_used
+    }
+    UserPasswordReset {
+        int id PK
+        int user_id FK
+        string reset_code
+        datetime expires_at
+        boolean is_used
+    }
+    UserDevice {
+        int id PK
+        int user_id FK
+        string device_id
+        DeviceType device_type
+        string device_token
+    }
+    UserTopic {
+        int id PK
+        int user_id FK
+        int topic_id FK
+    }
+    UserFollower {
+        int id PK
+        int user_id FK "the one being followed"
+        int follower_id FK "the one following"
+    }
+    CommunityUser {
+        int id PK
+        int community_id FK
+        int user_id FK
+        CommunityUserRole role
+    }
+    Topic {
+        int id PK
+        int parent_id "self-ref, not a real FK"
+        string topic_slug
+        string topic_name
+        boolean is_active
+    }
+    Community {
+        int id PK
+        string community_slug
+        string community_name
+        boolean is_active
+    }
+    CommunityTopic {
+        int id PK
+        int community_id FK
+        int topic_id FK
+    }
+    UserPost {
+        int id PK
+        int user_id FK
+        int post_topic_id FK
+        string post_slug
+        string post_title
+        string post_content
+        PostStatus post_status
+        PostType post_type
+        int like_count
+        int comment_count
+        int view_count
+    }
+    PostLike {
+        int id PK
+        int post_id FK
+        int user_id
+        LikeStatus like_status
+    }
+    PostComment {
+        int id PK
+        int post_id FK
+        int user_id FK
+        int parent_comment_id FK "self-ref, threaded replies"
+        string comment_content
+        boolean is_approved
+    }
+    CommentLike {
+        int id PK
+        int comment_id FK
+        int user_id
+        LikeStatus like_status
+    }
+    UserPoll {
+        int id PK
+        int user_id FK
+        string poll_slug
+        string poll_title
+        string poll_description
+        PollStatus poll_status
+        int vote_count
+    }
+    PollOption {
+        int id PK
+        int poll_id FK
+        string option_text
+        int vote_count
+    }
+    PollVote {
+        int id PK
+        int poll_id FK
+        int user_id
+        int vote_option_id FK
+    }
+    PollLike {
+        int id PK
+        int poll_id FK
+        int user_id
+        LikeStatus like_status
+    }
+    PollComment {
+        int id PK
+        int poll_id FK
+        int user_id FK
+        int parent_comment_id FK "self-ref, threaded replies"
+        string comment_content
+    }
+    Currency {
+        int id PK
+        string currency_name
+        string currency_code
+        string currency_symbol
+    }
+    Subscription {
+        int id PK
+        SubscriptionType subscription_type
+        string subscription_name
+        decimal subscription_price
+        int currency_id FK
+    }
+    UserSubscription {
+        int id PK
+        int user_id
+        int subscription_id FK
+        SubscriptionStatus subscription_status
+        datetime subscription_end_date
+    }
+    Payment {
+        int id PK
+        int users_subscriptions_id FK
+        int user_id FK
+        decimal payment_amount
+        PaymentStatus payment_status
+        PaymentMethod payment_method
+        int currency_id FK
+    }
+    Email {
+        int id PK
+        EmailType email_type
+        string recipient_email
+        EmailStatus status
+    }
+    Notification {
+        int id PK
+        int user_id
+        NotificationType notification_type
+        string title
+        boolean is_read
+        int email_id FK
+    }
+    Job {
+        int id PK
+        JobType job_type
+        JobStatus job_status
+        int notification_id FK
+        int email_id FK
+    }
+
+    User ||--o| UserProfile : has
+    User ||--o{ UserVerification : has
+    User ||--o{ UserPasswordReset : has
+    User ||--o{ UserDevice : has
+    User ||--o{ UserTopic : follows
+    User ||--o{ UserFollower : "is followed by"
+    User ||--o{ UserFollower : follows
+    User ||--o{ CommunityUser : joins
+    User ||--o{ UserPost : writes
+    User ||--o{ PostComment : writes
+    User ||--o{ UserPoll : writes
+    User ||--o{ PollComment : writes
+    User ||--o{ Payment : pays
+
+    Topic ||--o{ UserPost : categorizes
+    Topic ||--o{ CommunityTopic : "tagged in"
+
+    Community ||--o{ CommunityTopic : has
+    Community ||--o{ CommunityUser : "has members"
+
+    UserPost ||--o{ PostLike : has
+    UserPost ||--o{ PostComment : has
+    PostComment ||--o{ CommentLike : has
+    PostComment ||--o{ PostComment : "replies to"
+
+    UserPoll ||--o{ PollOption : has
+    UserPoll ||--o{ PollVote : has
+    UserPoll ||--o{ PollLike : has
+    UserPoll ||--o{ PollComment : has
+    PollOption ||--o{ PollVote : receives
+    PollComment ||--o{ PollComment : "replies to"
+
+    Currency ||--o{ Subscription : "priced in"
+    Currency ||--o{ Payment : "paid in"
+    Subscription ||--o{ UserSubscription : "purchased as"
+    UserSubscription ||--o{ Payment : "billed by"
+
+    Email ||--o{ Notification : "attached to"
+    Email ||--o{ Job : processes
+    Notification ||--o{ Job : processes
 ```
 
-### 3. Create `.env`
+Standalone, no relations: `Banner`, `AppSetting`, `Media`, `PrivacyPolicy`, `Support`, `Template`.
 
-Copy `.env.example` and fill in your values:
+Soft delete (`is_deleted`/`deleted_at`) exists **only** on `User`; everything else is hard-delete.
 
-```bash
-cp .env.example .env
-```
+Browse it live: `npx prisma studio`.
 
-Key variables:
+## API
 
-```env
-# Database
-DB_HOST=localhost
-DB_PORT=3306
-DB_USERNAME=root
-DB_PASSWORD=
-DB_NAME=db_jawab
-DB_SYNCHRONIZE=true
+Base URL `http://localhost:3001/api`. Two audiences behind the same JWT (`Authorization: Bearer <token>`):
+- `ma/*` — end-user self-service (profile, follow, topics)
+- `admin/*` — admin/sub_admin only (users, content moderation, subscriptions, dashboard stats, export)
 
-# SMTP
-SMTP_ENABLED=true
-SMTP_HOST=smtp.hostinger.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=your@email.com
-SMTP_PASSWORD=yourpassword
+Full endpoint-by-endpoint reference is generated live at **`/api/docs`** (Swagger) — not duplicated here.
 
-# OAuth
-GOOGLE_CLIENT_ID=your-google-client-id
-APPLE_CLIENT_ID=com.yourcompany.yourapp
-
-# App URLs (used by media module to build file URLs)
-APP_URL=http://localhost:3001
-API_URL=http://localhost:3001/api
-
-# File Storage
-UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=52428800
-ALLOWED_MIME_TYPES=image/*,video/*,application/pdf
-
-# Media Processing
-MAX_IMAGE_SIZE=2048
-MAX_THUMBNAIL_SIZE=300
-THUMBNAIL_QUALITY=80
-SUPPORT_WEBP=true
-SUPPORT_AVIF=false
-
-# AWS S3 (optional — leave blank to use local storage)
-# AWS_ACCESS_KEY_ID=
-# AWS_SECRET_ACCESS_KEY=
-# AWS_REGION=
-# S3_BUCKET_NAME=
-```
-
-> `DB_SYNCHRONIZE=true` auto-creates tables from entities. Set to `false` in production and use migrations.
-
-### 4. Environment switch (local vs production)
-
-Edit `src/config/services.config.ts`:
-
-```typescript
-export const hostType: 'local' | 'live' = 'local';
-```
-
-- `local` → Redis at `localhost:6379`
-- `live` → Redis at `redis_container`
-
-## Running
-
-```bash
-npm run start:dev     # watch mode
-npm run build         # compile
-npm run start:prod    # run compiled dist/main
-```
-
-Service starts at **http://localhost:3001**, API at **http://localhost:3001/api**
-
-## Create First Admin User
-
-After the service starts and tables are created:
-
-```bash
-# Generate bcrypt hash
-node -e "const bcrypt = require('./node_modules/bcrypt'); bcrypt.hash('YourPassword123', 10).then(h => console.log(h))"
-
-# Insert admin user (replace <hash> with output above)
-mysql -u root db_jawab -e "
-  INSERT INTO users (username, email, password_hash, role, auth_type, is_active, is_verified)
-  VALUES ('admin', 'admin@jawab.com', '<hash>', 'admin', 'email', 1, 1);
-"
-```
-
-## MySQL 9.x Compatibility
-
-If you see `Invalid default value for 'created_at'`, MySQL 9.x is rejecting the timestamp defaults. All entity `@CreateDateColumn` / `@UpdateDateColumn` decorators must use:
-
-```typescript
-@CreateDateColumn({
-  type: 'timestamp',
-  default: () => 'CURRENT_TIMESTAMP(6)',
-})
-created_at: Date;
-
-@UpdateDateColumn({
-  type: 'timestamp',
-  default: () => 'CURRENT_TIMESTAMP(6)',
-  onUpdate: 'CURRENT_TIMESTAMP(6)',
-})
-updated_at: Date;
-```
-
-If you get `Duplicate key name` errors, tables from a previous failed run exist. Drop and recreate:
-
-```bash
-mysql -u root -e "
-  DROP DATABASE IF EXISTS db_jawab;
-  CREATE DATABASE db_jawab CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-"
-```
-
-## Commands
-
-```bash
-npm run start:dev     # development with watch
-npm run start:prod    # production
-npm run build         # TypeScript compile
-npm run lint          # ESLint with auto-fix
-npm run test          # Jest unit tests
-npm run test:e2e      # E2E tests
-npm run test:cov      # coverage report
-```
-
-## Database Schemas
-
-### `db_jawab` (main database)
-
-**`users`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `role` | enum | `admin`, `sub_admin`, `pro_user`, `user` |
-| `username` | varchar(255) | unique, indexed |
-| `email` | varchar(255) | unique, indexed |
-| `password_hash` | varchar(255) | bcrypt, nullable (social auth) |
-| `auth_type` | enum | `email`, `phone`, `google`, `apple` |
-| `is_active` | tinyint(1) | default 0 |
-| `is_verified` | tinyint(1) | default 0 |
-| `is_deleted` | tinyint(1) | soft delete flag |
-| `deleted_at` | timestamp | nullable |
-| `access_token` | varchar(500) | stored JWT, nullable |
-| `refresh_token` | varchar(500) | nullable |
-| `created_at` | timestamp(6) | |
-| `updated_at` | timestamp(6) | |
-
-**`user_profile`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `user_id` | int | unique FK → users.id |
-| `full_name` | varchar(255) | nullable |
-| `profile_picture` | varchar(500) | URL, nullable |
-| `profile_background` | varchar(500) | URL, nullable |
-| `tagline` | varchar(255) | nullable |
-| `profile_bio` | text | nullable |
-| `profile_gender` | enum | `male`, `female`, `other`, nullable |
-| `profile_birthday` | date | nullable |
-| `profile_website` | varchar(500) | nullable |
-| `profile_location` | varchar(255) | nullable |
-
-**`user_posts`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `user_id` | int | FK → users.id |
-| `post_title` | varchar(500) | nullable |
-| `post_slug` | varchar(500) | unique |
-| `post_content` | text | nullable |
-| `post_status` | enum | `draft`, `published`, `archived` |
-| `post_type` | enum | `text`, `image`, `video`, `audio`, `link`, `poll` |
-| `post_image` | varchar(500) | URL, nullable |
-| `post_video` | varchar(500) | URL, nullable |
-| `post_audio` | varchar(500) | URL, nullable |
-| `post_link` | varchar(500) | nullable |
-| `post_topic_id` | int | FK → topics.id, nullable |
-| `is_featured` | tinyint(1) | default 0 |
-| `like_count` | int | default 0 |
-| `comment_count` | int | default 0 |
-| `view_count` | int | default 0 |
-
-**`topics`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `parent_id` | int | self-ref for nested topics, default 0 |
-| `topic_name` | varchar(255) | indexed |
-| `topic_slug` | varchar(255) | unique |
-| `topic_description` | text | nullable |
-| `topic_image` | varchar(500) | nullable |
-| `is_active` | tinyint(1) | default 1 |
-
-**`communities`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `name` | varchar(255) | |
-| `slug` | varchar(255) | |
-| `description` | text | nullable |
-| `image` | varchar(500) | nullable |
-| `is_active` | tinyint(1) | default 1 |
-| `member_count` | int | default 0 |
-
-**`subscriptions`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `subscription_name` | varchar(255) | unique |
-| `subscription_type` | enum | `free`, `pro`, `premium` |
-| `subscription_price` | decimal(10,2) | |
-| `subscription_duration` | int | number of units |
-| `subscription_duration_type` | enum | `days`, `weeks`, `months`, `years` |
-| `features` | json | entitlements/feature flags |
-| `is_active` | tinyint(1) | default 1 |
-
-**`users_subscriptions`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `user_id` | int | FK → users.id |
-| `subscription_id` | int | FK → subscriptions.id |
-| `subscription_status` | enum | `pending`, `active`, `inactive`, `expired` |
-| `subscription_start_date` | timestamp | nullable |
-| `subscription_end_date` | timestamp | nullable |
-| `subscription_renewal_amount` | decimal(10,2) | |
-| `subscription_renewal_currency` | varchar(10) | |
-| `subscription_renewal_gateway` | varchar(255) | |
-
-### Notification tables (in `db_jawab`)
-
-**`notifications`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `user_id` | int | recipient |
-| `notification_type` | enum | `comment`, `reply`, `like`, `follow`, `mention`, `system`, etc. |
-| `title` | varchar(255) | |
-| `body` | text | |
-| `data` | json | extra payload, nullable |
-| `is_read` | tinyint(1) | default 0 |
-| `push_status` | enum | `pending`, `sent`, `delivered`, `failed`, nullable |
-| `priority` | enum | `low`, `normal`, `high`, `urgent` |
-| `expires_at` | timestamp | nullable |
-
-**`templates`**
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `name` | varchar(255) | indexed |
-| `slug` | varchar(255) | unique |
-| `type` | enum | `email`, `pdf`, `html`, `sms` |
-| `category` | enum | `verification`, `password_reset`, `welcome`, `notification`, etc. |
-| `subject` | varchar(500) | for email templates, nullable |
-| `content` | text | HTML content |
-| `text_content` | text | plain text version, nullable |
-| `variables` | json | template variable schema, nullable |
-| `is_active` | tinyint(1) | default 1 |
-
----
-
-## Key Modules
+## Modules (`src/modules/`)
 
 | Module | Description |
 |---|---|
-| `admin` | Main fat module — dashboard stats, user/content management, cross-module operations |
-| `auth` | User registration, login, JWT, OAuth (Google/Apple), email verification |
-| `user` | User profiles, followers, topics |
-| `post` | Posts, likes |
-| `comment` | Comments, likes |
-| `poll` | Polls, options, votes |
-| `community` | Communities, members |
-| `subscription` | Plans, user subscriptions, payments |
-| `notification` | Push/in-app/email notifications (uses `notification` DB connection) |
-| `email` | Email queue via BullMQ (uses `notification` DB connection) |
-| `templates` | Email/PDF templates (uses `notification` DB connection) |
-| `media` | File uploads, image optimization (WebP/AVIF), thumbnail generation, local/S3 storage |
-| `shared` | `MediaClientService` — thin wrapper around `MediaService` for callers across the app |
+| `admin` | Fat module — dashboard stats, cross-module moderation |
+| `auth` | JWT, OAuth (Google/Apple), email verification |
+| `user`, `post`, `comment`, `poll`, `community`, `general` (topics) | Core content |
+| `subscription`, `currency`, `entitlements` | Monetization |
+| `notification`, `email`, `templates`, `job` | Async/comms (BullMQ-backed) |
+| `media` | Uploads, image optimization, local/S3 storage |
+| `banner`, `app-settings`, `privacy-policy`, `support`, `search` | Static/admin content |
+| `shared` | `@Global()` — `MediaClientService`, `RedisService` |

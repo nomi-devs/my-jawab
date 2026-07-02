@@ -23,10 +23,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 
-@ApiTags('Privacy Policy')
-@Controller('privacy-policy')
+@ApiTags('MA / Privacy Policy')
+@Controller('ma/privacy-policy')
 export class PrivacyPolicyController {
   constructor(private readonly privacyPolicyService: PrivacyPolicyService) {}
 
@@ -44,7 +44,7 @@ export class PrivacyPolicyController {
 @ApiBearerAuth('JWT-auth')
 @Controller('admin/privacy-policy')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+@Roles(UserRole.admin, UserRole.sub_admin)
 export class AdminPrivacyPolicyController {
   constructor(private readonly privacyPolicyService: PrivacyPolicyService) {}
 

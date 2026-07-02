@@ -52,7 +52,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole, SubscriptionStatus, PaymentStatus } from '@prisma/client';
 // Import DTOs from other modules
 import { CreatePostDto } from '../post/dto/create-post.dto';
 import { UpdatePostDto } from '../post/dto/update-post.dto';
@@ -73,8 +73,6 @@ import { ListSubscriptionsQueryDto } from '../subscription/dto/list-subscription
 import { ListUserSubscriptionsQueryDto } from '../subscription/dto/list-user-subscriptions-query.dto';
 import { ListPaymentsQueryDto } from '../subscription/dto/list-payments-query.dto';
 import { CreatePaymentDto } from '../subscription/dto/create-payment.dto';
-import { SubscriptionStatus } from '../subscription/entities/user-subscription.entity';
-import { PaymentStatus } from '../subscription/entities/payment.entity';
 import { ListSubscriptionPaymentNotificationsDto } from './dto/list-subscription-payment-notifications.dto';
 import { TopicSelectListDto } from '../general/dto/topic-select-list.dto';
 
@@ -104,7 +102,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('logout')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async logout(@GetUser() admin: any): Promise<{ message: string }> {
     return this.adminService.logout(admin.userId);
@@ -138,7 +136,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('change-password')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @GetUser() admin: any,
@@ -158,7 +156,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('dashboard/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getDashboardStats(
     @Query() queryDto: DashboardStatsQueryDto,
@@ -171,7 +169,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('dashboard/user-growth')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUserGrowth(@Query() queryDto: UserGrowthQueryDto) {
     return this.adminService.getUserGrowth(queryDto);
@@ -184,7 +182,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('search')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async search(@Query() searchQueryDto: SearchQueryDto) {
     return this.adminService.search(searchQueryDto);
@@ -197,7 +195,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async exportUsers(@Query() listQueryDto: ListUsersQueryDto) {
     return this.adminService.exportUsers(listQueryDto);
@@ -208,7 +206,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async exportPosts(@Query() listQueryDto: ListPostsQueryDto) {
     return this.adminService.exportPosts(listQueryDto);
@@ -219,7 +217,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('comments/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async exportComments(@Query() listQueryDto: ListCommentsQueryDto) {
     return this.adminService.exportComments(listQueryDto);
@@ -230,7 +228,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async exportCommunities(@Query() listQueryDto: ListCommunitiesQueryDto) {
     return this.adminService.exportCommunities(listQueryDto);
@@ -241,7 +239,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async exportTopics(@Query() listQueryDto: ListTopicsQueryDto) {
     return this.adminService.exportTopics(listQueryDto);
@@ -252,7 +250,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async exportPolls(@Query() listQueryDto: ListPollsQueryDto) {
     return this.adminService.exportPolls(listQueryDto);
@@ -266,7 +264,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('subscriptions/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async exportSubscriptions(@Query() listQueryDto: ListSubscriptionsQueryDto) {
     return this.adminService.exportSubscriptions(listQueryDto);
@@ -277,7 +275,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('payments/export')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async exportPayments(@Query() listQueryDto: ListPaymentsQueryDto) {
     return this.adminService.exportPayments(listQueryDto);
@@ -290,7 +288,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUsers(@Query() listQueryDto: ListUsersQueryDto) {
     return this.adminService.getUsers(listQueryDto);
@@ -304,7 +302,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/deleted')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getDeletedUsers(@Query() listQueryDto: ListUsersQueryDto) {
     return this.adminService.getDeletedUsers(listQueryDto);
@@ -317,7 +315,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('users/:userId/restore')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async restoreUser(
     @Param('userId', ParseIntPipe) userId: number,
@@ -333,7 +331,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('users/:userId/hard')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.admin)
   @HttpCode(HttpStatus.OK)
   async hardDeleteUser(
     @Param('userId', ParseIntPipe) userId: number,
@@ -348,7 +346,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('users')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   async createUser(
     @GetUser() admin: any,
@@ -364,7 +362,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUserById(@Param('userId', ParseIntPipe) userId: number) {
     return this.adminService.getUserById(userId);
@@ -396,7 +394,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('users/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FilesInterceptor('files', 2, {
@@ -446,7 +444,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId/posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUserPosts(
     @Param('userId', ParseIntPipe) userId: number,
@@ -464,7 +462,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId/communities')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUserCommunities(
     @Param('userId', ParseIntPipe) userId: number,
@@ -482,7 +480,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId/comments')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUserComments(
     @Param('userId', ParseIntPipe) userId: number,
@@ -498,7 +496,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('users/:userId/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUserStats(@Param('userId', ParseIntPipe) userId: number) {
     return this.adminService.getUserStats(userId);
@@ -511,7 +509,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('users/:userId/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updateUserStatus(
     @Param('userId', ParseIntPipe) userId: number,
@@ -532,7 +530,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('users/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async deleteUser(
     @Param('userId', ParseIntPipe) userId: number,
@@ -548,7 +546,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPosts(@Query() listQueryDto: ListPostsQueryDto) {
     return this.adminService.getPosts(listQueryDto);
@@ -561,7 +559,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts/:postId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPostById(@Param('postId', ParseIntPipe) postId: number) {
     return this.adminService.getPostByIdEnhanced(postId);
@@ -573,7 +571,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts/:postId/comments')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPostComments(
     @Param('postId', ParseIntPipe) postId: number,
@@ -588,7 +586,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('posts/:postId/analytics')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPostAnalytics(
     @Param('postId', ParseIntPipe) postId: number,
@@ -619,7 +617,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FilesInterceptor('files', 3, {
@@ -657,7 +655,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('posts/:postId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FilesInterceptor('files', 3, {
@@ -685,7 +683,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('posts/:postId/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updatePostStatus(
     @Param('postId', ParseIntPipe) postId: number,
@@ -706,7 +704,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('posts/:postId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async deletePost(
     @Param('postId', ParseIntPipe) postId: number,
@@ -725,7 +723,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('comments')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getComments(@Query() listQueryDto: ListCommentsQueryDto) {
     return this.adminService.getComments(listQueryDto);
@@ -738,7 +736,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('comments/:commentId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getCommentById(@Param('commentId', ParseIntPipe) commentId: number) {
     return this.adminService.getCommentByIdEnhanced(commentId);
@@ -753,7 +751,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('comments/:commentId/replies')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getCommentReplies(
     @Param('commentId', ParseIntPipe) commentId: number,
@@ -769,7 +767,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('comments/:commentId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updateComment(
     @Param('commentId', ParseIntPipe) commentId: number,
@@ -790,7 +788,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('comments/:commentId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async deleteComment(
     @Param('commentId', ParseIntPipe) commentId: number,
@@ -809,7 +807,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getTopics(@Query() listQueryDto: ListTopicsQueryDto) {
     return this.adminService.getTopics(listQueryDto);
@@ -823,7 +821,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('parent-topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getParentTopics(@Query() listQueryDto: ListQueryDto) {
     return this.adminService.getParentTopics(listQueryDto);
@@ -838,7 +836,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/select-list')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getTopicsForSelectList(): Promise<TopicSelectListDto[]> {
     return this.adminService.getTopicsForSelectList();
@@ -851,7 +849,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/:topicId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getTopicById(@Param('topicId', ParseIntPipe) topicId: number) {
     return this.adminService.getTopicByIdEnhanced(topicId);
@@ -866,7 +864,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/:topicId/posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getTopicPosts(
     @Param('topicId', ParseIntPipe) topicId: number,
@@ -884,7 +882,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/:topicId/communities')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getTopicCommunities(
     @Param('topicId', ParseIntPipe) topicId: number,
@@ -900,7 +898,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('topics/:topicId/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getTopicStats(@Param('topicId', ParseIntPipe) topicId: number) {
     return this.adminService.getTopicStats(topicId);
@@ -928,7 +926,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FileInterceptor('topic_image', {
@@ -966,7 +964,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('topics/:topicId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FileInterceptor('topic_image', {
@@ -994,7 +992,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('topics/:topicId/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updateTopicStatus(
     @Param('topicId', ParseIntPipe) topicId: number,
@@ -1015,7 +1013,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('topics/:topicId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async deleteTopic(
     @Param('topicId', ParseIntPipe) topicId: number,
@@ -1034,7 +1032,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getCommunities(@Query() listQueryDto: ListCommunitiesQueryDto) {
     return this.adminService.getCommunities(listQueryDto);
@@ -1047,7 +1045,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities/:communityId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getCommunityById(
     @Param('communityId', ParseIntPipe) communityId: number,
@@ -1077,7 +1075,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('communities')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FileInterceptor('community_image', {
@@ -1128,7 +1126,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('communities/:communityId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FileInterceptor('community_image', {
@@ -1165,7 +1163,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('communities/:communityId/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updateCommunityStatus(
     @Param('communityId', ParseIntPipe) communityId: number,
@@ -1186,7 +1184,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('communities/:communityId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async deleteCommunity(
     @Param('communityId', ParseIntPipe) communityId: number,
@@ -1204,7 +1202,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities/:communityId/members')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getCommunityMembers(
     @Param('communityId', ParseIntPipe) communityId: number,
@@ -1221,7 +1219,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('communities/:communityId/members/:memberId/role')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updateMemberRole(
     @Param('communityId', ParseIntPipe) communityId: number,
@@ -1243,7 +1241,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('communities/:communityId/topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getCommunityTopics(
     @Param('communityId', ParseIntPipe) communityId: number,
@@ -1258,7 +1256,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('communities/:communityId/topics')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   async addTopicToCommunity(
     @Param('communityId', ParseIntPipe) communityId: number,
@@ -1280,7 +1278,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('communities/:communityId/topics/:topicId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async removeTopicFromCommunity(
     @Param('communityId', ParseIntPipe) communityId: number,
@@ -1301,7 +1299,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPolls(@Query() listQueryDto: ListPollsQueryDto) {
     return this.adminService.getPolls(listQueryDto);
@@ -1314,7 +1312,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls/:pollId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPollById(@Param('pollId', ParseIntPipe) pollId: number) {
     return this.adminService.getPollByIdEnhanced(pollId);
@@ -1326,7 +1324,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls/:pollId/analytics')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPollAnalytics(@Param('pollId', ParseIntPipe) pollId: number) {
     return this.adminService.getPollAnalytics(pollId);
@@ -1341,7 +1339,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('polls/:pollId/votes')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPollVotes(
     @Param('pollId', ParseIntPipe) pollId: number,
@@ -1356,7 +1354,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('polls')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   async createPoll(
     @GetUser() admin: any,
@@ -1372,7 +1370,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('polls/:pollId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updatePoll(
     @Param('pollId', ParseIntPipe) pollId: number,
@@ -1389,7 +1387,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('polls/:pollId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async deletePoll(
     @Param('pollId', ParseIntPipe) pollId: number,
@@ -1408,7 +1406,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('subscriptions')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getSubscriptions(@Query() listQueryDto: ListSubscriptionsQueryDto) {
     return this.adminService.getSubscriptions(listQueryDto);
@@ -1421,7 +1419,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('subscriptions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getSubscriptionById(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.getSubscriptionById(id);
@@ -1436,7 +1434,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('subscriptions')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   async createSubscription(
     @GetUser() admin: any,
@@ -1458,7 +1456,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('subscriptions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updateSubscription(
     @Param('id', ParseIntPipe) id: number,
@@ -1482,7 +1480,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Delete('subscriptions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async deleteSubscription(
     @Param('id', ParseIntPipe) id: number,
@@ -1501,7 +1499,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('user-subscriptions')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUserSubscriptions(
     @Query() listQueryDto: ListUserSubscriptionsQueryDto,
@@ -1516,7 +1514,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('user-subscriptions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getUserSubscriptionById(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.getUserSubscriptionById(id);
@@ -1529,7 +1527,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('user-subscriptions/:id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updateUserSubscriptionStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -1553,7 +1551,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('payments')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPayments(@Query() listQueryDto: ListPaymentsQueryDto) {
     return this.adminService.getPayments(listQueryDto);
@@ -1566,7 +1564,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('payments/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getPaymentById(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.getPaymentById(id);
@@ -1578,7 +1576,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post('payments')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.CREATED)
   async createPayment(
     @GetUser() admin: any,
@@ -1594,7 +1592,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('payments/:id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async updatePaymentStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -1614,7 +1612,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('notifications/subscription-payment')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async getSubscriptionPaymentNotifications(
     @Query() listQueryDto: ListSubscriptionPaymentNotificationsDto,
@@ -1630,7 +1628,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('users/bulk-update')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async bulkUpdateUsers(
     @GetUser() admin: any,
@@ -1645,7 +1643,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('posts/bulk-update')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async bulkUpdatePosts(
     @GetUser() admin: any,
@@ -1660,7 +1658,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('communities/bulk-update')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async bulkUpdateCommunities(
     @GetUser() admin: any,
@@ -1675,7 +1673,7 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Put('topics/bulk-update')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   @HttpCode(HttpStatus.OK)
   async bulkUpdateTopics(
     @GetUser() admin: any,

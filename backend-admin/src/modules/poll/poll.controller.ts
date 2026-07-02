@@ -31,9 +31,9 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { FeatureGuard } from '../entitlements/guards/feature.guard';
 import { RequiresFeature } from '../entitlements/decorators/requires-feature.decorator';
 
-@ApiTags('Polls')
+@ApiTags('MA / Polls')
 @ApiBearerAuth('JWT-auth')
-@Controller('polls')
+@Controller('ma/polls')
 @UseGuards(JwtAuthGuard)
 export class PollController {
   constructor(private readonly pollService: PollService) {}

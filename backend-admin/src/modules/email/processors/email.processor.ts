@@ -3,7 +3,7 @@ import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { EmailSenderService } from '../services/email-sender.service';
 import { EmailService } from '../email.service';
-import { EmailStatus } from '../entities/email.entity';
+import { EmailStatus } from '@prisma/client';
 
 export interface EmailJobData {
   emailId: number;
@@ -45,7 +45,7 @@ export class EmailProcessor extends WorkerHost {
       }
 
       // Update status to processing
-      await this.emailService.updateStatus(emailId, EmailStatus.PROCESSING, {
+      await this.emailService.updateStatus(emailId, EmailStatus.processing, {
         queued_at: job.timestamp ? new Date(job.timestamp) : new Date(),
         processing_started_at: new Date(),
       });
@@ -64,7 +64,7 @@ export class EmailProcessor extends WorkerHost {
       this.logger.error(`Error processing email ${emailId}:`, error.message);
 
       // Update email status to failed
-      await this.emailService.updateStatus(emailId, EmailStatus.FAILED, {
+      await this.emailService.updateStatus(emailId, EmailStatus.failed, {
         error_message: error.message || 'Unknown error occurred',
         failed_at: new Date(),
       });

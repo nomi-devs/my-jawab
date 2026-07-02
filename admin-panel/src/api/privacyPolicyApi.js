@@ -7,7 +7,7 @@ const privacyPolicyApi = {
    * @returns {Promise} Response with active privacy policy
    */
   getActive() {
-    return axiosClient.get('/privacy-policy');
+    return axiosClient.get('/ma/privacy-policy');
   },
 
   /**

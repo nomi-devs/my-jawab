@@ -11,7 +11,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { StorageType } from '../entities/media.entity';
+import { StorageType } from '@prisma/client';
 
 export interface UploadResult {
   filePath: string;
@@ -77,9 +77,9 @@ export class StorageService {
   async uploadFile(
     file: Express.Multer.File,
     folder: string = '',
-    storageType: StorageType = StorageType.LOCAL,
+    storageType: StorageType = StorageType.local,
   ): Promise<UploadResult> {
-    if (storageType === StorageType.S3 && this.s3Client) {
+    if (storageType === StorageType.s3 && this.s3Client) {
       return this.uploadToS3(file, folder);
     }
     return this.uploadToLocal(file, folder);
@@ -148,7 +148,7 @@ export class StorageService {
     storageType: StorageType,
     expiresIn: number = 3600,
   ): Promise<string> {
-    if (storageType === StorageType.S3 && this.s3Client && this.s3Bucket) {
+    if (storageType === StorageType.s3 && this.s3Client && this.s3Bucket) {
       return this.getS3SignedUrl(filePath, expiresIn);
     }
     return this.getLocalFileUrl(filePath);
@@ -172,7 +172,7 @@ export class StorageService {
   }
 
   async deleteFile(filePath: string, storageType: StorageType): Promise<void> {
-    if (storageType === StorageType.S3 && this.s3Client && this.s3Bucket) {
+    if (storageType === StorageType.s3 && this.s3Client && this.s3Bucket) {
       await this.deleteFromS3(filePath);
     } else {
       await this.deleteFromLocal(filePath);
@@ -203,7 +203,7 @@ export class StorageService {
     filePath: string,
     storageType: StorageType,
   ): Promise<boolean> {
-    if (storageType === StorageType.S3 && this.s3Client && this.s3Bucket) {
+    if (storageType === StorageType.s3 && this.s3Client && this.s3Bucket) {
       return this.s3FileExists(filePath);
     }
     return this.localFileExists(filePath);
@@ -231,7 +231,7 @@ export class StorageService {
   }
 
   async readFile(filePath: string, storageType: StorageType): Promise<Buffer> {
-    if (storageType === StorageType.S3 && this.s3Client && this.s3Bucket) {
+    if (storageType === StorageType.s3 && this.s3Client && this.s3Bucket) {
       return this.readFromS3(filePath);
     }
     return this.readFromLocal(filePath);
@@ -269,6 +269,6 @@ export class StorageService {
   }
 
   getStorageType(): StorageType {
-    return this.s3Client && this.s3Bucket ? StorageType.S3 : StorageType.LOCAL;
+    return this.s3Client && this.s3Bucket ? StorageType.s3 : StorageType.local;
   }
 }

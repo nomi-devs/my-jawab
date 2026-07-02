@@ -1,7 +1,7 @@
 import { PostResponseDto } from '../../post/dto/post-response.dto';
 import { PollResponseDto } from '../../poll/dto/poll-response.dto';
 import { CommunityResponseDto } from '../../community/dto/community-response.dto';
-import { Banner } from '../../banner/entities/banner.entity';
+import { Banner } from '@prisma/client';
 
 export class FeedItemDto {
   type: 'post' | 'poll' | 'community' | 'banner';

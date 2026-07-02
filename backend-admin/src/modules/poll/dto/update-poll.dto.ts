@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PollStatus } from '../entities/user-poll.entity';
+import { PollStatus } from '@prisma/client';
 
 export class UpdatePollOptionDto {
   @ApiPropertyOptional({

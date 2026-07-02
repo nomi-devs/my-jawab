@@ -33,7 +33,7 @@ All URLs in the app derive from this single flag — do not hardcode URLs elsewh
 
 ## Login
 
-The admin panel requires a user with `role = 'admin'` or `role = 'sub_admin'` in `db_jawab`. See `backend-admin/README.md` for how to create the first admin user.
+The admin panel requires a user with `role = 'admin'` or `role = 'sub_admin'` in `db_jawab`. Run `npm run seed` in `backend-admin/` to create one — see `backend-admin/README.md` for the seeded credentials.
 
 Auth tokens are stored in `localStorage` (or `sessionStorage` for session-only login). A 401 response on any protected endpoint automatically clears tokens and redirects to `/login`.
 

@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PollStatus } from '../entities/user-poll.entity';
-import { LikeStatus } from '../entities/poll-like.entity';
+import { PollStatus, LikeStatus } from '@prisma/client';
 
 export class PollOptionResponseDto {
   @ApiProperty({ example: 1 })

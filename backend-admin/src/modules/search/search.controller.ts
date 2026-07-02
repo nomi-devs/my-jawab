@@ -13,9 +13,9 @@ import { SearchResponseDto } from './dto/search-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
-@ApiTags('Search')
+@ApiTags('MA / Search')
 @ApiBearerAuth('JWT-auth')
-@Controller('search')
+@Controller('ma/search')
 @UseGuards(JwtAuthGuard)
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}

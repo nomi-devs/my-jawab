@@ -11,7 +11,7 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TemplateType, TemplateCategory } from '../entities/template.entity';
+import { TemplateType, TemplateCategory } from '@prisma/client';
 
 export class UpdateTemplateDto {
   @ApiPropertyOptional({ example: 'Welcome Email' })

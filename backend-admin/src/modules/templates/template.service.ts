@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TemplateType, TemplateCategory } from './entities/template.entity';
+import { TemplateType, TemplateCategory } from '@prisma/client';
 import * as Handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -87,7 +87,7 @@ export class TemplateService {
         name: data.name,
         slug: data.slug,
         type: data.type as any,
-        category: (data.category ?? TemplateCategory.CUSTOM) as any,
+        category: (data.category ?? TemplateCategory.custom) as any,
         subject: data.subject ?? null,
         content: data.content,
         text_content: data.text_content ?? null,

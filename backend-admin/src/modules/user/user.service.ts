@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ProfileGender } from './entities/user-profile.entity';
+import { ProfileGender, NotificationType } from '@prisma/client';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { FollowUserDto } from './dto/follow-user.dto';
@@ -20,7 +20,6 @@ import { ListPostsQueryDto } from '../post/dto/list-posts-query.dto';
 import { ListPollsQueryDto } from '../poll/dto/list-polls-query.dto';
 import { ListCommentsQueryDto } from '../comment/dto/list-comments-query.dto';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '../notification/entities/notification.entity';
 
 @Injectable()
 export class UserService {
@@ -342,7 +341,7 @@ export class UserService {
     await this.safeNotify({
       user_id: followedUserId,
       actor_id: followerId,
-      notification_type: NotificationType.FOLLOW,
+      notification_type: NotificationType.follow,
       title: 'New follower',
       body: `${followerName} started following you`,
       action_url: `/users/${followerId}`,

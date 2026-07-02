@@ -31,8 +31,7 @@ import { GeneratePdfDto } from './dto/generate-pdf.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../auth/entities/user.entity';
-import { TemplateType, TemplateCategory } from './entities/template.entity';
+import { UserRole, TemplateType, TemplateCategory } from '@prisma/client';
 
 @ApiTags('Templates')
 @ApiBearerAuth('JWT-auth')
@@ -47,7 +46,7 @@ export class TemplateController {
   @ApiOperation({ summary: 'Create template' })
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   async create(@Body() createTemplateDto: CreateTemplateDto) {
     const template = await this.templateService.create(createTemplateDto);
     return {
@@ -105,7 +104,7 @@ export class TemplateController {
   @ApiParam({ name: 'id', type: String })
   @Put(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   async update(
     @Param('id') id: string,
     @Body() updateTemplateDto: UpdateTemplateDto,
@@ -124,7 +123,7 @@ export class TemplateController {
   @ApiParam({ name: 'id', type: String })
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   async remove(@Param('id') id: string) {
     await this.templateService.delete(parseInt(id));
     return {

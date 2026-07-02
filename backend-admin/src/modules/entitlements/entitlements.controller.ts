@@ -11,9 +11,9 @@ import { QuotaService, QuotaStatus } from './quota.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
-@ApiTags('Entitlements')
+@ApiTags('MA / Entitlements')
 @ApiBearerAuth('JWT-auth')
-@Controller('auth/me/entitlements')
+@Controller('ma/auth/me/entitlements')
 @UseGuards(JwtAuthGuard)
 export class EntitlementsController {
   constructor(

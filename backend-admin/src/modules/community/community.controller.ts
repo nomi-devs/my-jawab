@@ -39,13 +39,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 import { FeatureGuard } from '../entitlements/guards/feature.guard';
 import { RequiresFeature } from '../entitlements/decorators/requires-feature.decorator';
 
-@ApiTags('Communities')
+@ApiTags('MA / Communities')
 @ApiBearerAuth('JWT-auth')
-@Controller('communities')
+@Controller('ma/communities')
 @UseGuards(JwtAuthGuard)
 export class CommunityController {
   constructor(private readonly communityService: CommunityService) {}

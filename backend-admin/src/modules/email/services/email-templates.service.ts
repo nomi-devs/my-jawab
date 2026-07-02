@@ -4,7 +4,7 @@ import { EmailService } from '../email.service';
 import { EmailSenderService } from './email-sender.service';
 import { EmailQueueService } from './email-queue.service';
 import { TemplatesService } from '../../templates/templates.service';
-import { EmailType, EmailStatus } from '../entities/email.entity';
+import { EmailType, EmailStatus } from '@prisma/client';
 
 @Injectable()
 export class EmailTemplatesService {
@@ -48,7 +48,7 @@ export class EmailTemplatesService {
       );
 
       const email = await this.emailService.create({
-        email_type: EmailType.WELCOME,
+        email_type: EmailType.welcome,
         recipient_email: data.recipientEmail,
         recipient_name: data.recipientName,
         subject: `Welcome to ${appName}!`,
@@ -112,7 +112,7 @@ export class EmailTemplatesService {
         `${appUrl}/verify?code=${data.verificationCode}&email=${encodeURIComponent(data.recipientEmail)}`;
 
       const email = await this.emailService.create({
-        email_type: EmailType.VERIFICATION,
+        email_type: EmailType.verification,
         recipient_email: data.recipientEmail,
         recipient_name: data.recipientName,
         subject: `Verify your email address - ${appName}`,
@@ -176,7 +176,7 @@ export class EmailTemplatesService {
         `${appUrl}/reset-password?code=${data.resetCode}&email=${encodeURIComponent(data.recipientEmail)}`;
 
       const email = await this.emailService.create({
-        email_type: EmailType.PASSWORD_RESET,
+        email_type: EmailType.password_reset,
         recipient_email: data.recipientEmail,
         recipient_name: data.recipientName,
         subject: `Reset your password - ${appName}`,
@@ -237,7 +237,7 @@ export class EmailTemplatesService {
       );
 
       const email = await this.emailService.create({
-        email_type: EmailType.ADMIN,
+        email_type: EmailType.admin,
         recipient_email: data.recipientEmail,
         recipient_name: data.recipientName,
         subject: `Subscription Confirmed - ${data.subscriptionName}`,
@@ -311,7 +311,7 @@ export class EmailTemplatesService {
       );
 
       const email = await this.emailService.create({
-        email_type: EmailType.ADMIN,
+        email_type: EmailType.admin,
         recipient_email: data.recipientEmail,
         recipient_name: data.recipientName,
         subject: `Your ${data.subscriptionName} subscription has expired`,
@@ -374,7 +374,7 @@ export class EmailTemplatesService {
       const paymentUrl = data.paymentUrl || `${appUrl}/subscriptions/payment`;
 
       const email = await this.emailService.create({
-        email_type: EmailType.NOTIFICATION,
+        email_type: EmailType.notification,
         recipient_email: data.recipientEmail,
         recipient_name: data.recipientName,
         subject: `Complete your ${data.subscriptionName} subscription payment`,
@@ -434,7 +434,7 @@ export class EmailTemplatesService {
       );
 
       const email = await this.emailService.create({
-        email_type: EmailType.NOTIFICATION,
+        email_type: EmailType.notification,
         recipient_email: data.recipientEmail,
         recipient_name: data.recipientName,
         subject: data.title,
@@ -478,7 +478,7 @@ export class EmailTemplatesService {
             `Email ${email.id} added to queue with job ID: ${jobId}`,
           );
           // Update status to queued
-          await this.emailService.updateStatus(email.id, EmailStatus.QUEUED, {
+          await this.emailService.updateStatus(email.id, EmailStatus.queued, {
             queued_at: new Date(),
             queue_job_id: jobId,
           });

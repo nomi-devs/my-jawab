@@ -1,7 +1,7 @@
 import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { MediaType, MediaStatus } from '../entities/media.entity';
+import { MediaType, MediaStatus } from '@prisma/client';
 
 export class ListMediaDto {
   @ApiPropertyOptional({ example: 1 })

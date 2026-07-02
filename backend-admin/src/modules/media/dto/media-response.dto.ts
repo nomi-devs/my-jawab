@@ -1,4 +1,4 @@
-import { MediaType, StorageType, MediaStatus } from '../entities/media.entity';
+import { MediaType, StorageType, MediaStatus } from '@prisma/client';
 
 export class MediaResponseDto {
   id!: number;

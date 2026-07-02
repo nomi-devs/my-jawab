@@ -10,7 +10,7 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TemplateType, TemplateCategory } from '../entities/template.entity';
+import { TemplateType, TemplateCategory } from '@prisma/client';
 
 export class CreateTemplateDto {
   @ApiProperty({ example: 'Welcome Email' })

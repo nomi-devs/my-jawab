@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ProfileGender } from '../entities/user-profile.entity';
+import { ProfileGender } from '@prisma/client';
 
 export class ProfileResponseDto {
   @ApiProperty({ example: 1 })

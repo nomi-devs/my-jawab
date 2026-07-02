@@ -36,9 +36,9 @@ import { ListPollsQueryDto } from '../poll/dto/list-polls-query.dto';
 import { ListCommentsQueryDto } from '../comment/dto/list-comments-query.dto';
 import { Query } from '@nestjs/common';
 
-@ApiTags('Users')
+@ApiTags('MA / Users')
 @ApiBearerAuth('JWT-auth')
-@Controller('users')
+@Controller('ma/users')
 @UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}

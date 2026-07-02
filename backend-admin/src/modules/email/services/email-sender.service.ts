@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import { EmailStatus } from '../entities/email.entity';
+import { EmailStatus } from '@prisma/client';
 import { EmailService } from '../email.service';
 import { TemplatesService } from '../../templates/templates.service';
 
@@ -299,7 +299,7 @@ export class EmailSenderService {
       this.logger.warn(
         `Email service is disabled. Email ${email.id} will not be sent.`,
       );
-      await this.emailService.updateStatus(email.id, EmailStatus.FAILED, {
+      await this.emailService.updateStatus(email.id, EmailStatus.failed, {
         error_message: 'Email service is disabled',
       });
       return false;
@@ -311,7 +311,7 @@ export class EmailSenderService {
       this.logger.error(
         `SMTP transporter is not ready. Email ${email.id} will not be sent.`,
       );
-      await this.emailService.updateStatus(email.id, EmailStatus.FAILED, {
+      await this.emailService.updateStatus(email.id, EmailStatus.failed, {
         error_message:
           'SMTP transporter is not ready. Please check SMTP configuration.',
       });
@@ -325,7 +325,7 @@ export class EmailSenderService {
       this.logger.error(
         `SMTP credentials are not configured. Email ${email.id} will not be sent.`,
       );
-      await this.emailService.updateStatus(email.id, EmailStatus.FAILED, {
+      await this.emailService.updateStatus(email.id, EmailStatus.failed, {
         error_message:
           'SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASSWORD in .env file.',
       });
@@ -409,7 +409,7 @@ export class EmailSenderService {
       const info = await this.sendEmailWithRetry(mailOptions, email.id);
 
       // Update email status
-      await this.emailService.updateStatus(email.id, EmailStatus.SENT, {
+      await this.emailService.updateStatus(email.id, EmailStatus.sent, {
         provider: 'smtp',
         provider_message_id: info?.messageId || undefined,
         sent_at: new Date(),
@@ -438,7 +438,7 @@ export class EmailSenderService {
       }
 
       // Update email status with error
-      await this.emailService.updateStatus(email.id, EmailStatus.FAILED, {
+      await this.emailService.updateStatus(email.id, EmailStatus.failed, {
         error_message: errorMessage,
       });
 

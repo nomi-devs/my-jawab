@@ -9,7 +9,7 @@ import {
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ListQueryDto } from './list-query.dto';
-import { PostStatus } from '../../post/entities/user-post.entity';
+import { PostStatus } from '@prisma/client';
 
 export class ListPostsQueryDto extends ListQueryDto {
   @ApiPropertyOptional({

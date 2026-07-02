@@ -18,7 +18,7 @@ import { ListPollsQueryDto } from './dto/list-polls-query.dto';
 import { VotePollDto } from './dto/vote-poll.dto';
 import { LikePollDto } from './dto/like-poll.dto';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '../notification/entities/notification.entity';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class PollService {
@@ -386,11 +386,11 @@ export class PollService {
           : false;
 
         // Calculate option percentages and mark user's voted option if options included
-        if ((response as any).options && (response as any).options.length > 0) {
+        if (response.options && response.options.length > 0) {
           const totalVotes = poll.vote_count || 0;
           const userVotedOptionId = response.user_vote?.vote_option_id;
 
-          response.options = (response as any).options.map((option: any) => ({
+          response.options = response.options.map((option: any) => ({
             ...option,
             percentage:
               totalVotes > 0
@@ -780,7 +780,7 @@ export class PollService {
       await this.safeNotify({
         user_id: poll.user_id,
         actor_id: userId,
-        notification_type: NotificationType.SYSTEM,
+        notification_type: NotificationType.system,
         title: 'Someone voted on your poll',
         body: `${actorName} voted on "${poll.poll_title}"`,
         action_url: `/polls/${poll.poll_slug}`,
@@ -912,7 +912,7 @@ export class PollService {
       await this.safeNotify({
         user_id: poll.user_id,
         actor_id: userId,
-        notification_type: NotificationType.LIKE,
+        notification_type: NotificationType.like,
         title: 'Someone liked your poll',
         body: `${actorName} liked your poll "${poll.poll_title}"`,
         action_url: `/polls/${poll.poll_slug}`,

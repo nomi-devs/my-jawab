@@ -12,7 +12,7 @@ import { CommentResponseDto } from './dto/comment-response.dto';
 import { ListCommentsQueryDto } from './dto/list-comments-query.dto';
 import { LikeCommentDto } from './dto/like-comment.dto';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '../notification/entities/notification.entity';
+import { NotificationType } from '@prisma/client';
 import { QuotaService } from '../entitlements/quota.service';
 
 @Injectable()
@@ -147,7 +147,7 @@ export class CommentService {
           await this.safeNotify({
             user_id: parentComment.user_id,
             actor_id: userId,
-            notification_type: NotificationType.REPLY,
+            notification_type: NotificationType.reply,
             title: 'Someone replied to your comment',
             body: `${actorName} replied to your comment`,
             action_url: postFull ? `/posts/${postFull.post_slug}` : undefined,
@@ -160,7 +160,7 @@ export class CommentService {
         await this.safeNotify({
           user_id: postFull.user_id,
           actor_id: userId,
-          notification_type: NotificationType.COMMENT,
+          notification_type: NotificationType.comment,
           title: 'New comment on your post',
           body: `${actorName} commented on "${postFull.post_title}"`,
           action_url: `/posts/${postFull.post_slug}`,
@@ -234,7 +234,7 @@ export class CommentService {
           await this.safeNotify({
             user_id: parentComment.user_id,
             actor_id: userId,
-            notification_type: NotificationType.REPLY,
+            notification_type: NotificationType.reply,
             title: 'Someone replied to your comment',
             body: `${actorName} replied to your comment`,
             action_url: pollFull ? `/polls/${pollFull.poll_slug}` : undefined,
@@ -246,7 +246,7 @@ export class CommentService {
         await this.safeNotify({
           user_id: pollFull.user_id,
           actor_id: userId,
-          notification_type: NotificationType.COMMENT,
+          notification_type: NotificationType.comment,
           title: 'New comment on your poll',
           body: `${actorName} commented on "${pollFull.poll_title}"`,
           action_url: `/polls/${pollFull.poll_slug}`,
@@ -512,7 +512,7 @@ export class CommentService {
     userId?: number,
   ): Promise<CommentResponseDto> {
     // Try to find as post comment first
-    let postComment: any = await this.prisma.postComment.findUnique({
+    const postComment: any = await this.prisma.postComment.findUnique({
       where: { id: commentId },
       include: { user: true, post: true },
     });
@@ -547,8 +547,8 @@ export class CommentService {
     // Attach profile to user
     if (comment.user && userProfilesMap.has(comment.user.id)) {
       const profile = userProfilesMap.get(comment.user.id);
-      (comment.user as any).profile_picture = profile?.profile_picture || null;
-      (comment.user as any).full_name = profile?.full_name || null;
+      comment.user.profile_picture = profile?.profile_picture || null;
+      comment.user.full_name = profile?.full_name || null;
     }
 
     const commentResponse: any = { ...comment };
@@ -840,7 +840,7 @@ export class CommentService {
     userId: number,
   ): Promise<CommentResponseDto> {
     // Try to find as post comment first
-    let postComment: any = await this.prisma.postComment.findUnique({
+    const postComment: any = await this.prisma.postComment.findUnique({
       where: { id: commentId },
     });
 
@@ -888,7 +888,7 @@ export class CommentService {
     userId: number,
   ): Promise<{ message: string }> {
     // Try to find as post comment first
-    let postComment: any = await this.prisma.postComment.findUnique({
+    const postComment: any = await this.prisma.postComment.findUnique({
       where: { id: commentId },
     });
 
@@ -1077,7 +1077,7 @@ export class CommentService {
       await this.safeNotify({
         user_id: comment.user_id,
         actor_id: userId,
-        notification_type: NotificationType.LIKE,
+        notification_type: NotificationType.like,
         title: 'Someone liked your comment',
         body: `${actorName} liked your comment`,
         related_id: comment.id,

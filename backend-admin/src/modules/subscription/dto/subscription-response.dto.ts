@@ -1,7 +1,4 @@
-import {
-  SubscriptionType,
-  SubscriptionDurationType,
-} from '../entities/subscription.entity';
+import { SubscriptionType, SubscriptionDurationType } from '@prisma/client';
 
 export class SubscriptionResponseDto {
   id: number;

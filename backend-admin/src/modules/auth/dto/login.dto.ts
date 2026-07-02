@@ -6,7 +6,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AuthType } from '../entities/user.entity';
+import { AuthType } from '@prisma/client';
 
 export class LoginDto {
   @ApiProperty({
@@ -29,7 +29,7 @@ export class LoginDto {
   @ApiProperty({
     description: 'Authentication method',
     enum: AuthType,
-    example: AuthType.EMAIL,
+    example: AuthType.email,
   })
   @IsNotEmpty()
   @IsEnum(AuthType)

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CommunityUserRole } from '../entities/community-user.entity';
+import { CommunityUserRole } from '@prisma/client';
 
 export class CommunityResponseDto {
   @ApiProperty({ example: 1 })

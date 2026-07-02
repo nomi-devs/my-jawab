@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  NotificationType,
-  NotificationPriority,
-} from './entities/notification.entity';
+import { NotificationType, NotificationPriority } from '@prisma/client';
 
 @Injectable()
 export class NotificationService {
@@ -30,7 +27,7 @@ export class NotificationService {
         body: data.body,
         data: data.data ?? undefined,
         action_url: data.action_url ?? null,
-        priority: (data.priority ?? NotificationPriority.NORMAL) as any,
+        priority: (data.priority ?? NotificationPriority.normal) as any,
         in_app_enabled: data.in_app_enabled ?? true,
         push_enabled: data.push_enabled ?? true,
         email_enabled: data.email_enabled ?? true,

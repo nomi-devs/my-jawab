@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AuthType, UserRole } from '../../auth/entities/user.entity';
+import { AuthType, UserRole } from '@prisma/client';
 import { RequireEmailOrPhone } from '../../auth/dto/validators/class-validators';
 
 export class CreateUserDto {
@@ -34,7 +34,7 @@ export class CreateUserDto {
 
   @ApiPropertyOptional({ example: 'Secret@123' })
   @ValidateIf(
-    (o) => o.auth_type === AuthType.EMAIL || o.auth_type === AuthType.PHONE,
+    (o) => o.auth_type === AuthType.email || o.auth_type === AuthType.phone,
   )
   @IsOptional()
   @IsString()

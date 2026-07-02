@@ -33,9 +33,9 @@ import { LikePostDto } from './dto/like-post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
-@ApiTags('Posts')
+@ApiTags('MA / Posts')
 @ApiBearerAuth('JWT-auth')
-@Controller('posts')
+@Controller('ma/posts')
 @UseGuards(JwtAuthGuard)
 export class PostController {
   constructor(private readonly postService: PostService) {}

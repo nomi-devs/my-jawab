@@ -28,9 +28,9 @@ import { LikeCommentDto } from './dto/like-comment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
-@ApiTags('Comments')
+@ApiTags('MA / Comments')
 @ApiBearerAuth('JWT-auth')
-@Controller('comments')
+@Controller('ma/comments')
 @UseGuards(JwtAuthGuard)
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}

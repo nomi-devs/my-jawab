@@ -185,7 +185,7 @@ const userApi = {
    * This is intended for the logged-in admin/sub_admin to manage their own profile.
    */
   getOwnProfile() {
-    return axiosClient.get('/users/profile');
+    return axiosClient.get('/ma/users/profile');
   },
 
   /**
@@ -205,7 +205,7 @@ const userApi = {
           }
         : {};
 
-    return axiosClient.put('/users/profile', data, config);
+    return axiosClient.put('/ma/users/profile', data, config);
   },
 
   /**

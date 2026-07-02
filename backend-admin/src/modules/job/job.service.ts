@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { JobType, JobStatus } from './entities/job.entity';
+import { JobType, JobStatus } from '@prisma/client';
 
 @Injectable()
 export class JobService {
@@ -101,6 +101,6 @@ export class JobService {
   }
 
   async cancel(id: number) {
-    return await this.updateStatus(id, JobStatus.CANCELLED);
+    return await this.updateStatus(id, JobStatus.cancelled);
   }
 }

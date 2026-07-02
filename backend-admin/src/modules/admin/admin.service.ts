@@ -12,7 +12,6 @@ import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
-import { DeviceType } from '../auth/entities/user-device.entity';
 // Import services from other modules
 import { PostService } from '../post/post.service';
 import { CommentService } from '../comment/comment.service';
@@ -25,7 +24,7 @@ import { NotificationService } from '../notification/notification.service';
 import { MediaClientService } from '../shared/services/media-client.service';
 import { EmailTemplatesService } from '../email/services/email-templates.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SubscriptionStatus, PaymentStatus } from '@prisma/client';
+import { DeviceType, SubscriptionStatus, PaymentStatus } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import {
   DashboardStatsDto,
@@ -241,7 +240,7 @@ export class AdminService {
       await this.registerDevice(user.id, {
         device_id: adminLoginDto.device_id,
         device_type:
-          (adminLoginDto.device_type as DeviceType) || DeviceType.WEB,
+          (adminLoginDto.device_type as DeviceType) || DeviceType.web,
         device_token: adminLoginDto.device_token,
       });
     }
@@ -606,12 +605,12 @@ export class AdminService {
 
       // Engagement rate
       const totalViewsResult = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT COALESCE(SUM(view_count), 0) AS total FROM user_posts WHERE created_at >= ? AND created_at <= ?`,
+        `SELECT COALESCE(SUM(view_count), 0) AS total FROM user_posts WHERE created_at >= $1 AND created_at <= $2`,
         periodStart,
         periodEnd,
       );
       const totalLikesResult = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT COALESCE(SUM(like_count), 0) AS total FROM user_posts WHERE created_at >= ? AND created_at <= ?`,
+        `SELECT COALESCE(SUM(like_count), 0) AS total FROM user_posts WHERE created_at >= $1 AND created_at <= $2`,
         periodStart,
         periodEnd,
       );
@@ -648,9 +647,9 @@ export class AdminService {
            COUNT(DISTINCT comment.id) as comment_count
          FROM users u
          LEFT JOIN user_posts post
-           ON post.user_id = u.id AND post.created_at BETWEEN ? AND ?
+           ON post.user_id = u.id AND post.created_at BETWEEN $1 AND $2
          LEFT JOIN post_comments comment
-           ON comment.user_id = u.id AND comment.created_at BETWEEN ? AND ?
+           ON comment.user_id = u.id AND comment.created_at BETWEEN $3 AND $4
          GROUP BY u.id, u.username, u.email
          HAVING COUNT(DISTINCT post.id) > 0 OR COUNT(DISTINCT comment.id) > 0`,
         periodStart,
@@ -898,14 +897,14 @@ export class AdminService {
 
   private async getActiveUsersCount(start: Date, end: Date): Promise<number> {
     const result = await this.prisma.$queryRawUnsafe<any[]>(
-      `SELECT COUNT(DISTINCT u.id) AS \`count\`
+      `SELECT COUNT(DISTINCT u.id) AS "count"
        FROM users u
        LEFT JOIN user_posts post
-         ON post.user_id = u.id AND post.created_at BETWEEN ? AND ?
+         ON post.user_id = u.id AND post.created_at BETWEEN $1 AND $2
        LEFT JOIN post_comments comment
-         ON comment.user_id = u.id AND comment.created_at BETWEEN ? AND ?
+         ON comment.user_id = u.id AND comment.created_at BETWEEN $3 AND $4
        LEFT JOIN user_polls poll
-         ON poll.user_id = u.id AND poll.created_at BETWEEN ? AND ?
+         ON poll.user_id = u.id AND poll.created_at BETWEEN $5 AND $6
        WHERE post.id IS NOT NULL OR comment.id IS NOT NULL OR poll.id IS NOT NULL`,
       start,
       end,
@@ -971,7 +970,7 @@ export class AdminService {
         FROM topics t
         LEFT JOIN (
           SELECT topic_id, COUNT(*) as community_count
-          FROM community_topics WHERE is_active = 1
+          FROM community_topics WHERE is_active = true
           GROUP BY topic_id
         ) ct ON t.id = ct.topic_id
         LEFT JOIN (
@@ -979,9 +978,9 @@ export class AdminService {
           FROM user_posts WHERE post_status = 'published'
           GROUP BY post_topic_id
         ) pt ON t.id = pt.topic_id
-        WHERE t.is_active = 1
+        WHERE t.is_active = true
         ORDER BY usage_count DESC, community_count DESC, post_count DESC
-        LIMIT ?
+        LIMIT $1
       `;
 
       const results = await this.prisma.$queryRawUnsafe<any[]>(query, limit);
@@ -1080,7 +1079,7 @@ export class AdminService {
       await this.registerDevice(savedUser.id, {
         device_id: createUserDto.device_id,
         device_type:
-          (createUserDto.device_type as DeviceType) || DeviceType.WEB,
+          (createUserDto.device_type as DeviceType) || DeviceType.web,
         device_token: createUserDto.device_token,
       });
     }
@@ -2537,14 +2536,15 @@ export class AdminService {
       where.created_at = { ...where.created_at, lte: new Date(created_to) };
 
     if (min_members !== undefined || max_members !== undefined) {
+      let paramIndex = 1;
       const havingParts: string[] = [];
       const havingParams: any[] = [];
       if (min_members !== undefined) {
-        havingParts.push('member_count >= ?');
+        havingParts.push(`member_count >= $${paramIndex++}`);
         havingParams.push(Number(min_members));
       }
       if (max_members !== undefined) {
-        havingParts.push('member_count <= ?');
+        havingParts.push(`member_count <= $${paramIndex++}`);
         havingParams.push(Number(max_members));
       }
       const havingClause = havingParts.join(' AND ');
@@ -2553,7 +2553,7 @@ export class AdminService {
         { community_id: number }[]
       >(
         `SELECT community_id, COUNT(*) as member_count
-         FROM community_users WHERE is_active = 1
+         FROM community_users WHERE is_active = true
          GROUP BY community_id HAVING ${havingClause}`,
         ...havingParams,
       );
@@ -2585,7 +2585,7 @@ export class AdminService {
           : '';
       const isActiveFilter =
         where.is_active !== undefined
-          ? `AND c.is_active = ${where.is_active ? 1 : 0}`
+          ? `AND c.is_active = ${where.is_active ? 'true' : 'false'}`
           : '';
       const sortRows = await this.prisma.$queryRawUnsafe<
         { community_id: number }[]
@@ -2594,7 +2594,7 @@ export class AdminService {
          FROM communities c
          LEFT JOIN (
            SELECT community_id, COUNT(*) as cnt
-           FROM community_users WHERE is_active = 1
+           FROM community_users WHERE is_active = true
            GROUP BY community_id
          ) mc ON mc.community_id = c.id
          WHERE 1=1 ${idFilter} ${isActiveFilter}
@@ -2677,9 +2677,8 @@ export class AdminService {
 
         const last30DaysPostsResult = await this.prisma.$queryRawUnsafe<any[]>(
           `SELECT COUNT(*) as cnt FROM user_posts
-           WHERE (FIND_IN_SET(?, community_ids) > 0 OR community_ids = ?)
-           AND created_at >= ?`,
-          community.id,
+           WHERE $1::text = ANY(string_to_array(community_ids, ','))
+           AND created_at >= $2`,
           community.id.toString(),
           thirtyDaysAgo,
         );
@@ -3500,22 +3499,23 @@ export class AdminService {
   async getCommunityByIdEnhanced(communityId: number) {
     const community = await this.communityService.getCommunityById(communityId);
 
-    // FIND_IN_SET is MySQL-specific; use $queryRawUnsafe to retain that logic
-    const postsCountResult = (await this.prisma.$queryRawUnsafe(
-      'SELECT COUNT(*) as cnt FROM user_posts WHERE FIND_IN_SET(?, community_ids) > 0 OR community_ids = ?',
-      communityId,
+    const postsCountResult = await this.prisma.$queryRawUnsafe<
+      { cnt: bigint | number }[]
+    >(
+      `SELECT COUNT(*) as cnt FROM user_posts WHERE $1::text = ANY(string_to_array(community_ids, ','))`,
       String(communityId),
-    )) as [{ cnt: bigint }];
+    );
     const postsCount = Number(postsCountResult[0]?.cnt ?? 0);
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const last30DaysResult = (await this.prisma.$queryRawUnsafe(
-      'SELECT COUNT(*) as cnt FROM user_posts WHERE (FIND_IN_SET(?, community_ids) > 0 OR community_ids = ?) AND created_at >= ?',
-      communityId,
+    const last30DaysResult = await this.prisma.$queryRawUnsafe<
+      { cnt: bigint | number }[]
+    >(
+      `SELECT COUNT(*) as cnt FROM user_posts WHERE $1::text = ANY(string_to_array(community_ids, ',')) AND created_at >= $2`,
       String(communityId),
       thirtyDaysAgo,
-    )) as [{ cnt: bigint }];
+    );
     const last30DaysPosts = Number(last30DaysResult[0]?.cnt ?? 0);
     const postsPerDay = parseFloat((last30DaysPosts / 30).toFixed(2));
 
@@ -4205,9 +4205,8 @@ export class AdminService {
         // Count posts by this user in this specific community
         // Using FIND_IN_SET because community_ids is a comma-separated string
         const postsCountRows: any[] = await this.prisma.$queryRawUnsafe(
-          `SELECT COUNT(*) AS cnt FROM user_posts WHERE user_id = ? AND (FIND_IN_SET(?, community_ids) > 0 OR community_ids = ?)`,
+          `SELECT COUNT(*) AS cnt FROM user_posts WHERE user_id = $1 AND $2::text = ANY(string_to_array(community_ids, ','))`,
           member.user_id,
-          communityId,
           String(communityId),
         );
         const postsCount = Number(postsCountRows[0]?.cnt ?? 0);
@@ -5154,10 +5153,13 @@ export class AdminService {
     } = listQueryDto;
     const skip = (page - 1) * limit;
 
+    const baseParams: any[] = [`%${communityId}%`];
+    let nextIdx = 2;
     const searchClause = search
-      ? `AND (post_title LIKE ? OR post_content LIKE ?)`
+      ? `AND (post_title LIKE $${nextIdx++} OR post_content LIKE $${nextIdx++})`
       : '';
-    const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
+    if (search) baseParams.push(`%${search}%`, `%${search}%`);
+
     const allowedSortFields = [
       'id',
       'post_title',
@@ -5172,18 +5174,18 @@ export class AdminService {
       : 'created_at';
     const sortDir = sort_order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
+    const limitIdx = nextIdx++;
+    const offsetIdx = nextIdx++;
     const [postsRaw, countRaw] = (await Promise.all([
       this.prisma.$queryRawUnsafe(
-        `SELECT * FROM user_posts WHERE community_ids LIKE ? ${searchClause} ORDER BY ${sortField} ${sortDir} LIMIT ? OFFSET ?`,
-        `%${communityId}%`,
-        ...searchParams,
+        `SELECT * FROM user_posts WHERE community_ids LIKE $1 ${searchClause} ORDER BY ${sortField} ${sortDir} LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+        ...baseParams,
         limit,
         skip,
       ),
       this.prisma.$queryRawUnsafe(
-        `SELECT COUNT(*) AS cnt FROM user_posts WHERE community_ids LIKE ? ${searchClause}`,
-        `%${communityId}%`,
-        ...searchParams,
+        `SELECT COUNT(*) AS cnt FROM user_posts WHERE community_ids LIKE $1 ${searchClause}`,
+        ...baseParams,
       ),
     ])) as [any[], any[]];
 
@@ -5200,14 +5202,14 @@ export class AdminService {
 
     // Get recent posts — community_ids is a comma-separated string, must use raw SQL
     const recentPostsRaw: any[] = await this.prisma.$queryRawUnsafe(
-      `SELECT p.id, p.post_title, p.created_at, u.id AS u_id, u.username AS u_username FROM user_posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.community_ids LIKE ? ORDER BY p.created_at DESC LIMIT ?`,
+      `SELECT p.id, p.post_title, p.created_at, u.id AS u_id, u.username AS u_username FROM user_posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.community_ids LIKE $1 ORDER BY p.created_at DESC LIMIT $2`,
       `%${communityId}%`,
       limit,
     );
 
     // Get recent comments on community posts
     const recentCommentsRaw: any[] = await this.prisma.$queryRawUnsafe(
-      `SELECT c.id, c.comment_content, c.post_id, c.created_at, u.id AS u_id, u.username AS u_username FROM post_comments c LEFT JOIN user_posts p ON c.post_id = p.id LEFT JOIN users u ON c.user_id = u.id WHERE p.community_ids LIKE ? ORDER BY c.created_at DESC LIMIT ?`,
+      `SELECT c.id, c.comment_content, c.post_id, c.created_at, u.id AS u_id, u.username AS u_username FROM post_comments c LEFT JOIN user_posts p ON c.post_id = p.id LEFT JOIN users u ON c.user_id = u.id WHERE p.community_ids LIKE $1 ORDER BY c.created_at DESC LIMIT $2`,
       `%${communityId}%`,
       limit,
     );
@@ -5246,7 +5248,7 @@ export class AdminService {
   async getCommunityStats(communityId: number) {
     const [postsCountRaw, topicsCount, membersCount] = await Promise.all([
       this.prisma.$queryRawUnsafe(
-        `SELECT COUNT(*) AS cnt FROM user_posts WHERE community_ids LIKE ?`,
+        `SELECT COUNT(*) AS cnt FROM user_posts WHERE community_ids LIKE $1`,
         `%${communityId}%`,
       ) as Promise<any[]>,
       this.prisma.communityTopic.count({
@@ -5407,13 +5409,13 @@ export class AdminService {
          FROM poll_votes pv
          LEFT JOIN users u ON pv.user_id = u.id
          LEFT JOIN poll_options po ON pv.vote_option_id = po.id
-         WHERE pv.poll_id = ? ORDER BY pv.created_at DESC LIMIT ? OFFSET ?`,
+         WHERE pv.poll_id = $1 ORDER BY pv.created_at DESC LIMIT $2 OFFSET $3`,
         pollId,
         limit,
         skip,
       ),
       this.prisma.$queryRawUnsafe(
-        'SELECT COUNT(*) as count FROM poll_votes WHERE poll_id = ?',
+        'SELECT COUNT(*) as count FROM poll_votes WHERE poll_id = $1',
         pollId,
       ),
     ])) as [any[], any[]];

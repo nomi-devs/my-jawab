@@ -1,7 +1,7 @@
 import { IsBoolean, IsOptional, IsEnum } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 
 export class UpdateUserStatusDto {
   @ApiPropertyOptional({ example: true })

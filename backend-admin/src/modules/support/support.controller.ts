@@ -23,10 +23,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 
-@ApiTags('Support')
-@Controller('support')
+@ApiTags('MA / Support')
+@Controller('ma/support')
 export class SupportController {
   constructor(private readonly supportService: SupportService) {}
 
@@ -44,7 +44,7 @@ export class SupportController {
 @ApiBearerAuth('JWT-auth')
 @Controller('admin/support')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+@Roles(UserRole.admin, UserRole.sub_admin)
 export class AdminSupportController {
   constructor(private readonly supportService: SupportService) {}
 

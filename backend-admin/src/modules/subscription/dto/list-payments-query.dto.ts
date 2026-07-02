@@ -2,7 +2,7 @@ import { IsOptional, IsEnum, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ListQueryDto } from '../../admin/dto/list-query.dto';
-import { PaymentStatus, PaymentMethod } from '../entities/payment.entity';
+import { PaymentStatus, PaymentMethod } from '@prisma/client';
 
 export class ListPaymentsQueryDto extends ListQueryDto {
   @ApiPropertyOptional({ example: 1 })

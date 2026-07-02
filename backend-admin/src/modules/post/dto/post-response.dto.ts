@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PostStatus, PostType } from '../entities/user-post.entity';
+import { PostStatus, PostType } from '@prisma/client';
 
 export class PostResponseDto {
   @ApiProperty({ example: 1 })
@@ -32,10 +32,10 @@ export class PostResponseDto {
   @ApiProperty({ example: 'https://example.com/article', nullable: true })
   post_link: string | null;
 
-  @ApiProperty({ enum: PostStatus, example: PostStatus.PUBLISHED })
+  @ApiProperty({ enum: PostStatus, example: PostStatus.published })
   post_status: PostStatus;
 
-  @ApiProperty({ enum: PostType, example: PostType.POST })
+  @ApiProperty({ enum: PostType, example: PostType.post })
   post_type: PostType;
 
   @ApiProperty({ example: 5, nullable: true })

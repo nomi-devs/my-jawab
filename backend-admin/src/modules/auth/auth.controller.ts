@@ -25,8 +25,8 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 
-@ApiTags('Auth')
-@Controller('auth')
+@ApiTags('MA / Auth')
+@Controller('ma/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

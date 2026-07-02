@@ -28,12 +28,11 @@ import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { ListSubscriptionsQueryDto } from './dto/list-subscriptions-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { SubscriptionStatus } from './entities/user-subscription.entity';
 import { ActiveStatus } from '../admin/dto/list-users-query.dto';
 
-@ApiTags('Subscriptions')
+@ApiTags('MA / Subscriptions')
 @ApiBearerAuth('JWT-auth')
-@Controller('subscriptions')
+@Controller('ma/subscriptions')
 @UseGuards(JwtAuthGuard)
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}

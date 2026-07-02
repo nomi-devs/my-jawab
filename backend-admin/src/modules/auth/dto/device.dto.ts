@@ -1,6 +1,6 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { DeviceType } from '../entities/user-device.entity';
+import { DeviceType } from '@prisma/client';
 
 export class RegisterDeviceDto {
   @ApiProperty({
@@ -14,7 +14,7 @@ export class RegisterDeviceDto {
   @ApiProperty({
     description: 'Type of device',
     enum: DeviceType,
-    example: DeviceType.IOS,
+    example: DeviceType.ios,
   })
   @IsNotEmpty()
   @IsEnum(DeviceType)
@@ -41,7 +41,7 @@ export class UpdateDeviceDto {
   @ApiPropertyOptional({
     description: 'Type of device',
     enum: DeviceType,
-    example: DeviceType.ANDROID,
+    example: DeviceType.android,
   })
   @IsOptional()
   @IsEnum(DeviceType)

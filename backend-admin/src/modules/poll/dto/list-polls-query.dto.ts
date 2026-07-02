@@ -2,7 +2,7 @@ import { IsOptional, IsInt, IsBoolean, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ListQueryDto } from '../../admin/dto/list-query.dto';
-import { PollStatus } from '../entities/user-poll.entity';
+import { PollStatus } from '@prisma/client';
 
 export class ListPollsQueryDto extends ListQueryDto {
   @ApiPropertyOptional({ description: 'Filter polls by user ID', example: 1 })

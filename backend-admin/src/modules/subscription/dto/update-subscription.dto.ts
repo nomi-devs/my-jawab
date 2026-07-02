@@ -10,10 +10,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  SubscriptionType,
-  SubscriptionDurationType,
-} from '../entities/subscription.entity';
+import { SubscriptionType, SubscriptionDurationType } from '@prisma/client';
 
 export class UpdateSubscriptionDto {
   @ApiPropertyOptional({ enum: SubscriptionType })

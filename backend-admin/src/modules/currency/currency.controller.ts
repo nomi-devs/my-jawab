@@ -21,7 +21,7 @@ import { UpdateCurrencyDto } from './dto/update-currency.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
 @ApiTags('Currencies')
@@ -33,7 +33,7 @@ export class CurrencyController {
   @ApiOperation({ summary: 'Create currency' })
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   create(@Body() createCurrencyDto: CreateCurrencyDto, @GetUser() user: any) {
     return this.currencyService.create(createCurrencyDto, user.userId);
   }
@@ -55,7 +55,7 @@ export class CurrencyController {
   @ApiParam({ name: 'id', type: Number })
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateCurrencyDto: UpdateCurrencyDto,
@@ -68,7 +68,7 @@ export class CurrencyController {
   @ApiParam({ name: 'id', type: Number })
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+  @Roles(UserRole.admin, UserRole.sub_admin)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.currencyService.remove(id);
   }

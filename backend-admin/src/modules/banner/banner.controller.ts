@@ -32,13 +32,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { UserRole } from '../auth/entities/user.entity';
+import { UserRole } from '@prisma/client';
 
 /**
  * Public/User endpoint — returns banners targeted to the current user.
  */
-@ApiTags('Banners')
-@Controller('banners')
+@ApiTags('MA / Banners')
+@Controller('ma/banners')
 @UseGuards(JwtAuthGuard)
 export class BannerController {
   constructor(private readonly bannerService: BannerService) {}
@@ -59,7 +59,7 @@ export class BannerController {
 @ApiBearerAuth('JWT-auth')
 @Controller('admin/banners')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
+@Roles(UserRole.admin, UserRole.sub_admin)
 export class AdminBannerController {
   constructor(private readonly bannerService: BannerService) {}
 

@@ -10,7 +10,7 @@ import {
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ListQueryDto } from './list-query.dto';
-import { PollStatus } from '../../poll/entities/user-poll.entity';
+import { PollStatus } from '@prisma/client';
 
 export class ListPollsQueryDto extends ListQueryDto {
   @ApiPropertyOptional({
@@ -19,7 +19,7 @@ export class ListPollsQueryDto extends ListQueryDto {
   })
   @IsOptional()
   @IsIn(
-    [PollStatus.DRAFT, PollStatus.PUBLISHED, PollStatus.ENDED, 'all', 'active'],
+    [PollStatus.draft, PollStatus.published, PollStatus.ended, 'all', 'active'],
     {
       message:
         'poll_status must be one of the following values: draft, published, ended',

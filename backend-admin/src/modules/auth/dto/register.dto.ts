@@ -8,7 +8,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AuthType } from '../entities/user.entity';
+import { AuthType } from '@prisma/client';
 
 export class RegisterDto {
   @ApiProperty({ description: 'Unique username', example: 'john_doe' })
@@ -37,7 +37,7 @@ export class RegisterDto {
   @ApiProperty({
     description: 'Authentication method',
     enum: AuthType,
-    example: AuthType.EMAIL,
+    example: AuthType.email,
   })
   @IsNotEmpty()
   @IsEnum(AuthType)

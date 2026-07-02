@@ -2,7 +2,7 @@ import { IsOptional, IsInt, IsEnum, IsBoolean, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ListQueryDto } from '../../admin/dto/list-query.dto';
-import { PostStatus, PostType } from '../entities/user-post.entity';
+import { PostStatus, PostType } from '@prisma/client';
 
 export class ListPostsQueryDto extends ListQueryDto {
   @ApiPropertyOptional({ example: 1, description: 'Filter by user ID' })
@@ -28,7 +28,7 @@ export class ListPostsQueryDto extends ListQueryDto {
 
   @ApiPropertyOptional({
     enum: PostStatus,
-    example: PostStatus.PUBLISHED,
+    example: PostStatus.published,
     description: 'Filter by post status',
   })
   @IsOptional()
@@ -37,7 +37,7 @@ export class ListPostsQueryDto extends ListQueryDto {
 
   @ApiPropertyOptional({
     enum: PostType,
-    example: PostType.POST,
+    example: PostType.post,
     description: 'Filter by post type',
   })
   @IsOptional()

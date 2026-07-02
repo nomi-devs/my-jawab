@@ -1547,7 +1547,7 @@ export class FeedService {
             id: item.id,
             user_id: item.user_id,
             created_at: new Date(item.created_at),
-            poll: pollWithoutCommunities as any,
+            poll: pollWithoutCommunities,
           });
         } else if (item.type === 'community') {
           // Get community details

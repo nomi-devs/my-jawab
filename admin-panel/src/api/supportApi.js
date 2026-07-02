@@ -7,7 +7,7 @@ const supportApi = {
    * @returns {Promise} Response with active support data
    */
   getActive() {
-    return axiosClient.get('/support');
+    return axiosClient.get('/ma/support');
   },
 
   /**

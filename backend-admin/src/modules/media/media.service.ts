@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
-import { StorageType } from './entities/media.entity';
+import { StorageType } from '@prisma/client';
 import { StorageService } from './services/storage.service';
 import { MediaProcessingService } from './services/media-processing.service';
 import { ListMediaDto } from './dto/list-media.dto';
@@ -247,19 +247,16 @@ export class MediaService {
       );
     }
     try {
-      await this.storageService.deleteFile(
-        media.file_path,
-        media.storage_type as StorageType,
-      );
+      await this.storageService.deleteFile(media.file_path, media.storage_type);
       if (media.optimized_path)
         await this.storageService.deleteFile(
           media.optimized_path,
-          media.storage_type as StorageType,
+          media.storage_type,
         );
       if (media.thumbnail_path)
         await this.storageService.deleteFile(
           media.thumbnail_path,
-          media.storage_type as StorageType,
+          media.storage_type,
         );
     } catch (error) {
       this.logger.warn(
@@ -291,7 +288,7 @@ export class MediaService {
     }
     const fileBuffer = await this.storageService.readFile(
       media.file_path,
-      media.storage_type as StorageType,
+      media.storage_type,
     );
     const processedImage = await this.mediaProcessingService.processImage(
       fileBuffer,
@@ -302,7 +299,7 @@ export class MediaService {
       processedImage,
       media.original_filename,
       folder,
-      media.storage_type as StorageType,
+      media.storage_type,
     );
     const updateData: any = {
       optimized_path: savedPaths.optimizedPath,
@@ -333,7 +330,7 @@ export class MediaService {
         : media.file_path;
     return this.storageService.getFileUrl(
       filePath,
-      media.storage_type as StorageType,
+      media.storage_type,
       expiresIn,
     );
   }
@@ -347,10 +344,7 @@ export class MediaService {
       optimized && media.optimized_path
         ? media.optimized_path
         : media.file_path;
-    return this.storageService.readFile(
-      filePath,
-      media.storage_type as StorageType,
-    );
+    return this.storageService.readFile(filePath, media.storage_type);
   }
 
   async findMediaByPath(filePath: string): Promise<any | null> {

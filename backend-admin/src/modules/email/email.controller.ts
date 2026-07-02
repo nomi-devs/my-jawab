@@ -21,7 +21,7 @@ import { EmailTemplatesService } from './services/email-templates.service';
 import { EmailSenderService } from './services/email-sender.service';
 import { EmailQueueService } from './services/email-queue.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { EmailType, EmailStatus } from './entities/email.entity';
+import { EmailType, EmailStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 
 @ApiTags('Email')
