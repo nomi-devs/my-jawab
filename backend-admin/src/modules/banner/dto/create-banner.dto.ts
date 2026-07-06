@@ -30,7 +30,7 @@ export class CreateBannerDto {
   @IsOptional()
   @IsUrl()
   @MaxLength(500)
-  banner_image?: string; // Required if no file is uploaded — validated in service
+  banner_image?: string; // Required if no file is uploaded validated in service
 
   @ApiPropertyOptional({ example: 'https://example.com' })
   @IsOptional()

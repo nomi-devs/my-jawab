@@ -67,6 +67,16 @@ enum EmailStatus {
   clicked
 }
 
+enum SmsType {
+  verification
+  password_reset
+}
+
+enum SmsStatus {
+  sent
+  failed
+}
+
 enum JobType {
   notification
   email
@@ -228,8 +238,9 @@ enum TemplateCategory {
 model User {
   id            Int       @id @default(autoincrement())
   role          UserRole  @default(user)
-  username      String    @db.VarChar(255)
-  email         String    @db.VarChar(255)
+  username      String    @unique @db.VarChar(255)
+  email         String?   @unique @db.VarChar(255)
+  phone_number  String?   @unique @db.VarChar(20)
   password_hash String?   @db.VarChar(255)
   auth_type     AuthType  @default(email)
   access_token  String?   @db.VarChar(500)
@@ -259,8 +270,6 @@ model User {
   poll_comments         PollComment[]
 
   @@index([role])
-  @@index([username])
-  @@index([email])
   @@index([auth_type])
   @@index([is_active])
   @@index([is_verified])
@@ -441,6 +450,8 @@ model Topic {
   topic_name        String   @db.VarChar(255)
   topic_description String?  @db.Text
   topic_image       String?  @db.VarChar(500)
+  // Admin-controlled — not algorithmic. Toggled via admin update-status endpoint.
+  is_trending       Boolean  @default(false)
   is_active         Boolean  @default(true)
   created_by        Int?
   updated_by        Int?
@@ -453,15 +464,21 @@ model Topic {
   @@index([parent_id])
   @@index([topic_name])
   @@index([is_active])
+  @@index([is_trending])
   @@map("topics")
 }
 
 model Community {
   id                    Int      @id @default(autoincrement())
-  community_slug        String   @db.VarChar(255)
+  community_slug        String   @unique @db.VarChar(255)
   community_name        String   @db.VarChar(255)
   community_description String?  @db.Text
   community_image       String?  @db.VarChar(500)
+  // Denormalized count, kept in sync in community.service.ts join()/leave() —
+  // avoids counting CommunityUser rows on every list/sort request.
+  member_count          Int      @default(0)
+  // Admin-controlled — not algorithmic. Toggled via admin update-status endpoint.
+  is_trending           Boolean  @default(false)
   is_active             Boolean  @default(true)
   created_by            Int?
   updated_by            Int?
@@ -471,9 +488,10 @@ model Community {
   topics  CommunityTopic[]
   members CommunityUser[]
 
-  @@index([community_slug])
   @@index([community_name])
   @@index([is_active])
+  @@index([is_trending])
+  @@index([member_count])
   @@index([created_at])
   @@map("communities")
 }
@@ -892,6 +910,23 @@ model Email {
   @@index([next_retry_at])
   @@index([created_at])
   @@map("emails")
+}
+
+// SMS outbox log — records every SMS attempt sent through the SMSBox gateway
+// (or, if SMS_* env vars are unset, a no-op). Viewable via GET /api/sms-box/:id.
+model Sms {
+  id                Int       @id @default(autoincrement())
+  phone_number      String    @db.VarChar(20)
+  sms_type          SmsType
+  message           String    @db.Text
+  status            SmsStatus @default(sent)
+  provider_response String?   @db.Text
+  created_at        DateTime  @default(now()) @db.Timestamp(6)
+
+  @@index([phone_number])
+  @@index([sms_type])
+  @@index([created_at])
+  @@map("sms_messages")
 }
 
 model Notification {

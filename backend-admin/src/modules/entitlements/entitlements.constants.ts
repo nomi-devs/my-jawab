@@ -27,7 +27,7 @@ export const DEFAULT_FREE_FEATURES: Record<string, any> = {
 };
 
 /**
- * All known feature keys — reference list for typing / validation.
+ * All known feature keys reference list for typing / validation.
  * If you add a new feature, append it here.
  */
 export type FeatureKey =

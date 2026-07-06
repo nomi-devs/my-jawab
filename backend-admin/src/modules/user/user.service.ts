@@ -695,7 +695,7 @@ export class UserService {
       };
     }
 
-    // Count user's content — determines hard vs soft delete
+    // Count user's content determines hard vs soft delete
     const hasContent = await this.userHasContent(userId);
 
     if (!hasContent) {

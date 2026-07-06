@@ -26,6 +26,12 @@ export class CommunityResponseDto {
   @ApiProperty({ example: true })
   is_active: boolean;
 
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Admin-curated trending flag — not algorithmic',
+  })
+  is_trending?: boolean;
+
   @ApiPropertyOptional({ example: 42, nullable: true })
   created_by: number | null;
 

@@ -43,10 +43,19 @@ const AppSettingsPage = () => {
   const handleUpdateSetting = async (key, value) => {
     setIsSaving(true);
     try {
-      await appSettingsApi.updateSetting(key, { setting_value: value });
-      setSettings((prev) =>
-        prev.map((s) => (s.setting_key === key ? { ...s, setting_value: value } : s)),
-      );
+      const exists = settings.some((s) => s.setting_key === key);
+      if (exists) {
+        await appSettingsApi.updateSetting(key, { setting_value: value });
+      } else {
+        // First time this key is saved no row exists yet to PATCH, so create it.
+        await appSettingsApi.createSetting({ setting_key: key, setting_value: value });
+      }
+      setSettings((prev) => {
+        const existing = prev.find((s) => s.setting_key === key);
+        return existing
+          ? prev.map((s) => (s.setting_key === key ? { ...s, setting_value: value } : s))
+          : [...prev, { setting_key: key, setting_value: value }];
+      });
       showAlert('success', 'Success', 'Setting updated successfully!');
     } catch (error) {
       console.error(`Failed to update setting ${key}:`, error);

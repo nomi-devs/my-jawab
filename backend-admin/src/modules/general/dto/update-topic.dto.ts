@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsString,
   IsOptional,
   IsInt,
@@ -8,7 +9,7 @@ import {
   IsEnum,
   ValidateIf,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ActiveStatus } from '../../admin/dto/list-users-query.dto';
 
@@ -56,4 +57,18 @@ export class UpdateTopicDto {
   })
   @IsEnum(ActiveStatus)
   is_active?: ActiveStatus; // 'active' or 'inactive'
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Admin-curated trending flag — not algorithmic. Filterable via GET ma/topics?is_trending=true.',
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @Type(() => Boolean)
+  @IsBoolean()
+  is_trending?: boolean;
 }

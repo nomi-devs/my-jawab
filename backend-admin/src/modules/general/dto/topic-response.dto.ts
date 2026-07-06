@@ -22,6 +22,9 @@ export class TopicResponseDto {
   @ApiProperty()
   is_active: boolean;
 
+  @ApiPropertyOptional({ description: 'Admin-curated trending flag — not algorithmic' })
+  is_trending?: boolean;
+
   @ApiProperty({ nullable: true })
   created_by: number | null;
 

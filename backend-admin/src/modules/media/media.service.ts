@@ -380,6 +380,9 @@ export class MediaService {
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
       return filePath;
     }
+    if (this.storageService.isS3Configured()) {
+      return this.storageService.getPublicS3Url(filePath);
+    }
     const appConfig = this.configService.get<{ apiUrl?: string }>('app');
     const apiUrl = appConfig?.apiUrl || 'https://jawab.jantrah.io/api';
     return `${apiUrl}/media/files/${filePath}`;

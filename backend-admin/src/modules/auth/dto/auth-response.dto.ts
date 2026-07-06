@@ -5,7 +5,8 @@ export class AuthResponseDto {
   user: {
     id: number;
     username: string;
-    email: string;
+    email: string | null;
+    phone_number?: string | null;
     role: string;
     auth_type: string;
     is_active: boolean;

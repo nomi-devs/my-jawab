@@ -344,7 +344,7 @@ const DeletedUsersPage = () => {
         />
         <div className="text-[11px] text-amber-800 dark:text-amber-300">
           <strong>Hard delete</strong> is irreversible. It only works for users who have no posts,
-          polls, or comments. If a user has any content, permanent deletion is blocked — use{' '}
+          polls, or comments. If a user has any content, permanent deletion is blocked use{' '}
           <strong>Restore</strong> to bring them back or keep them soft-deleted.
         </div>
       </div>

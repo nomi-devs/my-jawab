@@ -646,7 +646,7 @@ export class PostService {
       data: countUpdate,
     });
 
-    // Notify the post owner — only on a new like (not dislike)
+    // Notify the post owner only on a new like (not dislike)
     if (likePostDto.like_status === 'like') {
       const liker = await this.prisma.user.findUnique({
         where: { id: userId },

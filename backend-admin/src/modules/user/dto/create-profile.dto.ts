@@ -99,7 +99,7 @@ export class CreateProfileDto {
   // Internal flag to identify which file type is being uploaded when only one file is sent
   @ApiPropertyOptional({
     description:
-      'Internal flag — set to "true" when uploading background via multipart',
+      'Internal flag set to "true" when uploading background via multipart',
   })
   @IsOptional()
   upload_profile_background?: string | boolean;

@@ -1067,7 +1067,7 @@ export class CommentService {
       data: countUpdate,
     });
 
-    // Notify comment author — only on a new LIKE (not dislike, not status change)
+    // Notify comment author only on a new LIKE (not dislike, not status change)
     if (likeCommentDto.like_status === 'like') {
       const actor = await this.prisma.user.findUnique({
         where: { id: userId },

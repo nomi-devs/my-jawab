@@ -35,14 +35,17 @@ export class MediaResponseDto {
   }
 
   static fromEntity(media: any): MediaResponseDto {
+    // media.file_size is a Prisma BigInt — must convert before any Math.*
+    // operation (throws) or JSON serialization (throws) can touch it.
+    const fileSize = Number(media.file_size);
     return {
       id: media.id,
       original_filename: media.original_filename,
       filename: media.filename,
       file_path: media.file_path,
       mime_type: media.mime_type,
-      file_size: media.file_size,
-      file_size_formatted: this.formatFileSize(media.file_size),
+      file_size: fileSize,
+      file_size_formatted: this.formatFileSize(fileSize),
       media_type: media.media_type,
       storage_type: media.storage_type,
       status: media.status,

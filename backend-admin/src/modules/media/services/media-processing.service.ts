@@ -257,10 +257,18 @@ export class MediaProcessingService {
   }
 
   async validateFile(file: Express.Multer.File): Promise<void> {
-    const maxFileSize = this.configService.get<number>(
+    let maxFileSize = this.configService.get<number>(
       'MAX_FILE_SIZE',
       50 * 1024 * 1024,
     );
+    if (this.storageService.isS3Configured()) {
+      const s3MaxUploadBytes = this.configService.get<number>(
+        'S3_MAX_UPLOAD_BYTES',
+      );
+      if (s3MaxUploadBytes) {
+        maxFileSize = Math.min(maxFileSize, s3MaxUploadBytes);
+      }
+    }
     const allowedMimeTypes = this.configService
       .get<string>('ALLOWED_MIME_TYPES', 'image/*,video/*,application/pdf')
       .split(',');

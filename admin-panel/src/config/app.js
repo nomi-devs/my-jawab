@@ -33,7 +33,7 @@ const URLS = {
 
 const active = URLS[hostType] || URLS.live;
 
-// API Base URL — backend server
+// API Base URL backend server
 export const API_BASE_URL = active.API_BASE_URL;
 
 // Media Service URL

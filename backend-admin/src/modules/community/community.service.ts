@@ -66,7 +66,7 @@ export class CommunityService {
         communityImage = this.mediaClientService.buildFileUrl(
           mediaResponse.file_path,
         );
-      } catch (error) {
+      } catch (error:any) {
         this.logger.error(`Failed to upload community image: ${error.message}`);
         throw new BadRequestException('Failed to upload community image');
       }
@@ -225,13 +225,9 @@ export class CommunityService {
     // Load additional data if requested
     const communitiesWithCounts = await Promise.all(
       communities.map(async (community) => {
+        // member_count is a denormalized column (kept in sync by join()/leave()),
+        // already present on `community` — no need to count CommunityUser rows here.
         const response: any = { ...community };
-
-        // Always include member_count for personalized community suggestions
-        const memberCount = await this.prisma.communityUser.count({
-          where: { community_id: community.id, is_active: true },
-        });
-        response.member_count = memberCount;
 
         if (include_topic_count) {
           const topicCount = await this.prisma.communityTopic.count({
@@ -299,7 +295,7 @@ export class CommunityService {
     // Build where for communities the user has joined
     const communityWhere: any = {
       is_active: true,
-      communityUsers: {
+      members: {
         some: {
           user_id: userId,
           is_active: true,
@@ -332,13 +328,8 @@ export class CommunityService {
     // Load additional data
     const communitiesWithCounts = await Promise.all(
       communities.map(async (community) => {
+        // member_count is a denormalized column (kept in sync by join()/leave()).
         const response: any = { ...community };
-
-        // Always include member_count for joined communities
-        const memberCount = await this.prisma.communityUser.count({
-          where: { community_id: community.id, is_active: true },
-        });
-        response.member_count = memberCount;
 
         if (include_topic_count) {
           const topicCount = await this.prisma.communityTopic.count({
@@ -454,13 +445,8 @@ export class CommunityService {
     // Load additional data if requested
     const communitiesWithCounts = await Promise.all(
       communities.map(async (community) => {
+        // member_count is a denormalized column (kept in sync by join()/leave()).
         const response: any = { ...community };
-
-        // Always include member_count for personalized communities
-        const memberCount = await this.prisma.communityUser.count({
-          where: { community_id: community.id, is_active: true },
-        });
-        response.member_count = memberCount;
 
         if (include_topic_count) {
           const topicCount = await this.prisma.communityTopic.count({
@@ -537,7 +523,9 @@ export class CommunityService {
 
     const skip = (page - 1) * limit;
 
-    const where: any = { is_active };
+    // Trending is admin-curated (is_trending flag, toggled via admin update-status),
+    // not algorithmic — ranked by member_count among communities admins have flagged.
+    const where: any = { is_active, is_trending: true };
 
     if (search) {
       where.OR = [
@@ -547,88 +535,31 @@ export class CommunityService {
       ];
     }
 
-    const allCommunities = await this.prisma.community.findMany({ where });
-
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    // Compute scores per community
-    const scored = await Promise.all(
-      allCommunities.map(async (community) => {
-        const [totalMembers, recentMembers] = await Promise.all([
-          this.prisma.communityUser.count({
-            where: { community_id: community.id, is_active: true },
-          }),
-          this.prisma.communityUser.count({
-            where: {
-              community_id: community.id,
-              is_active: true,
-              created_at: { gte: sevenDaysAgo },
-            },
-          }),
-        ]);
-
-        // Recent posts assigned to this community (community_ids is CSV)
-        const cid = `${community.id}`;
-        const recentPosts = await this.prisma.userPost.count({
-          where: {
-            post_status: 'published',
-            created_at: { gte: sevenDaysAgo },
-            OR: [
-              { community_ids: cid },
-              { community_ids: { startsWith: `${cid},` } },
-              { community_ids: { endsWith: `,${cid}` } },
-              { community_ids: { contains: `,${cid},` } },
-            ],
-          },
-        });
-
-        const trending_score =
-          totalMembers * 1 + recentMembers * 5 + recentPosts * 3;
-
-        return {
-          community,
-          totalMembers,
-          recentMembers,
-          recentPosts,
-          trending_score,
-        };
+    const [communities, total] = await Promise.all([
+      this.prisma.community.findMany({
+        where,
+        orderBy: [{ member_count: 'desc' }, { created_at: 'desc' }],
+        skip,
+        take: limit,
       }),
-    );
-
-    // Sort by score desc, then total members desc, then created_at desc
-    scored.sort((a, b) => {
-      if (b.trending_score !== a.trending_score)
-        return b.trending_score - a.trending_score;
-      if (b.totalMembers !== a.totalMembers)
-        return b.totalMembers - a.totalMembers;
-      return (
-        b.community.created_at.getTime() - a.community.created_at.getTime()
-      );
-    });
-
-    const total = scored.length;
-    const paginated = scored.slice(skip, skip + limit);
+      this.prisma.community.count({ where }),
+    ]);
 
     // Enrich with membership info, topic count, etc.
     const enriched = await Promise.all(
-      paginated.map(async (item) => {
-        const response: any = { ...item.community };
-        response.member_count = item.totalMembers;
-        response.recent_members_7d = item.recentMembers;
-        response.recent_posts_7d = item.recentPosts;
-        response.trending_score = item.trending_score;
+      communities.map(async (community) => {
+        const response: any = { ...community };
 
         if (include_topic_count) {
           response.topic_count = await this.prisma.communityTopic.count({
-            where: { community_id: item.community.id, is_active: true },
+            where: { community_id: community.id, is_active: true },
           });
         }
 
         if (userId) {
           const membership = await this.prisma.communityUser.findFirst({
             where: {
-              community_id: item.community.id,
+              community_id: community.id,
               user_id: userId,
               is_active: true,
             },
@@ -666,12 +597,7 @@ export class CommunityService {
     }
 
     const response: any = { ...community };
-
-    // Get member count
-    const memberCount = await this.prisma.communityUser.count({
-      where: { community_id: communityId, is_active: true },
-    });
-    response.member_count = memberCount;
+    // member_count is a denormalized column (kept in sync by join()/leave()).
 
     // Get topic count
     const topicCount = await this.prisma.communityTopic.count({
@@ -755,7 +681,7 @@ export class CommunityService {
         });
         updateCommunityDto.community_image =
           this.mediaClientService.buildFileUrl(mediaResponse.file_path);
-      } catch (error) {
+      } catch (error:any) {
         this.logger.error(`Failed to upload community image: ${error.message}`);
         throw new BadRequestException('Failed to upload community image');
       }
@@ -847,6 +773,10 @@ export class CommunityService {
           where: { id: existingMembership.id },
           data: { is_active: true, updated_by: userId },
         });
+        await this.prisma.community.update({
+          where: { id: communityId },
+          data: { member_count: { increment: 1 } },
+        });
         return { message: 'Successfully joined community' };
       }
     }
@@ -860,6 +790,10 @@ export class CommunityService {
         is_active: true,
         created_by: userId,
       },
+    });
+    await this.prisma.community.update({
+      where: { id: communityId },
+      data: { member_count: { increment: 1 } },
     });
 
     return { message: 'Successfully joined community' };
@@ -903,6 +837,10 @@ export class CommunityService {
     await this.prisma.communityUser.update({
       where: { id: membership.id },
       data: { is_active: false, updated_by: userId },
+    });
+    await this.prisma.community.update({
+      where: { id: communityId },
+      data: { member_count: { decrement: 1 } },
     });
 
     return { message: 'Successfully left community' };
@@ -1193,6 +1131,7 @@ export class CommunityService {
       community_description: community.community_description,
       community_image: community.community_image,
       is_active: community.is_active,
+      is_trending: community.is_trending,
       created_by: community.created_by,
       updated_by: community.updated_by,
       created_at: community.created_at,

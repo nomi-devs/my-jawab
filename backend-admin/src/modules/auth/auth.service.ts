@@ -19,11 +19,13 @@ import { DeviceType as PrismaDeviceType } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyDto } from './dto/verify.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { EmailTemplatesService } from '../email/services/email-templates.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +37,7 @@ export class AuthService {
     private configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private emailTemplatesService: EmailTemplatesService,
+    private smsService: SmsService,
   ) {
     this.googleClient = new OAuth2Client(
       this.configService.get<string>('GOOGLE_CLIENT_ID'),
@@ -118,7 +121,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid Google token');
       }
       return payload.email;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Google token verification failed:', {
         error: error.message,
         stack: error.stack,
@@ -154,7 +157,7 @@ export class AuthService {
         throw new UnauthorizedException('Email not found in Apple token');
       }
       return email;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Apple token verification failed:', {
         error: error.message,
         stack: error.stack,
@@ -186,21 +189,51 @@ export class AuthService {
 
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: registerDto.email }, { username: registerDto.username }],
+        OR: [
+          { username: registerDto.username },
+          ...(registerDto.email ? [{ email: registerDto.email }] : []),
+          ...(registerDto.phone_number
+            ? [{ phone_number: registerDto.phone_number }]
+            : []),
+        ],
       },
-      select: { id: true, is_deleted: true },
+      select: {
+        id: true,
+        is_deleted: true,
+        username: true,
+        email: true,
+        phone_number: true,
+      },
     });
 
     if (existingUser) {
+      // Identify exactly which field collided, so the message is specific.
+      let conflictField = 'username';
+      if (
+        registerDto.email &&
+        existingUser.email === registerDto.email &&
+        existingUser.username !== registerDto.username
+      ) {
+        conflictField = 'email';
+      } else if (
+        registerDto.phone_number &&
+        existingUser.phone_number === registerDto.phone_number &&
+        existingUser.username !== registerDto.username
+      ) {
+        conflictField = 'phone number';
+      }
+
       if (existingUser.is_deleted) {
         // Deleted users cannot register again with the same identifier.
         // Admin must hard-delete the record if they want to free up the email/username.
         throw new ConflictException(
-          'You cannot create an account with this email or username. Please contact support.',
+          `This ${conflictField} belongs to a deleted account and cannot be reused. Please contact support.`,
         );
       }
       throw new ConflictException(
-        'User with this email or username already exists',
+        conflictField === 'username'
+          ? 'This username is already taken'
+          : `This ${conflictField} is already registered`,
       );
     }
 
@@ -220,7 +253,8 @@ export class AuthService {
     const savedUser = await this.prisma.user.create({
       data: {
         username: registerDto.username,
-        email: registerDto.email,
+        email: registerDto.email || null,
+        phone_number: registerDto.phone_number || null,
         password_hash: passwordHash,
         auth_type: registerDto.auth_type,
         is_active: isOAuthUser,
@@ -229,11 +263,14 @@ export class AuthService {
     });
 
     // Generate verification code for email/phone auth
+    let verificationCodeForResponse: string | undefined;
+    let smsBoxUrlForResponse: string | undefined;
     if (
       registerDto.auth_type === 'email' ||
       registerDto.auth_type === 'phone'
     ) {
       const verificationCode = this.generateVerificationCode();
+      verificationCodeForResponse = verificationCode;
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minutes expiry
 
@@ -246,56 +283,65 @@ export class AuthService {
         },
       });
 
-      // Send verification email with template
-      try {
-        const appUrl = this.configService.get<string>(
-          'app.url',
-          'https://demo.jantrah.com/jawaab',
-        );
-        const verificationUrl = `${appUrl}/verify?code=${verificationCode}&email=${encodeURIComponent(savedUser.email)}`;
+      if (registerDto.auth_type === 'phone' && savedUser.phone_number) {
+        // Sent via the SMSBox gateway; also logged and viewable at sms_box_url.
+        try {
+          const { sms_box_url } = await this.smsService.sendSms(
+            savedUser.phone_number,
+            `Your Jawab verification code is ${verificationCode}. It expires in 15 minutes.`,
+            'verification',
+          );
+          smsBoxUrlForResponse = sms_box_url;
+        } catch (error) {
+          this.logger.error('Failed to send verification SMS:', error);
+        }
+      } else if (savedUser.email) {
+        const userEmail = savedUser.email;
+        // Send verification email with template
+        try {
+          const appUrl = this.configService.get<string>(
+            'app.url',
+            'https://demo.jantrah.com/jawaab',
+          );
+          const verificationUrl = `${appUrl}/verify?code=${verificationCode}&email=${encodeURIComponent(userEmail)}`;
 
-        const emailSent =
-          await this.emailTemplatesService.sendVerificationEmail({
-            recipientEmail: savedUser.email,
-            recipientName: savedUser.username,
-            verificationCode,
-            verificationUrl,
+          const emailSent =
+            await this.emailTemplatesService.sendVerificationEmail({
+              recipientEmail: userEmail,
+              recipientName: savedUser.username,
+              verificationCode,
+              verificationUrl,
+            });
+
+          if (emailSent) {
+            this.logger.log(
+              `Verification email sent successfully to ${userEmail}`,
+            );
+          } else {
+            this.logger.warn(
+              `Verification email failed to send to ${userEmail} - check email service configuration`,
+            );
+          }
+        } catch (error: any) {
+          this.logger.error('Failed to send verification email:', {
+            error: error.message,
+            stack: error.stack,
+            email: userEmail,
+            verificationCode: verificationCode,
           });
-
-        if (emailSent) {
-          this.logger.log(
-            `Verification email sent successfully to ${savedUser.email}`,
-          );
-        } else {
-          this.logger.warn(
-            `Verification email failed to send to ${savedUser.email} - check email service configuration`,
-          );
         }
-      } catch (error) {
-        this.logger.error('Failed to send verification email:', {
-          error: error.message,
-          stack: error.stack,
-          email: savedUser.email,
-          verificationCode: verificationCode,
-        });
-        // Log code for development (remove in production)
-        if (this.configService.get<string>('NODE_ENV') === 'development') {
-          console.log(
-            `Verification code for ${savedUser.email}: ${verificationCode}`,
-          );
-        }
-      }
 
-      // Send welcome email
-      try {
-        await this.emailTemplatesService.sendAccountCreationEmail({
-          recipientEmail: savedUser.email,
-          recipientName: savedUser.username,
-          username: savedUser.username,
-          verificationCode,
-        });
-      } catch (error) {
-        this.logger.error('Failed to send welcome email:', error);
+        // Send welcome email
+        try {
+          await this.emailTemplatesService.sendAccountCreationEmail({
+            recipientEmail: userEmail,
+            recipientName: savedUser.username,
+            username: savedUser.username,
+            verificationCode,
+          });
+        } catch (error) {
+          this.logger.error('Failed to send welcome email:', error);
+        }
       }
     }
 
@@ -322,14 +368,22 @@ export class AuthService {
         is_verified: savedUser.is_verified,
       },
       ...tokens,
+      ...(verificationCodeForResponse && {
+        dev_verification_code: verificationCodeForResponse,
+      }),
+      ...(smsBoxUrlForResponse && { sms_box_url: smsBoxUrlForResponse }),
     };
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    // Find user by identifier (email or username)
+    // Find user by identifier (email, username, or phone number)
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: loginDto.identifier }, { username: loginDto.identifier }],
+        OR: [
+          { email: loginDto.identifier },
+          { username: loginDto.identifier },
+          { phone_number: loginDto.identifier },
+        ],
       },
       select: {
         id: true,
@@ -433,7 +487,14 @@ export class AuthService {
 
   async verify(verifyDto: VerifyDto): Promise<{ message: string }> {
     const user = await this.prisma.user.findFirst({
-      where: { email: verifyDto.email },
+      where: {
+        OR: [
+          ...(verifyDto.email ? [{ email: verifyDto.email }] : []),
+          ...(verifyDto.phone_number
+            ? [{ phone_number: verifyDto.phone_number }]
+            : []),
+        ],
+      },
       select: { id: true, is_verified: true, is_active: true },
     });
 
@@ -476,10 +537,15 @@ export class AuthService {
     return { message: 'Account verified successfully' };
   }
 
-  async resendVerification(email: string): Promise<{ message: string }> {
+  async resendVerification(dto: ResendVerificationDto) {
     const user = await this.prisma.user.findFirst({
-      where: { email },
-      select: { id: true, is_verified: true, email: true },
+      where: {
+        OR: [
+          ...(dto.email ? [{ email: dto.email }] : []),
+          ...(dto.phone_number ? [{ phone_number: dto.phone_number }] : []),
+        ],
+      },
+      select: { id: true, is_verified: true, email: true, phone_number: true },
     });
 
     if (!user) {
@@ -503,34 +569,48 @@ export class AuthService {
       },
     });
 
-    // Send verification email with template
-    try {
-      const appUrl = this.configService.get<string>(
-        'app.url',
-        'https://demo.jantrah.com/jawaab',
-      );
-      const verificationUrl = `${appUrl}/verify?code=${verificationCode}&email=${encodeURIComponent(user.email)}`;
+    let smsBoxUrl: string | undefined;
+    if (dto.phone_number && user.phone_number) {
+      try {
+        const { sms_box_url } = await this.smsService.sendSms(
+          user.phone_number,
+          `Your Jawab verification code is ${verificationCode}. It expires in 15 minutes.`,
+          'verification',
+        );
+        smsBoxUrl = sms_box_url;
+      } catch (error) {
+        this.logger.error('Failed to send verification SMS:', error);
+      }
+    } else if (user.email) {
+      const userEmail = user.email;
+      // Send verification email with template
+      try {
+        const appUrl = this.configService.get<string>(
+          'app.url',
+          'https://demo.jantrah.com/jawaab',
+        );
+        const verificationUrl = `${appUrl}/verify?code=${verificationCode}&email=${encodeURIComponent(userEmail)}`;
 
-      await this.emailTemplatesService.sendVerificationEmail({
-        recipientEmail: user.email,
-        recipientName: user.email,
-        verificationCode,
-        verificationUrl,
-      });
-    } catch (error) {
-      this.logger.error('Failed to send verification email:', error);
-      // Log code for development (remove in production)
-      if (this.configService.get<string>('NODE_ENV') === 'development') {
-        console.log(`Verification code for ${user.email}: ${verificationCode}`);
+        await this.emailTemplatesService.sendVerificationEmail({
+          recipientEmail: userEmail,
+          recipientName: userEmail,
+          verificationCode,
+          verificationUrl,
+        });
+      } catch (error) {
+        this.logger.error('Failed to send verification email:', error);
       }
     }
 
-    return { message: 'Verification code sent successfully' };
+    return {
+      message: 'Verification code sent successfully',
+      dev_verification_code: verificationCode,
+      ...(smsBoxUrl && { sms_box_url: smsBoxUrl }),
+    };
   }
 
-  async forgotPassword(
-    forgotPasswordDto: ForgotPasswordDto,
-  ): Promise<{ message: string }> {
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     // Validate at least one identifier is provided
     // Values are already trimmed by @Transform decorator
     const email =
@@ -539,7 +619,7 @@ export class AuthService {
         : null;
     const phone =
       forgotPasswordDto.phone_number &&
-      forgotPasswordDto.phone_number.length > 0
+        forgotPasswordDto.phone_number.length > 0
         ? forgotPasswordDto.phone_number
         : null;
 
@@ -549,25 +629,26 @@ export class AuthService {
       );
     }
 
-    // Build where condition - prioritize email, then phone (by username)
+    // Build where condition - prioritize email, then phone
     const whereCondition: any = {};
     if (email) {
       whereCondition.email = email;
     } else if (phone) {
-      whereCondition.username = phone;
+      whereCondition.phone_number = phone;
     }
 
-    // Find user by email or username (phone)
     const user = await this.prisma.user.findFirst({
       where: whereCondition,
-      select: { id: true, email: true },
+      select: { id: true, email: true, phone_number: true },
     });
 
     if (!user) {
-      // Don't reveal if user exists or not for security (matching admin pattern)
+      // Don't reveal if the account exists or not, but still reflect which
+      // identifier the request was actually about.
       return {
-        message:
-          'If the email or phone exists, a password reset code has been sent',
+        message: email
+          ? 'If this email exists, a password reset code has been sent'
+          : 'If this phone number exists, a password reset code has been sent',
       };
     }
 
@@ -586,8 +667,19 @@ export class AuthService {
       },
     });
 
-    // Send password reset email with template (only if email is provided)
-    if (email && user.email) {
+    let smsBoxUrl: string | undefined;
+    if (phone && user.phone_number) {
+      try {
+        const { sms_box_url } = await this.smsService.sendSms(
+          user.phone_number,
+          `Your Jawab password reset code is ${resetCode}. It expires in 1 hour.`,
+          'password_reset',
+        );
+        smsBoxUrl = sms_box_url;
+      } catch (error) {
+        this.logger.error('Failed to send password reset SMS:', error);
+      }
+    } else if (email && user.email) {
       try {
         const appUrl = this.configService.get<string>(
           'app.url',
@@ -603,21 +695,13 @@ export class AuthService {
         });
       } catch (error) {
         this.logger.error('Failed to send password reset email:', error);
-        // Log code for development (remove in production)
-        if (this.configService.get<string>('NODE_ENV') === 'development') {
-          console.log(`Reset code for ${email}: ${resetCode}`);
-        }
-      }
-    } else if (phone) {
-      // For phone-based reset, log code (SMS integration would go here)
-      if (this.configService.get<string>('NODE_ENV') === 'development') {
-        console.log(`Reset code for ${phone}: ${resetCode}`);
       }
     }
 
     return {
-      message:
-        'If the email or phone exists, a password reset code has been sent',
+      message: 'Password reset code sent successfully',
+      dev_reset_code: resetCode,
+      ...(smsBoxUrl && { sms_box_url: smsBoxUrl }),
     };
   }
 
@@ -641,15 +725,14 @@ export class AuthService {
       );
     }
 
-    // Build where condition - prioritize email, then phone (by username)
+    // Build where condition - prioritize email, then phone
     const whereCondition: any = {};
     if (email) {
       whereCondition.email = email;
     } else if (phone) {
-      whereCondition.username = phone;
+      whereCondition.phone_number = phone;
     }
 
-    // Find user by email or username (phone)
     const user = await this.prisma.user.findFirst({
       where: whereCondition,
       select: { id: true, password_hash: true },

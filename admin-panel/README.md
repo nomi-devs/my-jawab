@@ -29,11 +29,11 @@ export const hostType = "local"; // "local" | "live"
 | `"local"` | http://localhost:3001/api | http://localhost:3001/api | http://localhost:5173 |
 | `"live"` | https://jawab.jantrah.io/backend/api | https://jawab.jantrah.io/backend/api | https://jawab.jantrah.io |
 
-All URLs in the app derive from this single flag — do not hardcode URLs elsewhere.
+All URLs in the app derive from this single flag do not hardcode URLs elsewhere.
 
 ## Login
 
-The admin panel requires a user with `role = 'admin'` or `role = 'sub_admin'` in `db_jawab`. Run `npm run seed` in `backend-admin/` to create one — see `backend-admin/README.md` for the seeded credentials.
+The admin panel requires a user with `role = 'admin'` or `role = 'sub_admin'` in `db_jawab`. Run `npm run seed` in `backend-admin/` to create one see `backend-admin/README.md` for the seeded credentials.
 
 Auth tokens are stored in `localStorage` (or `sessionStorage` for session-only login). A 401 response on any protected endpoint automatically clears tokens and redirects to `/login`.
 

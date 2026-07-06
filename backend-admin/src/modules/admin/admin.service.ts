@@ -106,7 +106,7 @@ export class AdminService {
     private notificationService: NotificationService,
     private mediaClientService: MediaClientService,
     private emailTemplatesService: EmailTemplatesService,
-  ) {}
+  ) { }
 
   // Helper methods for token generation
   private async generateTokens(user: {
@@ -318,11 +318,11 @@ export class AdminService {
         'app.url',
         'https://demo.jantrah.com/jawaab',
       );
-      const resetUrl = `${appUrl}/admin/reset-password?code=${resetCode}&email=${encodeURIComponent(user.email)}`;
+      const resetUrl = `${appUrl}/admin/reset-password?code=${resetCode}&email=${encodeURIComponent(forgotPasswordDto.email)}`;
 
       await this.emailTemplatesService.sendPasswordResetEmail({
-        recipientEmail: user.email,
-        recipientName: user.email,
+        recipientEmail: forgotPasswordDto.email,
+        recipientName: forgotPasswordDto.email,
         resetCode,
         resetUrl,
       });
@@ -565,28 +565,28 @@ export class AdminService {
       );
       const previousStats = isAllTime
         ? {
-            total_users: 0,
-            active_users: 0,
-            verified_users: 0,
-            pro_users: 0,
-            total_posts: 0,
-            published_posts: 0,
-            draft_posts: 0,
-            total_comments: 0,
-            total_topics: 0,
-            active_topics: 0,
-            total_communities: 0,
-            active_communities: 0,
-            total_polls: 0,
-            published_polls: 0,
-            recent_users: 0,
-            recent_posts: 0,
-          }
+          total_users: 0,
+          active_users: 0,
+          verified_users: 0,
+          pro_users: 0,
+          total_posts: 0,
+          published_posts: 0,
+          draft_posts: 0,
+          total_comments: 0,
+          total_topics: 0,
+          active_topics: 0,
+          total_communities: 0,
+          active_communities: 0,
+          total_polls: 0,
+          published_polls: 0,
+          recent_users: 0,
+          recent_posts: 0,
+        }
         : await this.getPeriodStats(
-            previousPeriodStart,
-            previousPeriodEnd,
-            false,
-          );
+          previousPeriodStart,
+          previousPeriodEnd,
+          false,
+        );
 
       const trends = this.calculateTrends(currentStats, previousStats);
 
@@ -709,7 +709,7 @@ export class AdminService {
         recent_activity: recentActivity,
         trending_topics: trendingTopics,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in getDashboardStats:', error);
       if (error instanceof BadRequestException) {
         throw error;
@@ -993,7 +993,7 @@ export class AdminService {
         community_count: parseInt(row.community_count) || 0,
         post_count: parseInt(row.post_count) || 0,
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.warn(
         'Trending topics query failed (tables may not exist yet):',
         error.message,
@@ -1030,14 +1030,35 @@ export class AdminService {
     if (createUserDto.email) {
       whereConditions.push({ email: createUserDto.email });
     }
+    if (createUserDto.phone_number) {
+      whereConditions.push({ phone_number: createUserDto.phone_number });
+    }
 
     const existingUser = await this.prisma.user.findFirst({
       where: { OR: whereConditions },
+      select: { id: true, username: true, email: true, phone_number: true },
     });
 
     if (existingUser) {
+      let conflictField = 'username';
+      if (
+        createUserDto.email &&
+        existingUser.email === createUserDto.email &&
+        existingUser.username !== username
+      ) {
+        conflictField = 'email';
+      } else if (
+        createUserDto.phone_number &&
+        existingUser.phone_number === createUserDto.phone_number &&
+        existingUser.username !== username
+      ) {
+        conflictField = 'phone number';
+      }
+
       throw new ConflictException(
-        'User with this email or username already exists',
+        conflictField === 'username'
+          ? 'This username is already taken'
+          : `This ${conflictField} is already registered`,
       );
     }
 
@@ -1062,7 +1083,8 @@ export class AdminService {
     const savedUser = await this.prisma.user.create({
       data: {
         username,
-        email: createUserDto.email || '',
+        email: createUserDto.email || null,
+        phone_number: createUserDto.phone_number || null,
         password_hash: passwordHash,
         auth_type: authType as any,
         role,
@@ -1128,7 +1150,7 @@ export class AdminService {
     }
 
     const sortField = this.getUserSortField(sort_by || 'created_at');
-    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
+    const orderBy: Record<string, 'asc' | 'desc'> = { [sortField]: sort_order.toLowerCase() as 'asc' | 'desc' };
 
     const users = await this.prisma.user.findMany({
       where,
@@ -1138,7 +1160,7 @@ export class AdminService {
       include: { profile: true },
     });
 
-    const usersWithProfile = users.map((user: any) => ({
+    const usersWithProfile = users.map((user) => ({
       id: user.id,
       username: user.username,
       email: user.email,
@@ -1150,9 +1172,9 @@ export class AdminService {
       updated_at: user.updated_at,
       profile: user.profile
         ? {
-            full_name: user.profile.full_name || null,
-            profile_picture: user.profile.profile_picture || null,
-          }
+          full_name: user.profile.full_name || null,
+          profile_picture: user.profile.profile_picture || null,
+        }
         : null,
     }));
 
@@ -1400,7 +1422,7 @@ export class AdminService {
               this.logger.log(
                 `Profile picture URL retrieved successfully: ${profileUpdateData.profile_picture} for media ID: ${mediaResponse.id}`,
               );
-            } catch (urlError) {
+            } catch (urlError: any) {
               this.logger.error(
                 `Failed to get file URL by ID (${mediaResponse.id}), using file_path fallback. Error: ${urlError.message}`,
                 urlError.stack,
@@ -1413,7 +1435,7 @@ export class AdminService {
               );
               profileUpdateData.profile_picture = fallbackUrl;
             }
-          } catch (error) {
+          } catch (error: any) {
             this.logger.error(
               `Failed to upload profile picture for user ${userId}: ${error.message}`,
               error.stack,
@@ -1455,7 +1477,7 @@ export class AdminService {
               this.logger.log(
                 `Profile background URL retrieved successfully: ${profileUpdateData.profile_background} for media ID: ${mediaResponse.id}`,
               );
-            } catch (urlError) {
+            } catch (urlError: any) {
               this.logger.error(
                 `Failed to get file URL by ID (${mediaResponse.id}), using file_path fallback. Error: ${urlError.message}`,
                 urlError.stack,
@@ -1468,7 +1490,7 @@ export class AdminService {
               );
               profileUpdateData.profile_background = fallbackUrl;
             }
-          } catch (error) {
+          } catch (error: any) {
             this.logger.error(
               `Failed to upload profile background for user ${userId}: ${error.message}`,
               error.stack,
@@ -1748,8 +1770,8 @@ export class AdminService {
     const profiles =
       userIds.length > 0
         ? await this.prisma.userProfile.findMany({
-            where: { user_id: { in: userIds } },
-          })
+          where: { user_id: { in: userIds } },
+        })
         : [];
 
     const profileMap = new Map(profiles.map((p) => [p.user_id, p]));
@@ -2206,7 +2228,7 @@ export class AdminService {
     const sortField = allowedSortFields.includes(sort_by)
       ? sort_by
       : 'created_at';
-    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() as 'asc' | 'desc' };
     const skip = (page - 1) * limit;
 
     const total = await this.prisma.topic.count({ where });
@@ -2288,12 +2310,12 @@ export class AdminService {
           ...(parentInfo && { parent_name: parentInfo.topic_name }),
           ...(topic.children &&
             topic.children.length > 0 && {
-              children: topic.children.map((child: any) => ({
-                id: child.id,
-                topic_name: child.topic_name,
-                topic_slug: child.topic_slug,
-              })),
-            }),
+            children: topic.children.map((child: any) => ({
+              id: child.id,
+              topic_name: child.topic_name,
+              topic_slug: child.topic_slug,
+            })),
+          }),
         };
       }),
     );
@@ -2337,7 +2359,7 @@ export class AdminService {
     const sortField = allowedSortFields.includes(sort_by)
       ? sort_by
       : 'created_at';
-    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() as 'asc' | 'desc' };
     const skip = (page - 1) * limit;
 
     const total = await this.prisma.topic.count({ where });
@@ -2392,7 +2414,7 @@ export class AdminService {
         adminId,
         file,
       );
-    } catch (error) {
+    } catch (error: any) {
       if (
         error instanceof BadRequestException ||
         error instanceof ConflictException ||
@@ -2434,7 +2456,10 @@ export class AdminService {
 
     await this.generalService.updateTopic(
       topicId,
-      { is_active: updateTopicStatusDto.is_active },
+      {
+        is_active: updateTopicStatusDto.is_active,
+        is_trending: updateTopicStatusDto.is_trending,
+      },
       adminId,
     );
 
@@ -2624,7 +2649,7 @@ export class AdminService {
       };
     }
 
-    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() as 'asc' | 'desc' };
     const communities = await this.prisma.community.findMany({
       where,
       orderBy,
@@ -2645,9 +2670,9 @@ export class AdminService {
     const communityTopics =
       communityIds.length > 0
         ? await this.prisma.communityTopic.findMany({
-            where: { community_id: { in: communityIds }, is_active: true },
-            include: { topic: true },
-          })
+          where: { community_id: { in: communityIds }, is_active: true },
+          include: { topic: true },
+        })
         : [];
 
     const topicsByCommunity = new Map<number, any[]>();
@@ -3068,13 +3093,13 @@ export class AdminService {
         updated_at: user.updated_at,
         profile: user.profile
           ? {
-              full_name: user.profile.full_name || null,
-              profile_picture: user.profile.profile_picture || null,
-              tagline: user.profile.tagline || null,
-              bio: user.profile.profile_bio || null,
-              location: user.profile.profile_location || null,
-              website: user.profile.profile_website || null,
-            }
+            full_name: user.profile.full_name || null,
+            profile_picture: user.profile.profile_picture || null,
+            tagline: user.profile.tagline || null,
+            bio: user.profile.profile_bio || null,
+            location: user.profile.profile_location || null,
+            website: user.profile.profile_website || null,
+          }
           : null,
       })),
     };
@@ -3716,10 +3741,10 @@ export class AdminService {
         post_audio: p.post_audio || null,
         user: p.user
           ? {
-              id: p.user.id,
-              name: (p.user as any).profile?.full_name || p.user.username,
-              handle: `@${p.user.username}`,
-            }
+            id: p.user.id,
+            name: (p.user as any).profile?.full_name || p.user.username,
+            handle: `@${p.user.username}`,
+          }
           : null,
       })),
       communities: communities.map((c) => ({
@@ -4130,6 +4155,7 @@ export class AdminService {
       where: { id: communityId },
       data: {
         is_active: updateCommunityStatusDto.is_active,
+        is_trending: updateCommunityStatusDto.is_trending,
         updated_by: adminId,
       },
     });
@@ -4289,10 +4315,10 @@ export class AdminService {
       updated_at: targetMember.updated_at,
       user: targetMember.user
         ? {
-            id: targetMember.user.id,
-            username: targetMember.user.username,
-            email: targetMember.user.email,
-          }
+          id: targetMember.user.id,
+          username: targetMember.user.username,
+          email: targetMember.user.email,
+        }
         : null,
     };
   }
@@ -4357,10 +4383,10 @@ export class AdminService {
           is_active: updated.is_active,
           topic: updated.topic
             ? {
-                id: updated.topic.id,
-                topic_name: updated.topic.topic_name,
-                topic_slug: updated.topic.topic_slug,
-              }
+              id: updated.topic.id,
+              topic_name: updated.topic.topic_name,
+              topic_slug: updated.topic.topic_slug,
+            }
             : null,
         };
       }
@@ -4384,10 +4410,10 @@ export class AdminService {
       is_active: savedAssociation.is_active,
       topic: savedAssociation.topic
         ? {
-            id: savedAssociation.topic.id,
-            topic_name: savedAssociation.topic.topic_name,
-            topic_slug: savedAssociation.topic.topic_slug,
-          }
+          id: savedAssociation.topic.id,
+          topic_name: savedAssociation.topic.topic_name,
+          topic_slug: savedAssociation.topic.topic_slug,
+        }
         : null,
     };
   }
@@ -4496,7 +4522,7 @@ export class AdminService {
     const sortField = allowedSortFields.includes(sort_by)
       ? sort_by
       : 'created_at';
-    const orderBy: any = { [sortField]: sort_order.toLowerCase() };
+    const orderBy: any = { [sortField]: sort_order.toLowerCase() as 'asc' | 'desc' };
     const skip = (page - 1) * limit;
 
     const [polls, total] = await Promise.all([
@@ -4535,8 +4561,8 @@ export class AdminService {
         ...poll,
         poll_expires_at: poll.poll_expires_at
           ? this.pollService['convertUtcToLocalString'](
-              new Date(poll.poll_expires_at),
-            )
+            new Date(poll.poll_expires_at),
+          )
           : null,
       })),
       meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
@@ -5200,7 +5226,7 @@ export class AdminService {
     const { page = 1, limit = 20 } = listQueryDto;
     const skip = (page - 1) * limit;
 
-    // Get recent posts — community_ids is a comma-separated string, must use raw SQL
+    // Get recent posts community_ids is a comma-separated string, must use raw SQL
     const recentPostsRaw: any[] = await this.prisma.$queryRawUnsafe(
       `SELECT p.id, p.post_title, p.created_at, u.id AS u_id, u.username AS u_username FROM user_posts p LEFT JOIN users u ON p.user_id = u.id WHERE p.community_ids LIKE $1 ORDER BY p.created_at DESC LIMIT $2`,
       `%${communityId}%`,

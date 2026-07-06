@@ -28,9 +28,13 @@ export class StorageService {
   private readonly uploadDir: string;
   private readonly s3Bucket: string | null = null;
   private readonly s3Region: string | null = null;
+  private readonly s3Prefix: string;
 
   constructor(private configService: ConfigService) {
     this.uploadDir = this.configService.get<string>('UPLOAD_DIR', './uploads');
+    this.s3Prefix = this.configService
+      .get<string>('S3_UPLOAD_PREFIX', '')
+      .replace(/^\/+|\/+$/g, ''); // trim leading/trailing slashes, we add our own
 
     const s3AccessKey = this.configService.get<string>('AWS_ACCESS_KEY_ID');
     const s3SecretKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
@@ -122,7 +126,8 @@ export class StorageService {
 
     const fileHash = this.generateFileHash(file.buffer);
     const fileName = this.generateFileName(file.originalname, fileHash);
-    const key = folder ? `${folder}/${fileName}` : fileName;
+    const unprefixedKey = folder ? `${folder}/${fileName}` : fileName;
+    const key = this.s3Prefix ? `${this.s3Prefix}/${unprefixedKey}` : unprefixedKey;
 
     const command = new PutObjectCommand({
       Bucket: this.s3Bucket,
@@ -146,12 +151,30 @@ export class StorageService {
   async getFileUrl(
     filePath: string,
     storageType: StorageType,
-    expiresIn: number = 3600,
+    expiresIn?: number,
   ): Promise<string> {
     if (storageType === StorageType.s3 && this.s3Client && this.s3Bucket) {
-      return this.getS3SignedUrl(filePath, expiresIn);
+      return this.getS3SignedUrl(
+        filePath,
+        expiresIn ??
+          this.configService.get<number>('S3_SIGNED_URL_EXPIRATION', 3600),
+      );
     }
     return this.getLocalFileUrl(filePath);
+  }
+
+  /**
+   * Permanent, non-expiring URL for a public S3 object — used when the URL
+   * is stored long-term in a DB column (topic_image, community_image, etc.)
+   * rather than resolved on every read. Requires the bucket/prefix to have a
+   * public-read policy configured in AWS (not something this code controls).
+   */
+  getPublicS3Url(key: string): string {
+    return `https://${this.s3Bucket}.s3.${this.s3Region}.amazonaws.com/${key}`;
+  }
+
+  isS3Configured(): boolean {
+    return !!(this.s3Client && this.s3Bucket);
   }
 
   private async getS3SignedUrl(

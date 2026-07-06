@@ -56,7 +56,7 @@ export class FeedService {
         return response;
       }
 
-      // Respect ads_enabled entitlement — pro/premium users see no banners
+      // Respect ads_enabled entitlement pro/premium users see no banners
       const adsEnabled = await this.entitlementsService.getFeature(
         userId,
         'ads_enabled',
@@ -1978,8 +1978,8 @@ export class FeedService {
   /**
    * Same as truncateContent but also returns an isMore flag.
    * Used by feed enrichment so the mobile app can conditionally show a "Show More" button.
-   * - isMore: 'yes' — original content exceeded maxLength (was truncated)
-   * - isMore: 'no'  — content fits within maxLength (not truncated)
+   * - isMore: 'yes' original content exceeded maxLength (was truncated)
+   * - isMore: 'no'  content fits within maxLength (not truncated)
    */
   private truncateContentWithFlag(
     content: string,

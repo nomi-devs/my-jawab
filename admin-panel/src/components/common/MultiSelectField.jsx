@@ -3,13 +3,13 @@
 //
 // Props:
 //   - options:   [{ id, label }]  (required)
-//   - value:     number[] | string[]  — array of selected IDs
+//   - value:     number[] | string[]  array of selected IDs
 //   - onChange:  (newIds) => void
 //   - placeholder: string (shown when nothing selected)
-//   - loading:   boolean  — show a skeleton instead of options
+//   - loading:   boolean  show a skeleton instead of options
 //   - disabled:  boolean
 //   - searchable: boolean (default true)
-//   - maxHeight: number   — dropdown max height in px (default 240)
+//   - maxHeight: number   dropdown max height in px (default 240)
 //
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, X, Search, Check, Loader2 } from 'lucide-react';

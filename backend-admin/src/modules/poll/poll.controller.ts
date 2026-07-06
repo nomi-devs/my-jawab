@@ -217,7 +217,7 @@ export class PollController {
   })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden — not the poll owner' })
+  @ApiResponse({ status: 403, description: 'Forbidden not the poll owner' })
   @ApiResponse({ status: 404, description: 'Poll not found' })
   async updatePoll(
     @Param('id', ParseIntPipe) id: number,
@@ -233,7 +233,7 @@ export class PollController {
   @ApiParam({ name: 'id', description: 'Poll ID', example: 1 })
   @ApiResponse({ status: 200, description: 'Poll deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden — not the poll owner' })
+  @ApiResponse({ status: 403, description: 'Forbidden not the poll owner' })
   @ApiResponse({ status: 404, description: 'Poll not found' })
   async deletePoll(
     @Param('id', ParseIntPipe) id: number,

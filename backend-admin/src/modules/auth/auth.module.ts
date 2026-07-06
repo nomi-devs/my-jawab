@@ -8,11 +8,13 @@ import { JwtStrategy } from './guards/jwt.strategy';
 import { DeviceController } from './device/device.controller';
 import { DeviceService } from './device/device.service';
 import { EmailModule } from '../email/email.module';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
     PassportModule,
     EmailModule,
+    SmsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService): JwtModuleOptions => {

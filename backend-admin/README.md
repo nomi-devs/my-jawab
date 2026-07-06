@@ -262,20 +262,22 @@ Browse it live: `npx prisma studio`.
 ## API
 
 Base URL `http://localhost:3001/api`. Two audiences behind the same JWT (`Authorization: Bearer <token>`):
-- `ma/*` — end-user self-service (profile, follow, topics)
-- `admin/*` — admin/sub_admin only (users, content moderation, subscriptions, dashboard stats, export)
+- `ma/*` end-user self-service (profile, follow, topics)
+- `admin/*` admin/sub_admin only (users, content moderation, subscriptions, dashboard stats, export)
 
-Full endpoint-by-endpoint reference is generated live at **`/api/docs`** (Swagger) — not duplicated here.
+Full endpoint-by-endpoint reference is generated live at **`/api/docs`** (Swagger) not duplicated here.
+
+A runnable Postman collection covering every `ma/*` and `admin/*` endpoint (with auto-captured tokens/IDs) lives in [`postman/`](../postman/) at the repo root (gitignored local only, not committed).
 
 ## Modules (`src/modules/`)
 
 | Module | Description |
 |---|---|
-| `admin` | Fat module — dashboard stats, cross-module moderation |
+| `admin` | Fat module dashboard stats, cross-module moderation |
 | `auth` | JWT, OAuth (Google/Apple), email verification |
 | `user`, `post`, `comment`, `poll`, `community`, `general` (topics) | Core content |
 | `subscription`, `currency`, `entitlements` | Monetization |
 | `notification`, `email`, `templates`, `job` | Async/comms (BullMQ-backed) |
 | `media` | Uploads, image optimization, local/S3 storage |
 | `banner`, `app-settings`, `privacy-policy`, `support`, `search` | Static/admin content |
-| `shared` | `@Global()` — `MediaClientService`, `RedisService` |
+| `shared` | `@Global()` `MediaClientService`, `RedisService` |

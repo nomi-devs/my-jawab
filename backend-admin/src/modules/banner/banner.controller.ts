@@ -35,7 +35,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from '@prisma/client';
 
 /**
- * Public/User endpoint — returns banners targeted to the current user.
+ * Public/User endpoint returns banners targeted to the current user.
  */
 @ApiTags('MA / Banners')
 @Controller('ma/banners')
@@ -53,7 +53,7 @@ export class BannerController {
 }
 
 /**
- * Admin endpoints — CRUD banners.
+ * Admin endpoints CRUD banners.
  */
 @ApiTags('Banners')
 @ApiBearerAuth('JWT-auth')

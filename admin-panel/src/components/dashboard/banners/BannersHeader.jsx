@@ -48,7 +48,7 @@ const BannersHeader = React.memo(
 
     return (
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-purple-100 dark:border-gray-700 transition-colors">
-        {/* Top row — title + add button */}
+        {/* Top row title + add button */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-3">
           <div>
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">

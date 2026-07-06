@@ -902,7 +902,7 @@ export class PollService {
       }),
     ]);
 
-    // Notify poll owner — only on a new LIKE (not dislike)
+    // Notify poll owner only on a new LIKE (not dislike)
     if (likePollDto.like_status === 'like') {
       const actor = await this.prisma.user.findUnique({
         where: { id: userId },

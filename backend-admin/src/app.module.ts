@@ -20,6 +20,7 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { EmailModule } from './modules/email/email.module';
+import { SmsModule } from './modules/sms/sms.module';
 import { JobModule } from './modules/job/job.module';
 import { SearchModule } from './modules/search/search.module';
 import { TemplatesModule } from './modules/templates/templates.module';
@@ -103,6 +104,7 @@ import { MediaModule } from './modules/media/media.module';
     SharedModule,
     NotificationModule,
     EmailModule,
+    SmsModule,
     JobModule,
     SearchModule,
     TemplatesModule,

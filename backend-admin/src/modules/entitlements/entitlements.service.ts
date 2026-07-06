@@ -69,7 +69,7 @@ export class EntitlementsService {
 
     if (userSub?.subscription) {
       const plan = userSub.subscription;
-      // Merge plan features OVER defaults — plan wins for any defined keys
+      // Merge plan features OVER defaults plan wins for any defined keys
       const mergedFeatures = {
         ...DEFAULT_FREE_FEATURES,
         ...((plan as any).features || {}),

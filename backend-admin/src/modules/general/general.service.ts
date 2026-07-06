@@ -21,7 +21,7 @@ export class GeneralService {
   constructor(
     private prisma: PrismaService,
     private mediaClientService: MediaClientService,
-  ) {}
+  ) { }
 
   // Create Topic
   async createTopic(
@@ -83,7 +83,7 @@ export class GeneralService {
           topicImage = this.mediaClientService.buildFileUrl(
             mediaResponse.file_path,
           );
-        } catch (error) {
+        } catch (error: any) {
           this.logger.error(
             `Failed to upload topic image: ${error.message}`,
             error.stack,
@@ -137,7 +137,7 @@ export class GeneralService {
       });
 
       return this.mapToResponseDto(savedTopic);
-    } catch (error) {
+    } catch (error: any) {
       // Re-throw known exceptions
       if (
         error instanceof BadRequestException ||
@@ -171,6 +171,7 @@ export class GeneralService {
       parent_id,
       is_active,
       include_children = false,
+      is_trending,
       data,
     } = listQueryDto;
 
@@ -182,6 +183,7 @@ export class GeneralService {
 
       const where: any = { parent_id };
       if (is_active !== undefined) where.is_active = is_active;
+      if (is_trending !== undefined) where.is_trending = is_trending;
       if (search) {
         where.OR = [
           { topic_name: { contains: search } },
@@ -267,6 +269,7 @@ export class GeneralService {
     // Default behavior: Return hierarchical structure (parents with children)
     const parentWhere: any = { parent_id: 0 };
     if (is_active !== undefined) parentWhere.is_active = is_active;
+    if (is_trending !== undefined) parentWhere.is_trending = is_trending;
     if (search) {
       parentWhere.OR = [
         { topic_name: { contains: search } },
@@ -366,9 +369,9 @@ export class GeneralService {
     const parent =
       topic.parent_id > 0
         ? await this.prisma.topic.findUnique({
-            where: { id: topic.parent_id },
-            select: { id: true, topic_name: true, topic_slug: true },
-          })
+          where: { id: topic.parent_id },
+          select: { id: true, topic_name: true, topic_slug: true },
+        })
         : null;
     const children = await this.prisma.topic.findMany({
       where: { parent_id: topicId, is_active: true },
@@ -391,9 +394,9 @@ export class GeneralService {
     const parent =
       topic.parent_id > 0
         ? await this.prisma.topic.findUnique({
-            where: { id: topic.parent_id },
-            select: { id: true, topic_name: true, topic_slug: true },
-          })
+          where: { id: topic.parent_id },
+          select: { id: true, topic_name: true, topic_slug: true },
+        })
         : null;
     const children = await this.prisma.topic.findMany({
       where: { parent_id: topic.id, is_active: true },
@@ -443,7 +446,7 @@ export class GeneralService {
         updateTopicDto.topic_image = this.mediaClientService.buildFileUrl(
           mediaResponse.file_path,
         );
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error(`Failed to upload topic image: ${error.message}`);
         throw new BadRequestException('Failed to upload topic image');
       }
@@ -552,7 +555,7 @@ export class GeneralService {
       delete updateData.is_active;
     }
 
-    // Build update data object — only update fields that are provided
+    // Build update data object only update fields that are provided
     this.logger.log(
       `[UPDATE TOPIC ${topicId}] Fields to update: ${JSON.stringify(Object.keys(updateData))}`,
     );
@@ -572,6 +575,9 @@ export class GeneralService {
       this.logger.log(
         `[UPDATE TOPIC ${topicId}] Setting topic.is_active to: ${updateData.is_active}`,
       );
+    }
+    if (updateData.is_trending !== undefined) {
+      updateFields.is_trending = updateData.is_trending;
     }
 
     this.logger.log(
@@ -639,9 +645,9 @@ export class GeneralService {
     const parentTopic =
       children.length > 0
         ? await this.prisma.topic.findUnique({
-            where: { id: topicId },
-            select: { id: true, topic_name: true, topic_slug: true },
-          })
+          where: { id: topicId },
+          select: { id: true, topic_name: true, topic_slug: true },
+        })
         : null;
 
     return children.map((child) =>
@@ -767,6 +773,7 @@ export class GeneralService {
       topic_description: topic.topic_description,
       topic_image: topic.topic_image,
       is_active: topic.is_active,
+      is_trending: topic.is_trending,
       created_by: topic.created_by,
       updated_by: topic.updated_by,
       created_at: topic.created_at,
@@ -794,12 +801,12 @@ export class GeneralService {
       // Include children names for parent topics (only basic info)
       ...(topic.children &&
         topic.children.length > 0 && {
-          children: topic.children.map((child) => ({
-            id: child.id,
-            topic_name: child.topic_name,
-            topic_slug: child.topic_slug,
-          })),
-        }),
+        children: topic.children.map((child) => ({
+          id: child.id,
+          topic_name: child.topic_name,
+          topic_slug: child.topic_slug,
+        })),
+      }),
     };
   }
 }

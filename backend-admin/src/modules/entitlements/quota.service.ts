@@ -40,7 +40,7 @@ export class QuotaService {
     return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
   }
 
-  /** Seconds until midnight UTC — TTL for daily counters. */
+  /** Seconds until midnight UTC TTL for daily counters. */
   private secondsUntilMidnightUtc(): number {
     const now = new Date();
     const tomorrow = new Date(
@@ -57,7 +57,7 @@ export class QuotaService {
     return Math.floor((tomorrow.getTime() - now.getTime()) / 1000);
   }
 
-  /** Next UTC midnight ISO string — used for the "resetsAt" field shown to clients. */
+  /** Next UTC midnight ISO string used for the "resetsAt" field shown to clients. */
   private resetsAtIso(): string {
     const now = new Date();
     const midnight = new Date(
@@ -79,7 +79,7 @@ export class QuotaService {
   }
 
   /**
-   * Read-only — how many uses has the user spent today for this feature?
+   * Read-only how many uses has the user spent today for this feature?
    */
   async getUsed(
     userId: number,
@@ -136,7 +136,7 @@ export class QuotaService {
   ): Promise<QuotaStatus> {
     const limit = await this.entitlements.getLimit(userId, featureKey);
 
-    // Unlimited — no tracking needed (but still increment for analytics)
+    // Unlimited no tracking needed (but still increment for analytics)
     if (limit === -1) {
       await this.incrementCounter(userId, featureKey);
       const used = await this.getUsed(userId, featureKey);
@@ -196,7 +196,7 @@ export class QuotaService {
   }
 
   /**
-   * Decrement — rarely needed, but useful if the consumer's downstream action fails
+   * Decrement rarely needed, but useful if the consumer's downstream action fails
    * AFTER the quota was consumed and you want to refund.
    */
   async refund(userId: number, featureKey: FeatureKey | string): Promise<void> {
@@ -220,7 +220,7 @@ export class QuotaService {
     const result = await this.redis.execute(async (client) => {
       const count = await client.incr(key);
       if (count === 1) {
-        // First increment — set TTL to midnight UTC
+        // First increment set TTL to midnight UTC
         await client.expire(key, this.secondsUntilMidnightUtc());
       }
       return count;
@@ -229,7 +229,7 @@ export class QuotaService {
   }
 
   /**
-   * Fetch multiple quota statuses in one call — handy for the entitlements endpoint.
+   * Fetch multiple quota statuses in one call handy for the entitlements endpoint.
    */
   async getMultipleStatuses(
     userId: number,

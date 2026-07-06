@@ -89,7 +89,7 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Jawab API')
     .setDescription(
-      'Jawab backend REST API — community platform with posts, polls, topics, subscriptions, and more.',
+      'Jawab backend REST API community platform with posts, polls, topics, subscriptions, and more.',
     )
     .setVersion('1.0')
     .addBearerAuth(

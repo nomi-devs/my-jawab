@@ -84,8 +84,8 @@ export class AuthController {
   })
   async resendVerification(
     @Body() resendVerificationDto: ResendVerificationDto,
-  ): Promise<{ message: string }> {
-    return this.authService.resendVerification(resendVerificationDto.email);
+  ) {
+    return this.authService.resendVerification(resendVerificationDto);
   }
 
   @Post('forgot-password')

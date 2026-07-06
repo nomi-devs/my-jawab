@@ -30,6 +30,14 @@ export class ListTopicsQueryDto extends ListQueryDto {
   @IsBoolean()
   include_children?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Filter to admin-curated trending topics only.',
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  is_trending?: boolean;
+
   @ApiPropertyOptional({ enum: ['all'] })
   @IsOptional()
   @IsString()
