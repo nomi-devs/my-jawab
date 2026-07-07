@@ -19,6 +19,7 @@ import { VotePollDto } from './dto/vote-poll.dto';
 import { LikePollDto } from './dto/like-poll.dto';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '@prisma/client';
+import { PointsService } from '../points/points.service';
 
 @Injectable()
 export class PollService {
@@ -42,6 +43,7 @@ export class PollService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
+    private pointsService: PointsService,
   ) {}
 
   /**
@@ -72,7 +74,7 @@ export class PollService {
         },
         created_by: data.actor_id,
       });
-    } catch (error) {
+    } catch (error:any) {
       this.logger.warn(`Failed to send notification: ${error.message}`);
     }
   }
@@ -231,6 +233,8 @@ export class PollService {
         created_by: userId,
       })),
     });
+
+    await this.pointsService.award(userId, 'poll_created', finalPoll.id);
 
     return this.mapToResponseDto(finalPoll);
   }

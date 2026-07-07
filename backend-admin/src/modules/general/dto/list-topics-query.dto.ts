@@ -6,9 +6,15 @@ import {
   IsString,
   IsIn,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ListQueryDto } from '../../admin/dto/list-query.dto';
+
+const toBoolean = ({ value }: { value: unknown }) => {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+};
 
 export class ListTopicsQueryDto extends ListQueryDto {
   @ApiPropertyOptional({ example: 0 })
@@ -20,7 +26,7 @@ export class ListTopicsQueryDto extends ListQueryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(toBoolean)
   @IsBoolean()
   is_active?: boolean;
 
@@ -34,7 +40,7 @@ export class ListTopicsQueryDto extends ListQueryDto {
     description: 'Filter to admin-curated trending topics only.',
   })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(toBoolean)
   @IsBoolean()
   is_trending?: boolean;
 

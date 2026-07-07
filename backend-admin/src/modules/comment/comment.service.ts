@@ -14,6 +14,7 @@ import { LikeCommentDto } from './dto/like-comment.dto';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '@prisma/client';
 import { QuotaService } from '../entitlements/quota.service';
+import { PointsService } from '../points/points.service';
 
 @Injectable()
 export class CommentService {
@@ -23,6 +24,7 @@ export class CommentService {
     private prisma: PrismaService,
     private notificationService: NotificationService,
     private quotaService: QuotaService,
+    private pointsService: PointsService,
   ) {}
 
   /**
@@ -54,7 +56,7 @@ export class CommentService {
         },
         created_by: data.actor_id,
       });
-    } catch (error) {
+    } catch (error:any) {
       this.logger.warn(`Failed to send notification: ${error.message}`);
     }
   }
@@ -169,6 +171,8 @@ export class CommentService {
         });
       }
 
+      await this.pointsService.award(userId, 'answer_created', savedComment.id);
+
       return this.mapPostCommentToResponseDto(savedComment);
     }
 
@@ -254,6 +258,8 @@ export class CommentService {
           related_type: 'poll',
         });
       }
+
+      await this.pointsService.award(userId, 'answer_created', savedComment.id);
 
       return this.mapPollCommentToResponseDto(savedComment);
     }

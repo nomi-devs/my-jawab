@@ -1,11 +1,40 @@
 // src/components/dashboard/settings/AppSettingsPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings, Save, RefreshCw, DollarSign, Globe } from 'lucide-react';
+import { Settings, Save, RefreshCw, DollarSign, Globe, Trophy } from 'lucide-react';
 import RefreshButton from '../../common/RefreshButton';
 import appSettingsApi from '../../../api/appSettingsApi';
 import currenciesApi from '../../../api/currenciesApi';
 import AlertModal from '../../common/AlertModal';
 import TableSkeleton from '../../common/TableSkeleton';
+
+// Local, uncontrolled-until-blur input: saves on blur/Enter instead of every
+// keystroke, so typing a new point value doesn't fire an API call per digit.
+const PointsValueInput = ({ value, onSave, disabled }) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const commit = () => {
+    if (localValue !== '' && localValue !== value) {
+      onSave(localValue);
+    }
+  };
+
+  return (
+    <input
+      type="number"
+      min="0"
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+      disabled={disabled}
+      className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-purple-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm font-bold text-center"
+    />
+  );
+};
 
 const AppSettingsPage = () => {
   const [settings, setSettings] = useState([]);
@@ -72,6 +101,28 @@ const AppSettingsPage = () => {
   const tabs = [
     { id: 'general', label: 'General Settings', icon: Globe },
     { id: 'currency', label: 'Currency Settings', icon: DollarSign },
+    { id: 'points', label: 'Points & Gamification', icon: Trophy },
+  ];
+
+  const pointsSettings = [
+    {
+      key: 'points_question_created',
+      label: 'Asking a Question',
+      description: 'Points awarded when a user posts a new question.',
+      defaultValue: 5,
+    },
+    {
+      key: 'points_poll_created',
+      label: 'Creating a Poll',
+      description: 'Points awarded when a user creates a new poll.',
+      defaultValue: 5,
+    },
+    {
+      key: 'points_answer_created',
+      label: 'Answering (Comment)',
+      description: 'Points awarded when a user comments on a post or poll. Weighted highest since answering is the core value of the app.',
+      defaultValue: 10,
+    },
   ];
 
   if (loading) {
@@ -206,6 +257,54 @@ const AppSettingsPage = () => {
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'points' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-1 uppercase tracking-wider">
+                    Points & Gamification
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Points users earn for contributing content, shown on their profile's "Points
+                    earned" card. Changes apply immediately to new activity points already
+                    awarded are not recalculated.
+                  </p>
+                  <div className="space-y-4">
+                    {pointsSettings.map((ps) => (
+                      <div
+                        key={ps.key}
+                        className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-0.5">
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                              {ps.label}
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {ps.description}
+                            </p>
+                          </div>
+                          <div className="w-full md:w-32">
+                            <PointsValueInput
+                              value={getSettingValue(ps.key) || String(ps.defaultValue)}
+                              disabled={isSaving}
+                              onSave={(val) => handleUpdateSetting(ps.key, val)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {isSaving && (
+                    <div className="mt-4 flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-[10px] uppercase tracking-widest animate-pulse">
+                      <RefreshCw size={12} className="animate-spin" />
+                      Persisting changes to database...
+                    </div>
+                  )}
                 </div>
               </div>
             )}

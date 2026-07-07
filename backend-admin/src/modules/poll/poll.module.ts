@@ -3,9 +3,10 @@ import { PollController } from './poll.controller';
 import { PollService } from './poll.service';
 import { NotificationModule } from '../notification/notification.module';
 import { EntitlementsModule } from '../entitlements/entitlements.module';
+import { PointsModule } from '../points/points.module';
 
 @Module({
-  imports: [NotificationModule, EntitlementsModule],
+  imports: [NotificationModule, EntitlementsModule, PointsModule],
   controllers: [PollController],
   providers: [PollService],
   exports: [PollService],

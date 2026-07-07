@@ -12,6 +12,10 @@
 
 **MOBILE APP → 0. NEW USER JOURNEY (ordered walkthrough)** is ordered by *screen*, not by API resource — it's a straight-line simulation of a brand-new user's first session, matching the actual onboarding mockups: Sign Up → Verify → Complete Profile → Choose Topics → Join Communities → Home Feed → Polls → Ask a Question → Profile → Logout, plus a separate Forgot Password mini-flow. Step 01 generates a fresh random username/email/phone via a pre-request script, so you can hit **Run** on this folder repeatedly without hitting "already taken" conflicts (username/email/phone are unique-constrained in the DB). Just run **0. NEW USER JOURNEY** top to bottom via Collection Runner — no manual edits needed.
 
+## Simulate real feature usage (post, comments, likes, polls, subscription purchase)
+
+**MOBILE APP → 0B. CONTENT, POLLS & SUBSCRIPTION JOURNEY** is the companion to folder 0: instead of onboarding, it drives the seeded `prouser@jawab.com` account through the actual features end to end — create a post, comment on it, reply to that comment, like the post and the comment, edit the post, then hit the poll-creation paywall as a free-tier user (expect 403), buy a subscription for real (admin creates a plan with `can_create_polls` enabled, the user subscribes, a completed payment activates it), and finally create/vote/like a poll now that it's unlocked. Run it top to bottom via Collection Runner, same as folder 0 every "create" step timestamps its own slug/plan name so the whole folder is re-runnable without unique-constraint conflicts. Section F is optional cleanup (cancel the subscription, delete the test post) if you want to reset state for a repeat run of the paywall demo in section C.
+
 ## Mobile app flow (by domain)
 
 For testing a specific resource in isolation, run **MOBILE APP → 1. Auth** top to bottom:

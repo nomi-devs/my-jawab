@@ -2,6 +2,11 @@ import 'dotenv/config';
 import { PrismaClient, UserRole, AuthType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
+import {
+  POINTS_VALUES,
+  POINTS_SETTING_GROUP,
+  pointsSettingKey,
+} from '../src/modules/points/points.constants';
 
 const adapter = new PrismaPg(process.env.DATABASE_URL as string);
 const prisma = new PrismaClient({ adapter });
@@ -212,6 +217,21 @@ async function main() {
       create: { ...c, is_active: true },
     });
     console.log(`✅ Currency: ${c.currency_code} ${c.currency_name}`);
+  }
+
+  console.log('\n🏆 Seeding points settings (admin-configurable, App Settings > Points)...\n');
+  for (const reason of Object.keys(POINTS_VALUES) as (keyof typeof POINTS_VALUES)[]) {
+    const key = pointsSettingKey(reason);
+    await prisma.appSetting.upsert({
+      where: { setting_key: key },
+      update: {},
+      create: {
+        setting_key: key,
+        setting_value: String(POINTS_VALUES[reason]),
+        setting_group: POINTS_SETTING_GROUP,
+      },
+    });
+    console.log(`✅ Points setting: ${key} = ${POINTS_VALUES[reason]}`);
   }
 
   console.log('\n🏷️  Seeding topics...\n');

@@ -1661,7 +1661,10 @@ export class AdminService {
       where: { OR: [{ user_id: userId }, { follower_id: userId }] },
     });
     await this.prisma.userTopic.deleteMany({ where: { user_id: userId } });
-    await this.prisma.communityUser.deleteMany({ where: { user_id: userId } });
+    await this.prisma.pointsTransaction.deleteMany({
+      where: { user_id: userId },
+    });
+    await this.communityService.releaseAllMemberships(userId);
     await this.prisma.user.delete({ where: { id: userId } });
 
     this.logger.log(`User ${userId} HARD-deleted by admin ${adminId}`);
@@ -2560,31 +2563,14 @@ export class AdminService {
     if (created_to)
       where.created_at = { ...where.created_at, lte: new Date(created_to) };
 
+    // member_count is a denormalized column (kept in sync by join()/leave()/
+    // hard-delete paths in community.service.ts) — filter/sort directly on it
+    // instead of live-counting community_users, so this list stays consistent
+    // with the mobile-facing endpoints that already read the same column.
     if (min_members !== undefined || max_members !== undefined) {
-      let paramIndex = 1;
-      const havingParts: string[] = [];
-      const havingParams: any[] = [];
-      if (min_members !== undefined) {
-        havingParts.push(`member_count >= $${paramIndex++}`);
-        havingParams.push(Number(min_members));
-      }
-      if (max_members !== undefined) {
-        havingParts.push(`member_count <= $${paramIndex++}`);
-        havingParams.push(Number(max_members));
-      }
-      const havingClause = havingParts.join(' AND ');
-
-      const rows = await this.prisma.$queryRawUnsafe<
-        { community_id: number }[]
-      >(
-        `SELECT community_id, COUNT(*) as member_count
-         FROM community_users WHERE is_active = true
-         GROUP BY community_id HAVING ${havingClause}`,
-        ...havingParams,
-      );
-      const communityIdFilter = rows.map((r) => r.community_id);
-      if (communityIdFilter.length > 0) where.id = { in: communityIdFilter };
-      else return { data: [], meta: { total: 0, page, limit, total_pages: 0 } };
+      where.member_count = {};
+      if (min_members !== undefined) where.member_count.gte = Number(min_members);
+      if (max_members !== undefined) where.member_count.lte = Number(max_members);
     }
 
     const allowedSortFields = [
@@ -2602,54 +2588,11 @@ export class AdminService {
 
     const total = await this.prisma.community.count({ where });
 
-    if (sortField === 'members_count') {
-      const whereIds = where.id?.in;
-      const idFilter =
-        whereIds && whereIds.length > 0
-          ? `AND c.id IN (${whereIds.join(',')})`
-          : '';
-      const isActiveFilter =
-        where.is_active !== undefined
-          ? `AND c.is_active = ${where.is_active ? 'true' : 'false'}`
-          : '';
-      const sortRows = await this.prisma.$queryRawUnsafe<
-        { community_id: number }[]
-      >(
-        `SELECT c.id as community_id
-         FROM communities c
-         LEFT JOIN (
-           SELECT community_id, COUNT(*) as cnt
-           FROM community_users WHERE is_active = true
-           GROUP BY community_id
-         ) mc ON mc.community_id = c.id
-         WHERE 1=1 ${idFilter} ${isActiveFilter}
-         ORDER BY COALESCE(mc.cnt, 0) ${sort_order}
-         LIMIT ${Number(limit)} OFFSET ${skip}`,
-      );
-      const sortedIds = sortRows.map((r) => r.community_id);
-      if (sortedIds.length === 0) {
-        return {
-          data: [],
-          meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
-        };
-      }
-      const communities = await this.prisma.community.findMany({
-        where: { id: { in: sortedIds } },
-      });
-      const communityMap = new Map(communities.map((c) => [c.id, c]));
-      const orderedCommunities = sortedIds
-        .map((id) => communityMap.get(id))
-        .filter(Boolean);
-      const communitiesWithCounts = await this.enrichCommunities(
-        orderedCommunities as any[],
-      );
-      return {
-        data: communitiesWithCounts,
-        meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
-      };
-    }
-
-    const orderBy: any = { [sortField]: sort_order.toLowerCase() as 'asc' | 'desc' };
+    const orderByField =
+      sortField === 'members_count' ? 'member_count' : sortField;
+    const orderBy: any = {
+      [orderByField]: sort_order.toLowerCase() as 'asc' | 'desc',
+    };
     const communities = await this.prisma.community.findMany({
       where,
       orderBy,
@@ -2693,9 +2636,9 @@ export class AdminService {
 
     return Promise.all(
       communities.map(async (community) => {
-        const memberCount = await this.prisma.communityUser.count({
-          where: { community_id: community.id, is_active: true },
-        });
+        // member_count is a denormalized column, already present on `community`
+        // — no need to count CommunityUser rows here.
+        const memberCount = community.member_count;
         const topicCount = await this.prisma.communityTopic.count({
           where: { community_id: community.id, is_active: true },
         });
@@ -3547,9 +3490,9 @@ export class AdminService {
     const topicsCount = await this.prisma.communityTopic.count({
       where: { community_id: communityId, is_active: true },
     });
-    const membersCount = await this.prisma.communityUser.count({
-      where: { community_id: communityId, is_active: true },
-    });
+    // member_count is a denormalized column already present on `community`
+    // (from communityService.getCommunityById above) — no live count needed.
+    const membersCount = (community as any).member_count;
 
     return {
       ...community,
@@ -4181,10 +4124,8 @@ export class AdminService {
     }
 
     // Admin can delete any community, bypassing community admin check
-    // Count active members
-    const memberCount = await this.prisma.communityUser.count({
-      where: { community_id: communityId, is_active: true },
-    });
+    // member_count is a denormalized column, already present on `community`.
+    const memberCount = community.member_count;
 
     // Delete all related community-topic associations
     await this.prisma.communityTopic.deleteMany({
@@ -5272,7 +5213,7 @@ export class AdminService {
   }
 
   async getCommunityStats(communityId: number) {
-    const [postsCountRaw, topicsCount, membersCount] = await Promise.all([
+    const [postsCountRaw, topicsCount, community] = await Promise.all([
       this.prisma.$queryRawUnsafe(
         `SELECT COUNT(*) AS cnt FROM user_posts WHERE community_ids LIKE $1`,
         `%${communityId}%`,
@@ -5280,8 +5221,10 @@ export class AdminService {
       this.prisma.communityTopic.count({
         where: { community_id: communityId, is_active: true },
       }),
-      this.prisma.communityUser.count({
-        where: { community_id: communityId, is_active: true },
+      // member_count is a denormalized column — read it instead of a live count.
+      this.prisma.community.findUnique({
+        where: { id: communityId },
+        select: { member_count: true },
       }),
     ]);
     const postsCount = Number(postsCountRaw[0]?.cnt ?? 0);
@@ -5289,7 +5232,7 @@ export class AdminService {
     return {
       posts_count: postsCount,
       topics_count: topicsCount,
-      members_count: membersCount,
+      members_count: community?.member_count ?? 0,
     };
   }
 

@@ -16,6 +16,7 @@ import { MediaClientService } from '../shared/services/media-client.service';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '@prisma/client';
 import { QuotaService } from '../entitlements/quota.service';
+import { PointsService } from '../points/points.service';
 
 @Injectable()
 export class PostService {
@@ -41,6 +42,7 @@ export class PostService {
     private mediaClientService: MediaClientService,
     private notificationService: NotificationService,
     private quotaService: QuotaService,
+    private pointsService: PointsService,
   ) {}
 
   /**
@@ -73,7 +75,7 @@ export class PostService {
         },
         created_by: data.actor_id,
       });
-    } catch (error) {
+    } catch (error:any) {
       this.logger.warn(`Failed to send notification: ${error.message}`);
     }
   }
@@ -138,7 +140,7 @@ export class PostService {
               mediaResponse.file_path,
             );
           }
-        } catch (error) {
+        } catch (error:any) {
           this.logger.error(
             `Failed to upload file ${file.originalname}: ${error.message}`,
           );
@@ -201,6 +203,10 @@ export class PostService {
       where: { id: savedPost.id },
       data: { post_slug: finalSlug },
     });
+
+    if (finalPost.post_type === 'question') {
+      await this.pointsService.award(userId, 'question_created', finalPost.id);
+    }
 
     return this.mapToResponseDto(finalPost);
   }
@@ -473,7 +479,7 @@ export class PostService {
               mediaResponse.file_path,
             );
           }
-        } catch (error) {
+        } catch (error:any) {
           this.logger.error(
             `Failed to upload file ${file.originalname}: ${error.message}`,
           );

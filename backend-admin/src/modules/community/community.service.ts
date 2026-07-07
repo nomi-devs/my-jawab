@@ -109,12 +109,14 @@ export class CommunityService {
     console.log('Transformed is_active:', transformedIsActive);
 
     // Save to get the ID (with initial slug; will be updated with hash)
+    // member_count starts at 1: the creator is always added as an admin member below.
     const savedCommunity = await this.prisma.community.create({
       data: {
         ...communityData,
         community_image: communityImage,
         is_active: transformedIsActive,
         created_by: userId,
+        member_count: 1,
       },
     });
 
@@ -838,12 +840,35 @@ export class CommunityService {
       where: { id: membership.id },
       data: { is_active: false, updated_by: userId },
     });
-    await this.prisma.community.update({
-      where: { id: communityId },
+    // Guard against going negative: only decrement while the counter is still positive.
+    await this.prisma.community.updateMany({
+      where: { id: communityId, member_count: { gt: 0 } },
       data: { member_count: { decrement: 1 } },
     });
 
     return { message: 'Successfully left community' };
+  }
+
+  /**
+   * Deletes all of a user's community memberships and decrements each
+   * affected community's member_count. Used by account hard-delete flows
+   * (admin-initiated and self-service), which remove membership rows
+   * directly rather than going through leaveCommunity() one at a time.
+   */
+  async releaseAllMemberships(userId: number): Promise<void> {
+    const activeMemberships = await this.prisma.communityUser.findMany({
+      where: { user_id: userId, is_active: true },
+      select: { community_id: true },
+    });
+    await this.prisma.communityUser.deleteMany({ where: { user_id: userId } });
+    await Promise.all(
+      activeMemberships.map((membership) =>
+        this.prisma.community.updateMany({
+          where: { id: membership.community_id, member_count: { gt: 0 } },
+          data: { member_count: { decrement: 1 } },
+        }),
+      ),
+    );
   }
 
   // Get Community Members

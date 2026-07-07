@@ -20,6 +20,7 @@ import { ListPostsQueryDto } from '../post/dto/list-posts-query.dto';
 import { ListPollsQueryDto } from '../poll/dto/list-polls-query.dto';
 import { ListCommentsQueryDto } from '../comment/dto/list-comments-query.dto';
 import { NotificationService } from '../notification/notification.service';
+import { CommunityService } from '../community/community.service';
 
 @Injectable()
 export class UserService {
@@ -32,7 +33,8 @@ export class UserService {
     private readonly pollService: PollService,
     private readonly commentService: CommentService,
     private readonly notificationService: NotificationService,
-  ) {}
+    private readonly communityService: CommunityService,
+  ) { }
 
   /**
    * Helper: send a notification without breaking the main flow.
@@ -62,7 +64,7 @@ export class UserService {
         },
         created_by: data.actor_id,
       });
-    } catch (error) {
+    } catch (error: any) {
       this.logger.warn(`Failed to send notification: ${error.message}`);
     }
   }
@@ -102,7 +104,7 @@ export class UserService {
         profilePicture = this.mediaClientService.buildFileUrl(
           mediaResponse.file_path,
         );
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error(`Failed to upload profile picture: ${error.message}`);
         throw new BadRequestException('Failed to upload profile picture');
       }
@@ -123,7 +125,7 @@ export class UserService {
         profileBackground = this.mediaClientService.buildFileUrl(
           mediaResponse.file_path,
         );
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error(
           `Failed to upload profile background: ${error.message}`,
         );
@@ -197,7 +199,7 @@ export class UserService {
         updateProfileDto.profile_picture = this.mediaClientService.buildFileUrl(
           mediaResponse.file_path,
         );
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error(`Failed to upload profile picture: ${error.message}`);
         throw new BadRequestException('Failed to upload profile picture');
       }
@@ -217,7 +219,7 @@ export class UserService {
         );
         updateProfileDto.profile_background =
           this.mediaClientService.buildFileUrl(mediaResponse.file_path);
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error(
           `Failed to upload profile background: ${error.message}`,
         );
@@ -511,7 +513,7 @@ export class UserService {
               data: { is_active: true, updated_by: userId },
             });
             subscribed.push(topicId);
-          } catch (error) {
+          } catch (error: any) {
             this.logger.error(
               `Failed to reactivate subscription for topic ${topicId}: ${error.message}`,
             );
@@ -530,7 +532,7 @@ export class UserService {
             },
           });
           subscribed.push(topicId);
-        } catch (error) {
+        } catch (error: any) {
           this.logger.error(
             `Failed to create subscription for topic ${topicId}: ${error.message}`,
           );
@@ -708,9 +710,10 @@ export class UserService {
         },
       });
       await this.prisma.userTopic.deleteMany({ where: { user_id: userId } });
-      await this.prisma.communityUser.deleteMany({
+      await this.prisma.pointsTransaction.deleteMany({
         where: { user_id: userId },
       });
+      await this.communityService.releaseAllMemberships(userId);
       await this.prisma.user.delete({ where: { id: userId } });
 
       this.logger.log(`User hard-deleted (no content): User ID ${userId}`);

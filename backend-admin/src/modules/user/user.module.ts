@@ -5,9 +5,16 @@ import { PostModule } from '../post/post.module';
 import { PollModule } from '../poll/poll.module';
 import { CommentModule } from '../comment/comment.module';
 import { NotificationModule } from '../notification/notification.module';
+import { CommunityModule } from '../community/community.module';
 
 @Module({
-  imports: [PostModule, PollModule, CommentModule, NotificationModule],
+  imports: [
+    PostModule,
+    PollModule,
+    CommentModule,
+    NotificationModule,
+    CommunityModule,
+  ],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

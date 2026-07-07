@@ -32,6 +32,7 @@ import { SupportModule } from './modules/support/support.module';
 import { BannerModule } from './modules/banner/banner.module';
 import { EntitlementsModule } from './modules/entitlements/entitlements.module';
 import { MediaModule } from './modules/media/media.module';
+import { PointsModule } from './modules/points/points.module';
 
 @Module({
   imports: [
@@ -115,6 +116,7 @@ import { MediaModule } from './modules/media/media.module';
     BannerModule,
     EntitlementsModule,
     MediaModule,
+    PointsModule,
   ],
   controllers: [AppController],
   providers: [

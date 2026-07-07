@@ -199,6 +199,34 @@
       "key": "journey_reset_code",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "feature_post_slug",
+      "value": ""
+    },
+    {
+      "key": "reply_comment_id",
+      "value": ""
+    },
+    {
+      "key": "feature_plan_name",
+      "value": ""
+    },
+    {
+      "key": "feature_sub_start_date",
+      "value": ""
+    },
+    {
+      "key": "feature_sub_end_date",
+      "value": ""
+    },
+    {
+      "key": "feature_txn_id",
+      "value": ""
+    },
+    {
+      "key": "feature_poll_slug",
+      "value": ""
     }
   ],
   "item": [
@@ -1233,6 +1261,1239 @@
               ]
             }
           ]
+        },
+        {
+          "name": "0B. CONTENT, POLLS & SUBSCRIPTION JOURNEY",
+          "item": [
+            {
+              "name": "A. Sign In As Test User",
+              "item": [
+                {
+                  "name": "1. Login As Pro User",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/auth/login",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "auth",
+                        "login"
+                      ]
+                    },
+                    "description": "Uses the seeded pro_user account so this journey can go straight to content/subscription testing without repeating the sign-up/verification flow covered in folder 0.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"identifier\": \"prouser@jawab.com\",\n  \"password\": \"ProUser@123\",\n  \"auth_type\": \"email\",\n  \"device_id\": \"feature-journey-device-1\",\n  \"device_type\": \"web\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200 || pm.response.code === 201) {",
+                          "    const data = pm.response.json();",
+                          "    if (data.access_token) pm.collectionVariables.set('user_access_token', data.access_token);",
+                          "    if (data.refresh_token) pm.collectionVariables.set('user_refresh_token', data.refresh_token);",
+                          "    if (data.user && data.user.id) pm.collectionVariables.set('user_id', data.user.id);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "2. Check Entitlements \u2014 Before Subscribing",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/auth/me/entitlements",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "auth",
+                        "me",
+                        "entitlements"
+                      ]
+                    },
+                    "description": "Expect free-tier defaults: plan is null, features.can_create_polls is false. This is what the mobile app would check before showing the 'Create Poll' button.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "B. Create a Post and Interact With It",
+              "item": [
+                {
+                  "name": "3. Create Post",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/posts",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "posts"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "post_slug",
+                          "value": "{{feature_post_slug}}",
+                          "type": "text"
+                        },
+                        {
+                          "key": "post_title",
+                          "value": "What do you all think about remote work?",
+                          "type": "text"
+                        },
+                        {
+                          "key": "post_content",
+                          "value": "Curious how the community feels about fully remote jobs long-term.",
+                          "type": "text"
+                        },
+                        {
+                          "key": "post_status",
+                          "value": "published",
+                          "type": "text"
+                        },
+                        {
+                          "key": "post_type",
+                          "value": "post",
+                          "type": "text"
+                        },
+                        {
+                          "key": "is_featured",
+                          "value": "not_featured",
+                          "type": "text"
+                        },
+                        {
+                          "key": "files",
+                          "type": "file",
+                          "src": [],
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const ts = Date.now();",
+                          "pm.collectionVariables.set('feature_post_slug', 'feature-journey-post-' + ts);"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                          "    const data = pm.response.json();",
+                          "    const val = data.id;",
+                          "    if (val !== undefined && val !== null) {",
+                          "        pm.collectionVariables.set('post_id', val);",
+                          "        console.log('Saved post_id =', val);",
+                          "    }",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "4. Get Post By ID",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/posts/{{post_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "posts",
+                        "{{post_id}}"
+                      ]
+                    },
+                    "description": "Confirm the post exists and read back its counters (like_count/comment_count start at 0).",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "5. Comment On The Post",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/comments",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "comments"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"post_id\": \"{{post_id}}\",\n  \"comment_content\": \"Fully remote has worked great for my team!\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                          "    const data = pm.response.json();",
+                          "    const val = data.id;",
+                          "    if (val !== undefined && val !== null) {",
+                          "        pm.collectionVariables.set('comment_id', val);",
+                          "        console.log('Saved comment_id =', val);",
+                          "    }",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "6. Reply To The Comment",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/comments",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "comments"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"post_id\": \"{{post_id}}\",\n  \"parent_comment_id\": \"{{comment_id}}\",\n  \"comment_content\": \"Agreed, though I do miss the in-person social side.\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                          "    const data = pm.response.json();",
+                          "    const val = data.id;",
+                          "    if (val !== undefined && val !== null) {",
+                          "        pm.collectionVariables.set('reply_comment_id', val);",
+                          "        console.log('Saved reply_comment_id =', val);",
+                          "    }",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "7. Like The Post",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/posts/{{post_id}}/like",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "posts",
+                        "{{post_id}}",
+                        "like"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"like_status\": \"like\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "8. Like The Comment",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/comments/{{comment_id}}/like",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "comments",
+                        "{{comment_id}}",
+                        "like"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"like_status\": \"like\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "9. Update The Post",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/posts/{{post_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "posts",
+                        "{{post_id}}"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "post_content",
+                          "value": "Curious how the community feels about fully remote jobs long-term. (Edited to add: even hybrid counts!)",
+                          "type": "text"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "10. Get Post By ID \u2014 After Edits",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/posts/{{post_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "posts",
+                        "{{post_id}}"
+                      ]
+                    },
+                    "description": "Confirm the edited content and that like_count/comment_count now reflect the interactions above.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "C. Hit The Poll-Creation Paywall (Free Tier)",
+              "item": [
+                {
+                  "name": "11. Attempt: Create Poll As Free-Tier User (expect 403)",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/polls",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "polls"
+                      ]
+                    },
+                    "description": "DEFAULT_FREE_FEATURES.can_create_polls is false (entitlements.constants.ts), so this should 403 with a FeatureGuard message until the user has an active subscription plan that grants can_create_polls. See step 18 for the same request succeeding after subscribing.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"poll_slug\": \"paywall-test-poll\",\n  \"poll_title\": \"Should be blocked\",\n  \"poll_description\": \"Free-tier users cannot create polls (can_create_polls defaults to false).\",\n  \"options\": [\n    {\n      \"option_text\": \"Yes\"\n    },\n    {\n      \"option_text\": \"No\"\n    }\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Blocked for free-tier user (403)', function () {",
+                          "    pm.expect(pm.response.code).to.eql(403);",
+                          "});"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "D. Buy a Subscription (unlocks poll creation)",
+              "item": [
+                {
+                  "name": "12. Admin Login",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/login",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "login"
+                      ]
+                    },
+                    "description": "Needed to create a fresh subscription plan with can_create_polls enabled \u2014 there's no seeded plan with that feature flag, and plans are admin-authored, not self-service.",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"identifier\": \"admin@jawab.com\",\n  \"password\": \"Admin@123\",\n  \"device_id\": \"feature-journey-admin-1\",\n  \"device_type\": \"web\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200 || pm.response.code === 201) {",
+                          "    const data = pm.response.json();",
+                          "    if (data.access_token) pm.collectionVariables.set('admin_access_token', data.access_token);",
+                          "    if (data.refresh_token) pm.collectionVariables.set('admin_refresh_token', data.refresh_token);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "13. Admin: Create A Poll-Enabled Subscription Plan",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/admin/subscriptions",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "subscriptions"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{admin_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"subscription_type\": \"pro\",\n  \"subscription_name\": \"{{feature_plan_name}}\",\n  \"subscription_description\": \"Journey-test plan that unlocks poll creation.\",\n  \"subscription_price\": 9.99,\n  \"subscription_duration\": 30,\n  \"subscription_duration_type\": \"days\",\n  \"is_active\": true,\n  \"subscription_currency\": \"USD\",\n  \"features\": {\n    \"can_create_polls\": true,\n    \"daily_post_limit\": 50\n  }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const ts = Date.now();",
+                          "pm.collectionVariables.set('feature_plan_name', 'Journey Poll Plan ' + ts);"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                          "    const data = pm.response.json();",
+                          "    const val = data.id;",
+                          "    if (val !== undefined && val !== null) {",
+                          "        pm.collectionVariables.set('subscription_id', val);",
+                          "        console.log('Saved subscription_id (plan) =', val);",
+                          "    }",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "14. List Active Plans \u2014 Confirm Plan Is Visible To Mobile",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/subscriptions/active",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "subscriptions",
+                        "active"
+                      ]
+                    },
+                    "description": "The plan created in the previous (admin) step should now show up here for the mobile app to display on a pricing screen.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "15. Subscribe To The Plan",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/subscriptions/subscribe",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "subscriptions",
+                        "subscribe"
+                      ]
+                    },
+                    "description": "Creates the UserSubscription row with subscription_status='pending' \u2014 it does not unlock features until a completed payment is recorded in the next step (subscription.service.ts only flips it to 'active' on payment_status='completed').",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"subscription_id\": \"{{subscription_id}}\",\n  \"subscription_start_date\": \"{{feature_sub_start_date}}\",\n  \"subscription_end_date\": \"{{feature_sub_end_date}}\",\n  \"subscription_renewal_type\": \"auto\",\n  \"subscription_renewal_date\": \"{{feature_sub_end_date}}\",\n  \"subscription_renewal_amount\": 9.99,\n  \"subscription_renewal_currency\": \"USD\",\n  \"subscription_renewal_gateway\": \"stripe\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const start = new Date();",
+                          "const end = new Date();",
+                          "end.setDate(end.getDate() + 30);",
+                          "const fmt = (d) => d.toISOString().slice(0, 10);",
+                          "pm.collectionVariables.set('feature_sub_start_date', fmt(start));",
+                          "pm.collectionVariables.set('feature_sub_end_date', fmt(end));"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                          "    const data = pm.response.json();",
+                          "    const val = data.id;",
+                          "    if (val !== undefined && val !== null) {",
+                          "        pm.collectionVariables.set('user_subscription_id', val);",
+                          "        console.log('Saved user_subscription_id =', val);",
+                          "    }",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "16. Submit Payment \u2014 Completes The Subscription",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/subscriptions/payments",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "subscriptions",
+                        "payments"
+                      ]
+                    },
+                    "description": "There is no real payment-gateway integration (no Stripe SDK, no webhook) \u2014 payment_gateway/payment_transaction_id are free-text client-supplied fields. Recording a payment with payment_status='completed' is what actually flips the subscription to 'active' server-side.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"users_subscriptions_id\": \"{{user_subscription_id}}\",\n  \"payment_amount\": 9.99,\n  \"payment_status\": \"completed\",\n  \"payment_method\": \"credit_card\",\n  \"payment_currency\": \"USD\",\n  \"payment_gateway\": \"stripe\",\n  \"payment_transaction_id\": \"{{feature_txn_id}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.collectionVariables.set('feature_txn_id', 'txn_journey_' + Date.now());"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                          "    const data = pm.response.json();",
+                          "    const val = data.id;",
+                          "    if (val !== undefined && val !== null) {",
+                          "        pm.collectionVariables.set('payment_id', val);",
+                          "        console.log('Saved payment_id =', val);",
+                          "    }",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "17. Check Entitlements \u2014 After Subscribing",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/auth/me/entitlements",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "auth",
+                        "me",
+                        "entitlements"
+                      ]
+                    },
+                    "description": "features.can_create_polls should now be true and plan should show the plan created in step 13.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "    const data = pm.response.json();",
+                          "    pm.test('can_create_polls is now true', function () {",
+                          "        pm.expect(data.features && data.features.can_create_polls).to.eql(true);",
+                          "    });",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "E. Create, Vote On, and Like a Poll (Now Unlocked)",
+              "item": [
+                {
+                  "name": "18. Create Poll (Now Allowed)",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/polls",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "polls"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"poll_slug\": \"{{feature_poll_slug}}\",\n  \"poll_title\": \"Best day for the community meetup?\",\n  \"poll_description\": \"Pick the day that works best for you.\",\n  \"poll_status\": \"published\",\n  \"options\": [\n    {\n      \"option_text\": \"Saturday\",\n      \"display_order\": 1\n    },\n    {\n      \"option_text\": \"Sunday\",\n      \"display_order\": 2\n    }\n  ],\n  \"is_featured\": \"not_featured\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "const ts = Date.now();",
+                          "pm.collectionVariables.set('feature_poll_slug', 'feature-journey-poll-' + ts);"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test('Poll creation now succeeds (2xx)', function () {",
+                          "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                          "});",
+                          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                          "    const data = pm.response.json();",
+                          "    const val = data.id;",
+                          "    if (val !== undefined && val !== null) {",
+                          "        pm.collectionVariables.set('poll_id', val);",
+                          "        console.log('Saved poll_id =', val);",
+                          "    }",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "19. Get Poll By ID \u2014 Fetch Option IDs",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/polls/{{poll_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "polls",
+                        "{{poll_id}}"
+                      ]
+                    },
+                    "description": "createPoll's response doesn't include the generated option rows, so fetch the poll to grab the first option's id before voting.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": [],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "    const data = pm.response.json();",
+                          "    if (data.options && data.options.length > 0) {",
+                          "        pm.collectionVariables.set('poll_option_id', data.options[0].id);",
+                          "        console.log('Saved poll_option_id =', data.options[0].id);",
+                          "    }",
+                          "}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "20. Vote On The Poll",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/polls/{{poll_id}}/vote",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "polls",
+                        "{{poll_id}}",
+                        "vote"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"vote_option_id\": \"{{poll_option_id}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "21. Like The Poll",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/ma/polls/{{poll_id}}/like",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "polls",
+                        "{{poll_id}}",
+                        "like"
+                      ]
+                    },
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"like_status\": \"like\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "22. Get Poll By ID \u2014 Final Results",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/polls/{{poll_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "polls",
+                        "{{poll_id}}"
+                      ]
+                    },
+                    "description": "Confirm vote_count/like_count and each option's percentage reflect the vote and like above.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "F. Cleanup (optional)",
+              "item": [
+                {
+                  "name": "23. (Optional) Cancel My Subscription",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/subscriptions/my/subscriptions/{{user_subscription_id}}/cancel",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "subscriptions",
+                        "my",
+                        "subscriptions",
+                        "{{user_subscription_id}}",
+                        "cancel"
+                      ]
+                    },
+                    "description": "Run this if you want to reset the pro_user account back to free-tier for a repeat run of section C's paywall demo.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "24. (Optional) Delete The Test Post",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/ma/posts/{{post_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ma",
+                        "posts",
+                        "{{post_id}}"
+                      ]
+                    },
+                    "description": "Cleanup for the post created in step 3, if you don't want journey test posts accumulating in the feed.",
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{user_access_token}}",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ],
+          "description": "A second ordered walkthrough, complementary to '0. NEW USER JOURNEY': that folder covers sign-up and onboarding; this one covers real feature usage end-to-end using the already-verified seeded pro_user account \u2014 creating and interacting with a post (comment, reply, likes, edit), hitting the poll-creation paywall as a free-tier user, buying a subscription plan for real (admin creates the plan, user subscribes, a completed payment activates it), and then creating/voting/liking a poll now that the plan unlocks it. Every step uses the same collection variables as the numbered reference folders (post_id, poll_id, subscription_id, etc.), so it also serves as a chained example of how to use those folders together instead of one request at a time."
         },
         {
           "name": "1. Auth",

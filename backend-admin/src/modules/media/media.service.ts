@@ -26,7 +26,7 @@ export class MediaService {
     private storageService: StorageService,
     private mediaProcessingService: MediaProcessingService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   async uploadFile(
     file: Express.Multer.File,
@@ -77,7 +77,7 @@ export class MediaService {
         );
         optimizedPath = savedPaths.optimizedPath;
         thumbnailPath = savedPaths.thumbnailPath;
-      } catch (error) {
+      } catch (error: any) {
         this.logger.warn(`Image optimization failed: ${error.message}`);
         const metadata = await this.mediaProcessingService.extractImageMetadata(
           file.buffer,
@@ -104,7 +104,7 @@ export class MediaService {
         duration = videoThumbnail.duration;
         width = videoThumbnail.width;
         height = videoThumbnail.height;
-      } catch (error) {
+      } catch (error: any) {
         this.logger.warn(`Video thumbnail generation failed: ${error.message}`);
       }
     }
@@ -258,7 +258,7 @@ export class MediaService {
           media.thumbnail_path,
           media.storage_type,
         );
-    } catch (error) {
+    } catch (error: any) {
       this.logger.warn(
         `Failed to delete files for media ${id}: ${error.message}`,
       );
