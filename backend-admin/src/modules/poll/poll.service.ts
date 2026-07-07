@@ -326,7 +326,7 @@ export class PollService {
     // Build include
     const include: any = {};
     if (listQueryDto.include_user) {
-      include.user = true;
+      include.user = { select: { id: true, username: true, email: true } };
     }
     if (listQueryDto.include_options || userId) {
       include.options = true;
@@ -343,73 +343,101 @@ export class PollService {
       this.prisma.userPoll.count({ where }),
     ]);
 
-    // Get user vote and like status for each poll if userId provided
-    const pollsWithUserData = await Promise.all(
-      polls.map(async (poll) => {
-        const response: any = { ...poll };
+    // Get like/dislike counts, user vote, and user like status for every poll
+    // on the page in a handful of batched queries instead of 3-4 per poll.
+    const pollIds = polls.map((poll) => poll.id);
+    const likeCountsByPoll = new Map<number, { like: number; dislike: number }>();
+    const userVoteByPoll = new Map<
+      number,
+      { vote_option_id: number; created_at: Date }
+    >();
+    const userLikeByPoll = new Map<number, string>();
 
-        // Calculate like and dislike counts
-        const [likeCount, dislikeCount] = await Promise.all([
-          this.prisma.pollLike.count({
-            where: { poll_id: poll.id, like_status: 'like' },
+    if (pollIds.length > 0) {
+      const likeCounts = await this.prisma.pollLike.groupBy({
+        by: ['poll_id', 'like_status'],
+        where: { poll_id: { in: pollIds } },
+        _count: { _all: true },
+      });
+      for (const row of likeCounts) {
+        const counts = likeCountsByPoll.get(row.poll_id) || {
+          like: 0,
+          dislike: 0,
+        };
+        counts[row.like_status] = row._count._all;
+        likeCountsByPoll.set(row.poll_id, counts);
+      }
+
+      if (userId) {
+        const [userVotes, userLikes] = await Promise.all([
+          this.prisma.pollVote.findMany({
+            where: { poll_id: { in: pollIds }, user_id: userId },
+            select: { poll_id: true, vote_option_id: true, created_at: true },
           }),
-          this.prisma.pollLike.count({
-            where: { poll_id: poll.id, like_status: 'dislike' },
+          this.prisma.pollLike.findMany({
+            where: { poll_id: { in: pollIds }, user_id: userId },
+            select: { poll_id: true, like_status: true },
           }),
         ]);
-        response.like_count = likeCount;
-        response.dislike_count = dislikeCount;
-
-        if (userId) {
-          // Get user vote (always include for logged users)
-          const userVote = await this.prisma.pollVote.findFirst({
-            where: { poll_id: poll.id, user_id: userId },
+        for (const vote of userVotes) {
+          userVoteByPoll.set(vote.poll_id, {
+            vote_option_id: vote.vote_option_id,
+            created_at: vote.created_at,
           });
-          if (userVote) {
-            response.user_vote = {
-              vote_option_id: userVote.vote_option_id,
-              created_at: userVote.created_at,
-            };
-            response.user_has_voted = true;
-          } else {
-            response.user_has_voted = false;
-          }
+        }
+        for (const like of userLikes) {
+          userLikeByPoll.set(like.poll_id, like.like_status);
+        }
+      }
+    }
 
-          // Get user like status
-          const userLike = await this.prisma.pollLike.findFirst({
-            where: { poll_id: poll.id, user_id: userId },
-          });
-          response.user_like_status = userLike?.like_status || null;
-          response.is_liked = userLike?.like_status === 'like';
-          response.is_disliked = userLike?.like_status === 'dislike';
+    const pollsWithUserData = polls.map((poll) => {
+      const response: any = { ...poll };
+
+      const counts = likeCountsByPoll.get(poll.id) || { like: 0, dislike: 0 };
+      response.like_count = counts.like;
+      response.dislike_count = counts.dislike;
+
+      if (userId) {
+        const userVote = userVoteByPoll.get(poll.id);
+        if (userVote) {
+          response.user_vote = userVote;
+          response.user_has_voted = true;
+        } else {
+          response.user_has_voted = false;
         }
 
-        // Check if poll is expired (only if expiration date is set)
-        response.is_expired = poll.poll_expires_at
-          ? new Date(poll.poll_expires_at) < new Date()
-          : false;
+        const userLikeStatus = userLikeByPoll.get(poll.id) || null;
+        response.user_like_status = userLikeStatus;
+        response.is_liked = userLikeStatus === 'like';
+        response.is_disliked = userLikeStatus === 'dislike';
+      }
 
-        // Calculate option percentages and mark user's voted option if options included
-        if (response.options && response.options.length > 0) {
-          const totalVotes = poll.vote_count || 0;
-          const userVotedOptionId = response.user_vote?.vote_option_id;
+      // Check if poll is expired (only if expiration date is set)
+      response.is_expired = poll.poll_expires_at
+        ? new Date(poll.poll_expires_at) < new Date()
+        : false;
 
-          response.options = response.options.map((option: any) => ({
-            ...option,
-            percentage:
-              totalVotes > 0
-                ? Math.round((option.vote_count / totalVotes) * 100 * 100) / 100
-                : 0,
-            is_voted:
-              userId && userVotedOptionId
-                ? option.id === userVotedOptionId
-                : false,
-          }));
-        }
+      // Calculate option percentages and mark user's voted option if options included
+      if (response.options && response.options.length > 0) {
+        const totalVotes = poll.vote_count || 0;
+        const userVotedOptionId = response.user_vote?.vote_option_id;
 
-        return response;
-      }),
-    );
+        response.options = response.options.map((option: any) => ({
+          ...option,
+          percentage:
+            totalVotes > 0
+              ? Math.round((option.vote_count / totalVotes) * 100 * 100) / 100
+              : 0,
+          is_voted:
+            userId && userVotedOptionId
+              ? option.id === userVotedOptionId
+              : false,
+        }));
+      }
+
+      return response;
+    });
 
     return {
       data: pollsWithUserData.map((poll) => this.mapToResponseDto(poll)),
@@ -430,7 +458,10 @@ export class PollService {
   ): Promise<PollResponseDto> {
     const poll = await this.prisma.userPoll.findUnique({
       where: { id: pollId },
-      include: { user: true, options: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        options: true,
+      },
     });
 
     if (!poll) {
@@ -447,11 +478,27 @@ export class PollService {
 
     const response: any = { ...poll };
 
-    // Get user vote if userId provided
+    // Vote/like lookups and like/dislike counts are all independent — run together.
+    const [userVote, userLike, likeCount, dislikeCount] = await Promise.all([
+      userId
+        ? this.prisma.pollVote.findFirst({
+            where: { poll_id: pollId, user_id: userId },
+          })
+        : Promise.resolve(null),
+      userId
+        ? this.prisma.pollLike.findFirst({
+            where: { poll_id: pollId, user_id: userId },
+          })
+        : Promise.resolve(null),
+      this.prisma.pollLike.count({
+        where: { poll_id: pollId, like_status: 'like' },
+      }),
+      this.prisma.pollLike.count({
+        where: { poll_id: pollId, like_status: 'dislike' },
+      }),
+    ]);
+
     if (userId) {
-      const userVote = await this.prisma.pollVote.findFirst({
-        where: { poll_id: pollId, user_id: userId },
-      });
       if (userVote) {
         response.user_vote = {
           vote_option_id: userVote.vote_option_id,
@@ -462,24 +509,11 @@ export class PollService {
         response.user_has_voted = false;
       }
 
-      // Get user like status
-      const userLike = await this.prisma.pollLike.findFirst({
-        where: { poll_id: pollId, user_id: userId },
-      });
       response.user_like_status = userLike?.like_status || null;
       response.is_liked = userLike?.like_status === 'like';
       response.is_disliked = userLike?.like_status === 'dislike';
     }
 
-    // Calculate like and dislike counts
-    const [likeCount, dislikeCount] = await Promise.all([
-      this.prisma.pollLike.count({
-        where: { poll_id: pollId, like_status: 'like' },
-      }),
-      this.prisma.pollLike.count({
-        where: { poll_id: pollId, like_status: 'dislike' },
-      }),
-    ]);
     response.like_count = likeCount;
     response.dislike_count = dislikeCount;
 

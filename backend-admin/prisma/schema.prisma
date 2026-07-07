@@ -252,6 +252,11 @@ model User {
   phone_number  String?   @unique @db.VarChar(20)
   password_hash String?   @db.VarChar(255)
   auth_type     AuthType  @default(email)
+  // Provider-issued user IDs for social login lookup — set on first social
+  // sign-in/signup (see AuthService.socialAuth), independent of `email` so a
+  // later email change on the provider side doesn't break re-login.
+  google_id     String?   @unique @db.VarChar(255)
+  apple_id      String?   @unique @db.VarChar(255)
   access_token  String?   @db.VarChar(500)
   refresh_token String?   @db.VarChar(500)
   expires_in    Int       @default(3600)

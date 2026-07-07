@@ -21,6 +21,7 @@ import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { SocialAuthDto } from './dto/social-auth.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
@@ -108,6 +109,25 @@ export class AuthController {
     @Body() resetPasswordDto: ResetPasswordDto,
   ): Promise<{ message: string }> {
     return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @Post('social-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Log in or sign up with a Google/Apple profile decoded client-side',
+    description:
+      "The client performs the provider's sign-in flow and posts the decoded profile directly — this endpoint does not verify a raw ID token server-side.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login/signup successful',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  async socialAuth(
+    @Body() socialAuthDto: SocialAuthDto,
+  ): Promise<AuthResponseDto> {
+    return this.authService.socialAuth(socialAuthDto);
   }
 
   @Post('refresh-token')

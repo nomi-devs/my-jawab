@@ -558,105 +558,117 @@ export class AdminService {
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-      const currentStats = await this.getPeriodStats(
-        periodStart,
-        periodEnd,
-        isAllTime,
-      );
-      const previousStats = isAllTime
-        ? {
-          total_users: 0,
-          active_users: 0,
-          verified_users: 0,
-          pro_users: 0,
-          total_posts: 0,
-          published_posts: 0,
-          draft_posts: 0,
-          total_comments: 0,
-          total_topics: 0,
-          active_topics: 0,
-          total_communities: 0,
-          active_communities: 0,
-          total_polls: 0,
-          published_polls: 0,
-          recent_users: 0,
-          recent_posts: 0,
-        }
-        : await this.getPeriodStats(
-          previousPeriodStart,
-          previousPeriodEnd,
-          false,
-        );
+      // None of the following blocks depend on each other's results, so run
+      // them all concurrently instead of one after another.
+      const [
+        currentStats,
+        previousStats,
+        dailyActiveUsers,
+        weeklyActiveUsers,
+        monthlyActiveUsers,
+        totalViewsResult,
+        totalLikesResult,
+        totalComments,
+        topPostsRaw,
+        topUsersRaw,
+        recentActivity,
+        trendingTopics,
+      ] = await Promise.all([
+        this.getPeriodStats(periodStart, periodEnd, isAllTime),
+        isAllTime
+          ? Promise.resolve({
+            total_users: 0,
+            active_users: 0,
+            verified_users: 0,
+            pro_users: 0,
+            total_posts: 0,
+            published_posts: 0,
+            draft_posts: 0,
+            total_comments: 0,
+            total_topics: 0,
+            active_topics: 0,
+            total_communities: 0,
+            active_communities: 0,
+            total_polls: 0,
+            published_polls: 0,
+            recent_users: 0,
+            recent_posts: 0,
+          })
+          : this.getPeriodStats(previousPeriodStart, previousPeriodEnd, false),
+        this.getActiveUsersCount(oneDayAgo, new Date()),
+        this.getActiveUsersCount(oneWeekAgo, new Date()),
+        this.getActiveUsersCount(oneMonthAgo, new Date()),
+        this.prisma.$queryRawUnsafe<any[]>(
+          `SELECT COALESCE(SUM(view_count), 0) AS total FROM user_posts WHERE created_at >= $1 AND created_at <= $2`,
+          periodStart,
+          periodEnd,
+        ),
+        this.prisma.$queryRawUnsafe<any[]>(
+          `SELECT COALESCE(SUM(like_count), 0) AS total FROM user_posts WHERE created_at >= $1 AND created_at <= $2`,
+          periodStart,
+          periodEnd,
+        ),
+        this.prisma.postComment.count({
+          where: { created_at: { gte: periodStart, lte: periodEnd } },
+        }),
+        // Top posts by engagement, computed and limited in SQL instead of
+        // pulling every post (+ full user row) in the period into memory.
+        this.prisma.$queryRawUnsafe<any[]>(
+          `SELECT p.id, p.post_title, p.like_count, p.comment_count,
+                  u.id AS user_id, u.username AS user_username
+           FROM user_posts p
+           JOIN users u ON u.id = p.user_id
+           WHERE p.created_at >= $1 AND p.created_at <= $2
+           ORDER BY (p.like_count + p.comment_count) DESC
+           LIMIT 10`,
+          periodStart,
+          periodEnd,
+        ),
+        // Top users by activity
+        this.prisma.$queryRawUnsafe<any[]>(
+          `SELECT
+             u.id as user_id,
+             u.username as user_username,
+             u.email as user_email,
+             COUNT(DISTINCT post.id) as post_count,
+             COUNT(DISTINCT comment.id) as comment_count
+           FROM users u
+           LEFT JOIN user_posts post
+             ON post.user_id = u.id AND post.created_at BETWEEN $1 AND $2
+           LEFT JOIN post_comments comment
+             ON comment.user_id = u.id AND comment.created_at BETWEEN $3 AND $4
+           GROUP BY u.id, u.username, u.email
+           HAVING COUNT(DISTINCT post.id) > 0 OR COUNT(DISTINCT comment.id) > 0`,
+          periodStart,
+          periodEnd,
+          periodStart,
+          periodEnd,
+        ),
+        this.getRecentActivity(10).catch((error) => {
+          console.error('Error fetching recent activity:', error);
+          return [] as any[];
+        }),
+        this.getTrendingTopics(10).catch((error) => {
+          console.error('Error fetching trending topics:', error);
+          return [] as TrendingTopicDto[];
+        }),
+      ]);
 
       const trends = this.calculateTrends(currentStats, previousStats);
 
-      const dailyActiveUsers = await this.getActiveUsersCount(
-        oneDayAgo,
-        new Date(),
-      );
-      const weeklyActiveUsers = await this.getActiveUsersCount(
-        oneWeekAgo,
-        new Date(),
-      );
-      const monthlyActiveUsers = await this.getActiveUsersCount(
-        oneMonthAgo,
-        new Date(),
-      );
-
-      // Engagement rate
-      const totalViewsResult = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT COALESCE(SUM(view_count), 0) AS total FROM user_posts WHERE created_at >= $1 AND created_at <= $2`,
-        periodStart,
-        periodEnd,
-      );
-      const totalLikesResult = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT COALESCE(SUM(like_count), 0) AS total FROM user_posts WHERE created_at >= $1 AND created_at <= $2`,
-        periodStart,
-        periodEnd,
-      );
-      const totalComments = await this.prisma.postComment.count({
-        where: { created_at: { gte: periodStart, lte: periodEnd } },
-      });
       const totalInteractions =
         parseInt(totalLikesResult[0]?.total || '0', 10) + totalComments;
       const totalViewsNum = parseInt(totalViewsResult[0]?.total || '0', 10);
       const engagementRate =
         totalViewsNum > 0 ? (totalInteractions / totalViewsNum) * 100 : 0;
 
-      // Top posts -- fetch then sort in memory
-      const allPosts = await this.prisma.userPost.findMany({
-        where: { created_at: { gte: periodStart, lte: periodEnd } },
-        include: { user: true },
-      });
-
-      const topPosts = allPosts
-        .map((post) => ({
-          ...post,
-          engagement_score: (post.like_count || 0) + (post.comment_count || 0),
-        }))
-        .sort((a, b) => b.engagement_score - a.engagement_score)
-        .slice(0, 10);
-
-      // Top users by activity
-      const topUsersRaw = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT
-           u.id as user_id,
-           u.username as user_username,
-           u.email as user_email,
-           COUNT(DISTINCT post.id) as post_count,
-           COUNT(DISTINCT comment.id) as comment_count
-         FROM users u
-         LEFT JOIN user_posts post
-           ON post.user_id = u.id AND post.created_at BETWEEN $1 AND $2
-         LEFT JOIN post_comments comment
-           ON comment.user_id = u.id AND comment.created_at BETWEEN $3 AND $4
-         GROUP BY u.id, u.username, u.email
-         HAVING COUNT(DISTINCT post.id) > 0 OR COUNT(DISTINCT comment.id) > 0`,
-        periodStart,
-        periodEnd,
-        periodStart,
-        periodEnd,
-      );
+      const topPosts = topPostsRaw.map((p) => ({
+        id: p.id,
+        post_title: p.post_title,
+        like_count: p.like_count,
+        comment_count: p.comment_count,
+        user: { id: p.user_id, username: p.user_username },
+      }));
 
       const topUsers = topUsersRaw
         .map((u) => ({
@@ -668,20 +680,6 @@ export class AdminService {
         .sort((a, b) => b.activity_score - a.activity_score)
         .slice(0, 10);
 
-      let recentActivity: any[] = [];
-      try {
-        recentActivity = await this.getRecentActivity(10);
-      } catch (error) {
-        console.error('Error fetching recent activity:', error);
-      }
-
-      let trendingTopics: TrendingTopicDto[] = [];
-      try {
-        trendingTopics = await this.getTrendingTopics(10);
-      } catch (error) {
-        console.error('Error fetching trending topics:', error);
-      }
-
       return {
         ...currentStats,
         daily_active_users: dailyActiveUsers,
@@ -689,16 +687,7 @@ export class AdminService {
         monthly_active_users: monthlyActiveUsers,
         engagement_rate: engagementRate,
         trends,
-        top_posts: topPosts.map((p) => ({
-          id: p.id,
-          post_title: p.post_title,
-          like_count: p.like_count,
-          comment_count: p.comment_count,
-          user: {
-            id: (p as any).user?.id,
-            username: (p as any).user?.username,
-          },
-        })),
+        top_posts: topPosts,
         top_users: topUsers.map((u) => ({
           id: u.user_id,
           username: u.user_username,
@@ -726,109 +715,155 @@ export class AdminService {
     isAllTime: boolean = false,
   ) {
     if (isAllTime) {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const [
+        total_users,
+        active_users,
+        verified_users,
+        pro_users,
+        total_posts,
+        published_posts,
+        draft_posts,
+        total_comments,
+        total_topics,
+        active_topics,
+        total_communities,
+        active_communities,
+        total_polls,
+        published_polls,
+        recent_users,
+        recent_posts,
+      ] = await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.user.count({ where: { is_active: true } }),
+        this.prisma.user.count({ where: { is_verified: true } }),
+        this.prisma.user.count({ where: { role: 'pro_user' } }),
+        this.prisma.userPost.count(),
+        this.prisma.userPost.count({ where: { post_status: 'published' } }),
+        this.prisma.userPost.count({ where: { post_status: 'draft' } }),
+        this.prisma.postComment.count(),
+        this.prisma.topic.count(),
+        this.prisma.topic.count({ where: { is_active: true } }),
+        this.prisma.community.count(),
+        this.prisma.community.count({ where: { is_active: true } }),
+        this.prisma.userPoll.count(),
+        this.prisma.userPoll.count({ where: { poll_status: 'published' } }),
+        this.prisma.user.count({ where: { created_at: { gt: sevenDaysAgo } } }),
+        this.prisma.userPost.count({
+          where: { created_at: { gt: sevenDaysAgo } },
+        }),
+      ]);
+
       return {
-        total_users: await this.prisma.user.count(),
-        active_users: await this.prisma.user.count({
-          where: { is_active: true },
-        }),
-        verified_users: await this.prisma.user.count({
-          where: { is_verified: true },
-        }),
-        pro_users: await this.prisma.user.count({
-          where: { role: 'pro_user' },
-        }),
-        total_posts: await this.prisma.userPost.count(),
-        published_posts: await this.prisma.userPost.count({
-          where: { post_status: 'published' },
-        }),
-        draft_posts: await this.prisma.userPost.count({
-          where: { post_status: 'draft' },
-        }),
-        total_comments: await this.prisma.postComment.count(),
-        total_topics: await this.prisma.topic.count(),
-        active_topics: await this.prisma.topic.count({
-          where: { is_active: true },
-        }),
-        total_communities: await this.prisma.community.count(),
-        active_communities: await this.prisma.community.count({
-          where: { is_active: true },
-        }),
-        total_polls: await this.prisma.userPoll.count(),
-        published_polls: await this.prisma.userPoll.count({
-          where: { poll_status: 'published' },
-        }),
-        recent_users: await this.prisma.user.count({
-          where: {
-            created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-          },
-        }),
-        recent_posts: await this.prisma.userPost.count({
-          where: {
-            created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-          },
-        }),
+        total_users,
+        active_users,
+        verified_users,
+        pro_users,
+        total_posts,
+        published_posts,
+        draft_posts,
+        total_comments,
+        total_topics,
+        active_topics,
+        total_communities,
+        active_communities,
+        total_polls,
+        published_polls,
+        recent_users,
+        recent_posts,
       };
     }
 
-    return {
-      total_users: await this.prisma.user.count({
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [
+      total_users,
+      active_users,
+      verified_users,
+      pro_users,
+      total_posts,
+      published_posts,
+      draft_posts,
+      total_comments,
+      total_topics,
+      active_topics,
+      total_communities,
+      active_communities,
+      total_polls,
+      published_polls,
+      recent_users,
+      recent_posts,
+    ] = await Promise.all([
+      this.prisma.user.count({
         where: { created_at: { gte: start, lte: end } },
       }),
-      active_users: await this.prisma.user.count({
+      this.prisma.user.count({
         where: { is_active: true, created_at: { gte: start, lte: end } },
       }),
-      verified_users: await this.prisma.user.count({
+      this.prisma.user.count({
         where: { is_verified: true, created_at: { gte: start, lte: end } },
       }),
-      pro_users: await this.prisma.user.count({
+      this.prisma.user.count({
         where: { role: 'pro_user', created_at: { gte: start, lte: end } },
       }),
-      total_posts: await this.prisma.userPost.count({
+      this.prisma.userPost.count({
         where: { created_at: { gte: start, lte: end } },
       }),
-      published_posts: await this.prisma.userPost.count({
+      this.prisma.userPost.count({
         where: {
           post_status: 'published',
           created_at: { gte: start, lte: end },
         },
       }),
-      draft_posts: await this.prisma.userPost.count({
+      this.prisma.userPost.count({
         where: { post_status: 'draft', created_at: { gte: start, lte: end } },
       }),
-      total_comments: await this.prisma.postComment.count({
+      this.prisma.postComment.count({
         where: { created_at: { gte: start, lte: end } },
       }),
-      total_topics: await this.prisma.topic.count({
+      this.prisma.topic.count({
         where: { created_at: { gte: start, lte: end } },
       }),
-      active_topics: await this.prisma.topic.count({
+      this.prisma.topic.count({
         where: { is_active: true, created_at: { gte: start, lte: end } },
       }),
-      total_communities: await this.prisma.community.count({
+      this.prisma.community.count({
         where: { created_at: { gte: start, lte: end } },
       }),
-      active_communities: await this.prisma.community.count({
+      this.prisma.community.count({
         where: { is_active: true, created_at: { gte: start, lte: end } },
       }),
-      total_polls: await this.prisma.userPoll.count({
+      this.prisma.userPoll.count({
         where: { created_at: { gte: start, lte: end } },
       }),
-      published_polls: await this.prisma.userPoll.count({
+      this.prisma.userPoll.count({
         where: {
           poll_status: 'published',
           created_at: { gte: start, lte: end },
         },
       }),
-      recent_users: await this.prisma.user.count({
-        where: {
-          created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        },
+      this.prisma.user.count({ where: { created_at: { gt: sevenDaysAgo } } }),
+      this.prisma.userPost.count({
+        where: { created_at: { gt: sevenDaysAgo } },
       }),
-      recent_posts: await this.prisma.userPost.count({
-        where: {
-          created_at: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        },
-      }),
+    ]);
+
+    return {
+      total_users,
+      active_users,
+      verified_users,
+      pro_users,
+      total_posts,
+      published_posts,
+      draft_posts,
+      total_comments,
+      total_topics,
+      active_topics,
+      total_communities,
+      active_communities,
+      total_polls,
+      published_polls,
+      recent_users,
+      recent_posts,
     };
   }
 
@@ -1190,31 +1225,47 @@ export class AdminService {
   }
 
   async getUserById(userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        auth_type: true,
+        is_active: true,
+        is_verified: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const profile = await this.prisma.userProfile.findFirst({
-      where: { user_id: userId },
-    });
-
-    const followerCount = await this.prisma.userFollower.count({
-      where: { user_id: userId, is_active: true },
-    });
-    const followingCount = await this.prisma.userFollower.count({
-      where: { follower_id: userId, is_active: true },
-    });
-    const postsCount = await this.prisma.userPost.count({
-      where: { user_id: userId },
-    });
-    const commentsCount = await this.prisma.postComment.count({
-      where: { user_id: userId },
-    });
-    const communitiesCount = await this.prisma.communityUser.count({
-      where: { user_id: userId, is_active: true },
-    });
+    // None of these depend on each other — run them together.
+    const [
+      profile,
+      followerCount,
+      followingCount,
+      postsCount,
+      commentsCount,
+      communitiesCount,
+    ] = await Promise.all([
+      this.prisma.userProfile.findFirst({ where: { user_id: userId } }),
+      this.prisma.userFollower.count({
+        where: { user_id: userId, is_active: true },
+      }),
+      this.prisma.userFollower.count({
+        where: { follower_id: userId, is_active: true },
+      }),
+      this.prisma.userPost.count({ where: { user_id: userId } }),
+      this.prisma.postComment.count({ where: { user_id: userId } }),
+      this.prisma.communityUser.count({
+        where: { user_id: userId, is_active: true },
+      }),
+    ]);
 
     return {
       id: user.id,
@@ -1763,7 +1814,10 @@ export class AdminService {
       orderBy,
       skip,
       take: limit,
-      include: { user: true, topic: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        topic: { select: { id: true, topic_name: true, topic_slug: true } },
+      },
     });
 
     const userIds = [
@@ -1774,6 +1828,7 @@ export class AdminService {
       userIds.length > 0
         ? await this.prisma.userProfile.findMany({
           where: { user_id: { in: userIds } },
+          select: { user_id: true, full_name: true, profile_picture: true },
         })
         : [];
 
@@ -2044,7 +2099,17 @@ export class AdminService {
       orderBy,
       skip,
       take: limit,
-      include: { user: true, post: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        post: {
+          select: {
+            id: true,
+            post_slug: true,
+            post_title: true,
+            post_image: true,
+          },
+        },
+      },
     });
 
     const userIds = new Set<number>();
@@ -2052,36 +2117,50 @@ export class AdminService {
       if (comment.user_id) userIds.add(comment.user_id);
     });
 
-    const userProfilesMap = new Map<number, any>();
-    if (userIds.size > 0) {
-      const profiles = await this.prisma.userProfile.findMany({
-        where: { user_id: { in: Array.from(userIds) } },
-      });
-      profiles.forEach((p) => {
-        userProfilesMap.set(p.user_id, p);
-      });
-    }
+    const commentIds = comments.map((comment) => comment.id);
 
-    const mappedData = await Promise.all(
-      comments.map(async (comment: any) => {
-        const repliesCount = await this.prisma.postComment.count({
-          where: { parent_comment_id: comment.id },
-        });
-        const commentWithExtras: any = {
-          ...comment,
-          replies_count: repliesCount,
-        };
-        if (comment.user && userProfilesMap.has(comment.user.id)) {
-          const profile = userProfilesMap.get(comment.user.id);
-          commentWithExtras.user.profile_picture =
-            profile?.profile_picture || null;
-          commentWithExtras.user.full_name = profile?.full_name || null;
-        }
-        return this.commentService.mapPostCommentToResponseDto(
-          commentWithExtras,
-        );
-      }),
-    );
+    const [profiles, replyCounts] = await Promise.all([
+      userIds.size > 0
+        ? this.prisma.userProfile.findMany({
+            where: { user_id: { in: Array.from(userIds) } },
+            select: { user_id: true, full_name: true, profile_picture: true },
+          })
+        : Promise.resolve([] as any[]),
+      commentIds.length > 0
+        ? this.prisma.postComment.groupBy({
+            by: ['parent_comment_id'],
+            where: { parent_comment_id: { in: commentIds } },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
+
+    const userProfilesMap = new Map<number, any>();
+    profiles.forEach((p) => {
+      userProfilesMap.set(p.user_id, p);
+    });
+    const replyCountByComment = new Map<number, number>();
+    replyCounts.forEach((row) => {
+      if (row.parent_comment_id !== null) {
+        replyCountByComment.set(row.parent_comment_id, row._count._all);
+      }
+    });
+
+    const mappedData = comments.map((comment: any) => {
+      const commentWithExtras: any = {
+        ...comment,
+        replies_count: replyCountByComment.get(comment.id) || 0,
+      };
+      if (comment.user && userProfilesMap.has(comment.user.id)) {
+        const profile = userProfilesMap.get(comment.user.id);
+        commentWithExtras.user.profile_picture =
+          profile?.profile_picture || null;
+        commentWithExtras.user.full_name = profile?.full_name || null;
+      }
+      return this.commentService.mapPostCommentToResponseDto(
+        commentWithExtras,
+      );
+    });
 
     return {
       data: mappedData,
@@ -2295,33 +2374,56 @@ export class AdminService {
       parentInfos.forEach((p) => parentInfoMap.set(p.id, p));
     }
 
-    const topicsWithUsage = await Promise.all(
-      topics.map(async (topic) => {
-        const postsCount = await this.prisma.userPost.count({
-          where: { post_topic_id: topic.id, post_status: 'published' },
-        });
-        const communitiesCount = await this.prisma.communityTopic.count({
-          where: { topic_id: topic.id, is_active: true },
-        });
-        const parentInfo =
-          topic.parent_id > 0 ? parentInfoMap.get(topic.parent_id) : null;
-        return {
-          ...topic,
-          posts_count: postsCount,
-          communities_count: communitiesCount,
-          usage_count: postsCount + communitiesCount,
-          ...(parentInfo && { parent_name: parentInfo.topic_name }),
-          ...(topic.children &&
-            topic.children.length > 0 && {
-            children: topic.children.map((child: any) => ({
-              id: child.id,
-              topic_name: child.topic_name,
-              topic_slug: child.topic_slug,
-            })),
-          }),
-        };
-      }),
-    );
+    // Batch usage counts across the whole page instead of 2 queries per topic.
+    const topicIds = topics.map((topic) => topic.id);
+    const [postCounts, communityCounts] = await Promise.all([
+      topicIds.length > 0
+        ? this.prisma.userPost.groupBy({
+            by: ['post_topic_id'],
+            where: { post_topic_id: { in: topicIds }, post_status: 'published' },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+      topicIds.length > 0
+        ? this.prisma.communityTopic.groupBy({
+            by: ['topic_id'],
+            where: { topic_id: { in: topicIds }, is_active: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
+    const postCountByTopic = new Map<number, number>();
+    postCounts.forEach((row) => {
+      if (row.post_topic_id !== null) {
+        postCountByTopic.set(row.post_topic_id, row._count._all);
+      }
+    });
+    const communityCountByTopic = new Map<number, number>();
+    communityCounts.forEach((row) => {
+      communityCountByTopic.set(row.topic_id, row._count._all);
+    });
+
+    const topicsWithUsage = topics.map((topic) => {
+      const postsCount = postCountByTopic.get(topic.id) || 0;
+      const communitiesCount = communityCountByTopic.get(topic.id) || 0;
+      const parentInfo =
+        topic.parent_id > 0 ? parentInfoMap.get(topic.parent_id) : null;
+      return {
+        ...topic,
+        posts_count: postsCount,
+        communities_count: communitiesCount,
+        usage_count: postsCount + communitiesCount,
+        ...(parentInfo && { parent_name: parentInfo.topic_name }),
+        ...(topic.children &&
+          topic.children.length > 0 && {
+          children: topic.children.map((child: any) => ({
+            id: child.id,
+            topic_name: child.topic_name,
+            topic_slug: child.topic_slug,
+          })),
+        }),
+      };
+    });
 
     return {
       data: topicsWithUsage,
@@ -2374,27 +2476,58 @@ export class AdminService {
       take: limit,
     });
 
-    // getParentTopics only fetches parent_id=0 rows, so no parent lookup needed
-    const topicsWithUsage = await Promise.all(
-      topics.map(async (topic) => {
-        const postsCount = await this.prisma.userPost.count({
-          where: { post_topic_id: topic.id, post_status: 'published' },
-        });
-        const communitiesCount = await this.prisma.communityTopic.count({
-          where: { topic_id: topic.id, is_active: true },
-        });
-        const childrenCount = await this.prisma.topic.count({
-          where: { parent_id: topic.id, is_active: true },
-        });
-        return {
-          ...topic,
-          posts_count: postsCount,
-          communities_count: communitiesCount,
-          children_count: childrenCount,
-          usage_count: postsCount + communitiesCount,
-        };
-      }),
-    );
+    // getParentTopics only fetches parent_id=0 rows, so no parent lookup needed.
+    // Batch usage counts across the whole page instead of 3 queries per topic.
+    const topicIds = topics.map((topic) => topic.id);
+    const [postCounts, communityCounts, childCounts] = await Promise.all([
+      topicIds.length > 0
+        ? this.prisma.userPost.groupBy({
+            by: ['post_topic_id'],
+            where: { post_topic_id: { in: topicIds }, post_status: 'published' },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+      topicIds.length > 0
+        ? this.prisma.communityTopic.groupBy({
+            by: ['topic_id'],
+            where: { topic_id: { in: topicIds }, is_active: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+      topicIds.length > 0
+        ? this.prisma.topic.groupBy({
+            by: ['parent_id'],
+            where: { parent_id: { in: topicIds }, is_active: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
+    const postCountByTopic = new Map<number, number>();
+    postCounts.forEach((row) => {
+      if (row.post_topic_id !== null) {
+        postCountByTopic.set(row.post_topic_id, row._count._all);
+      }
+    });
+    const communityCountByTopic = new Map<number, number>();
+    communityCounts.forEach((row) => {
+      communityCountByTopic.set(row.topic_id, row._count._all);
+    });
+    const childCountByTopic = new Map<number, number>();
+    childCounts.forEach((row) => {
+      childCountByTopic.set(row.parent_id, row._count._all);
+    });
+
+    const topicsWithUsage = topics.map((topic) => {
+      const postsCount = postCountByTopic.get(topic.id) || 0;
+      const communitiesCount = communityCountByTopic.get(topic.id) || 0;
+      return {
+        ...topic,
+        posts_count: postsCount,
+        communities_count: communitiesCount,
+        children_count: childCountByTopic.get(topic.id) || 0,
+        usage_count: postsCount + communitiesCount,
+      };
+    });
 
     return {
       data: topicsWithUsage,
@@ -3557,103 +3690,110 @@ export class AdminService {
 
     const effectiveLimit = Math.min(Math.max(limit || 5, 1), 20);
 
-    const [users, userCount] = await Promise.all([
+    const userWhere = {
+      OR: [
+        { username: { contains: term } },
+        { email: { contains: term } },
+        { profile: { full_name: { contains: term } } },
+      ],
+    };
+    const postWhere = {
+      post_status: { in: ['published', 'draft'] },
+      OR: [
+        { post_title: { contains: term } },
+        { post_content: { contains: term } },
+        { post_slug: { contains: term } },
+        { post_tags: { contains: term } },
+      ],
+    };
+    const communityWhere = {
+      OR: [
+        { community_name: { contains: term } },
+        { community_slug: { contains: term } },
+        { community_description: { contains: term } },
+      ],
+    };
+    const topicWhere = {
+      OR: [
+        { topic_name: { contains: term } },
+        { topic_slug: { contains: term } },
+        { topic_description: { contains: term } },
+      ],
+    };
+
+    // All 4 categories are independent — search them concurrently instead of
+    // one after another.
+    const [
+      users,
+      userCount,
+      posts,
+      postCount,
+      communities,
+      communityCount,
+      topics,
+      topicCount,
+    ] = await Promise.all([
       this.prisma.user.findMany({
-        where: {
-          OR: [
-            { username: { contains: term } },
-            { email: { contains: term } },
-            { profile: { full_name: { contains: term } } },
-          ],
+        where: userWhere as any,
+        include: {
+          profile: { select: { full_name: true, profile_picture: true } },
         },
-        include: { profile: true },
         orderBy: { username: 'asc' },
         take: effectiveLimit,
       }),
-      this.prisma.user.count({
-        where: {
-          OR: [
-            { username: { contains: term } },
-            { email: { contains: term } },
-            { profile: { full_name: { contains: term } } },
-          ],
-        },
-      }),
-    ]);
-
-    const [posts, postCount] = await Promise.all([
+      this.prisma.user.count({ where: userWhere as any }),
       this.prisma.userPost.findMany({
-        where: {
-          post_status: { in: ['published', 'draft'] },
-          OR: [
-            { post_title: { contains: term } },
-            { post_content: { contains: term } },
-            { post_slug: { contains: term } },
-            { post_tags: { contains: term } },
-          ],
+        where: postWhere as any,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              profile: { select: { full_name: true } },
+            },
+          },
         },
-        include: { user: { include: { profile: true } } },
         orderBy: { created_at: 'desc' },
         take: effectiveLimit,
       }),
-      this.prisma.userPost.count({
-        where: {
-          post_status: { in: ['published', 'draft'] },
-          OR: [
-            { post_title: { contains: term } },
-            { post_content: { contains: term } },
-            { post_slug: { contains: term } },
-            { post_tags: { contains: term } },
-          ],
-        },
-      }),
-    ]);
-
-    const [communities, communityCount] = await Promise.all([
+      this.prisma.userPost.count({ where: postWhere as any }),
       this.prisma.community.findMany({
-        where: {
-          OR: [
-            { community_name: { contains: term } },
-            { community_slug: { contains: term } },
-            { community_description: { contains: term } },
-          ],
+        where: communityWhere,
+        // member_count is a denormalized column — no need to fetch/count members here.
+        select: {
+          id: true,
+          community_name: true,
+          community_slug: true,
+          community_image: true,
+          member_count: true,
         },
-        include: { members: { where: { is_active: true } } },
         take: effectiveLimit,
       }),
-      this.prisma.community.count({
-        where: {
-          OR: [
-            { community_name: { contains: term } },
-            { community_slug: { contains: term } },
-            { community_description: { contains: term } },
-          ],
-        },
+      this.prisma.community.count({ where: communityWhere }),
+      this.prisma.topic.findMany({
+        where: topicWhere,
+        select: { id: true, topic_name: true, topic_slug: true },
+        take: effectiveLimit,
       }),
+      this.prisma.topic.count({ where: topicWhere }),
     ]);
 
-    const [topics, topicCount] = await Promise.all([
-      this.prisma.topic.findMany({
-        where: {
-          OR: [
-            { topic_name: { contains: term } },
-            { topic_slug: { contains: term } },
-            { topic_description: { contains: term } },
-          ],
-        },
-        include: { userPosts: { where: { post_status: 'published' } } },
-        take: effectiveLimit,
-      }),
-      this.prisma.topic.count({
-        where: {
-          OR: [
-            { topic_name: { contains: term } },
-            { topic_slug: { contains: term } },
-            { topic_description: { contains: term } },
-          ],
-        },
-      }),
-    ]);
+    // Batch published-post counts for the matched topics in one query.
+    const topicIds = topics.map((topic) => topic.id);
+    const topicPostCounts =
+      topicIds.length > 0
+        ? await this.prisma.userPost.groupBy({
+            by: ['post_topic_id'],
+            where: { post_topic_id: { in: topicIds }, post_status: 'published' },
+            _count: { _all: true },
+          })
+        : [];
+    const topicPostCountById = new Map<number, number>();
+    topicPostCounts.forEach((row) => {
+      if (row.post_topic_id !== null) {
+        topicPostCountById.set(row.post_topic_id, row._count._all);
+      }
+    });
 
     this.logger.debug(
       `Search results - Posts sample: ${JSON.stringify(posts.slice(0, 1))}`,
@@ -3695,13 +3835,13 @@ export class AdminService {
         name: c.community_name,
         slug: c.community_slug,
         community_image: c.community_image || null,
-        member_count: (c as any).members?.length || 0,
+        member_count: c.member_count,
       })),
       topics: topics.map((t) => ({
         id: t.id,
         name: t.topic_name,
         slug: t.topic_slug,
-        posts_count: (t as any).userPosts?.length || 0,
+        posts_count: topicPostCountById.get(t.id) || 0,
       })),
       meta: {
         users: { count: userCount },

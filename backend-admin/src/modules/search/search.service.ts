@@ -36,63 +36,51 @@ export class SearchService {
       },
     };
 
-    // Search based on type
-    if (type === SearchType.ALL || type === SearchType.USERS) {
-      const { users, count } = await this.searchUsers(
-        term,
-        effectiveLimit,
-        skip,
-      );
-      results.users = users;
-      results.meta.users = { count };
-      results.meta.total += count;
-    }
+    // Search each requested category concurrently — the branches are fully
+    // independent, so there's no reason to await them one after another.
+    const [usersResult, postsResult, communitiesResult, topicsResult, pollsResult] =
+      await Promise.all([
+        type === SearchType.ALL || type === SearchType.USERS
+          ? this.searchUsers(term, effectiveLimit, skip)
+          : Promise.resolve(null),
+        type === SearchType.ALL || type === SearchType.POSTS
+          ? this.searchPosts(term, effectiveLimit, skip, userId)
+          : Promise.resolve(null),
+        type === SearchType.ALL || type === SearchType.COMMUNITIES
+          ? this.searchCommunities(term, effectiveLimit, skip, userId)
+          : Promise.resolve(null),
+        type === SearchType.ALL || type === SearchType.TOPICS
+          ? this.searchTopics(term, effectiveLimit, skip)
+          : Promise.resolve(null),
+        type === SearchType.ALL || type === SearchType.POLLS
+          ? this.searchPolls(term, effectiveLimit, skip, userId)
+          : Promise.resolve(null),
+      ]);
 
-    if (type === SearchType.ALL || type === SearchType.POSTS) {
-      const { posts, count } = await this.searchPosts(
-        term,
-        effectiveLimit,
-        skip,
-        userId,
-      );
-      results.posts = posts;
-      results.meta.posts = { count };
-      results.meta.total += count;
+    if (usersResult) {
+      results.users = usersResult.users;
+      results.meta.users = { count: usersResult.count };
+      results.meta.total += usersResult.count;
     }
-
-    if (type === SearchType.ALL || type === SearchType.COMMUNITIES) {
-      const { communities, count } = await this.searchCommunities(
-        term,
-        effectiveLimit,
-        skip,
-        userId,
-      );
-      results.communities = communities;
-      results.meta.communities = { count };
-      results.meta.total += count;
+    if (postsResult) {
+      results.posts = postsResult.posts;
+      results.meta.posts = { count: postsResult.count };
+      results.meta.total += postsResult.count;
     }
-
-    if (type === SearchType.ALL || type === SearchType.TOPICS) {
-      const { topics, count } = await this.searchTopics(
-        term,
-        effectiveLimit,
-        skip,
-      );
-      results.topics = topics;
-      results.meta.topics = { count };
-      results.meta.total += count;
+    if (communitiesResult) {
+      results.communities = communitiesResult.communities;
+      results.meta.communities = { count: communitiesResult.count };
+      results.meta.total += communitiesResult.count;
     }
-
-    if (type === SearchType.ALL || type === SearchType.POLLS) {
-      const { polls, count } = await this.searchPolls(
-        term,
-        effectiveLimit,
-        skip,
-        userId,
-      );
-      results.polls = polls;
-      results.meta.polls = { count };
-      results.meta.total += count;
+    if (topicsResult) {
+      results.topics = topicsResult.topics;
+      results.meta.topics = { count: topicsResult.count };
+      results.meta.total += topicsResult.count;
+    }
+    if (pollsResult) {
+      results.polls = pollsResult.polls;
+      results.meta.polls = { count: pollsResult.count };
+      results.meta.total += pollsResult.count;
     }
 
     results.meta.total_pages = Math.ceil(results.meta.total / effectiveLimit);
@@ -166,9 +154,13 @@ export class SearchService {
         where,
         include: {
           user: {
-            include: { profile: true },
+            select: {
+              id: true,
+              username: true,
+              profile: { select: { full_name: true, profile_picture: true } },
+            },
           },
-          topic: true,
+          topic: { select: { id: true, topic_name: true, topic_slug: true } },
         },
         orderBy: { created_at: 'desc' },
         skip,
@@ -240,6 +232,9 @@ export class SearchService {
           community_description: true,
           community_image: true,
           is_active: true,
+          // Denormalized column kept in sync by join()/leave() — no need to
+          // count CommunityUser rows per community here.
+          member_count: true,
         },
         orderBy: { created_at: 'desc' },
         skip,
@@ -248,22 +243,15 @@ export class SearchService {
       this.prisma.community.count({ where }),
     ]);
 
-    // Get member counts separately
-    const communityResults: SearchCommunityResult[] = await Promise.all(
-      communities.map(async (community) => {
-        const memberCount = await this.prisma.communityUser.count({
-          where: { community_id: community.id, is_active: true },
-        });
-
-        return {
-          id: community.id,
-          name: community.community_name,
-          slug: community.community_slug,
-          description: (community as any).community_description || null,
-          image: (community as any).community_image || null,
-          member_count: memberCount,
-          is_active: community.is_active,
-        };
+    const communityResults: SearchCommunityResult[] = communities.map(
+      (community) => ({
+        id: community.id,
+        name: community.community_name,
+        slug: community.community_slug,
+        description: community.community_description || null,
+        image: community.community_image || null,
+        member_count: community.member_count,
+        is_active: community.is_active,
       }),
     );
 
@@ -302,24 +290,33 @@ export class SearchService {
       this.prisma.topic.count({ where }),
     ]);
 
-    // Get post counts separately
-    const topicResults: SearchTopicResult[] = await Promise.all(
-      topics.map(async (topic) => {
-        const postsCount = await this.prisma.userPost.count({
-          where: { post_topic_id: topic.id, post_status: 'published' },
-        });
+    // Get post counts for all matched topics in one batched query instead of
+    // one `count()` per topic.
+    const topicIds = topics.map((topic) => topic.id);
+    const postCounts =
+      topicIds.length > 0
+        ? await this.prisma.userPost.groupBy({
+            by: ['post_topic_id'],
+            where: { post_topic_id: { in: topicIds }, post_status: 'published' },
+            _count: { _all: true },
+          })
+        : [];
+    const postCountByTopic = new Map<number, number>();
+    postCounts.forEach((row) => {
+      if (row.post_topic_id !== null) {
+        postCountByTopic.set(row.post_topic_id, row._count._all);
+      }
+    });
 
-        return {
-          id: topic.id,
-          name: topic.topic_name,
-          slug: topic.topic_slug,
-          description: (topic as any).topic_description || null,
-          image: (topic as any).topic_image || null,
-          posts_count: postsCount,
-          is_active: topic.is_active,
-        };
-      }),
-    );
+    const topicResults: SearchTopicResult[] = topics.map((topic) => ({
+      id: topic.id,
+      name: topic.topic_name,
+      slug: topic.topic_slug,
+      description: (topic as any).topic_description || null,
+      image: (topic as any).topic_image || null,
+      posts_count: postCountByTopic.get(topic.id) || 0,
+      is_active: topic.is_active,
+    }));
 
     return { topics: topicResults, count };
   }
@@ -344,7 +341,11 @@ export class SearchService {
         where,
         include: {
           user: {
-            include: { profile: true },
+            select: {
+              id: true,
+              username: true,
+              profile: { select: { full_name: true, profile_picture: true } },
+            },
           },
         },
         orderBy: { created_at: 'desc' },

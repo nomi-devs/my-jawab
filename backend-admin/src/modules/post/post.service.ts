@@ -296,13 +296,15 @@ export class PostService {
     // Build orderBy
     const orderBy: any = { [sort_by]: sort_order.toLowerCase() };
 
-    // Build include
+    // Build include — only the fields mapToResponseDto actually reads.
     const include: any = {};
     if (include_user) {
-      include.user = true;
+      include.user = { select: { id: true, username: true, email: true } };
     }
     if (include_topic) {
-      include.topic = true;
+      include.topic = {
+        select: { id: true, topic_slug: true, topic_name: true },
+      };
     }
 
     // Get total count
@@ -317,26 +319,30 @@ export class PostService {
       include: Object.keys(include).length > 0 ? include : undefined,
     });
 
-    // Get user like status if userId provided
-    const postsWithLikes = await Promise.all(
-      posts.map(async (post) => {
-        const response: any = { ...post };
+    // Get user like status for all posts on the page in one query instead of one-per-post.
+    const likeByPostId = new Map<number, string>();
+    if (userId && posts.length > 0) {
+      const likes = await this.prisma.postLike.findMany({
+        where: { post_id: { in: posts.map((post) => post.id) }, user_id: userId },
+        select: { post_id: true, like_status: true },
+      });
+      for (const like of likes) {
+        likeByPostId.set(like.post_id, like.like_status);
+      }
+    }
 
-        if (userId) {
-          const userLike = await this.prisma.postLike.findFirst({
-            where: {
-              post_id: post.id,
-              user_id: userId,
-            },
-          });
-          response.user_like_status = userLike?.like_status || null;
-          response.is_liked = userLike?.like_status === 'like';
-          response.is_disliked = userLike?.like_status === 'dislike';
-        }
+    const postsWithLikes = posts.map((post) => {
+      const response: any = { ...post };
 
-        return response;
-      }),
-    );
+      if (userId) {
+        const likeStatus = likeByPostId.get(post.id) || null;
+        response.user_like_status = likeStatus;
+        response.is_liked = likeStatus === 'like';
+        response.is_disliked = likeStatus === 'dislike';
+      }
+
+      return response;
+    });
 
     return {
       data: postsWithLikes.map((post) => this.mapToResponseDto(post)),
@@ -355,9 +361,13 @@ export class PostService {
     userId?: number,
     skipViewCount?: boolean,
   ): Promise<PostResponseDto> {
+    const postInclude = {
+      user: { select: { id: true, username: true, email: true } },
+      topic: { select: { id: true, topic_slug: true, topic_name: true } },
+    };
     const post = await this.prisma.userPost.findUnique({
       where: { id: postId },
-      include: { user: true, topic: true },
+      include: postInclude,
     });
 
     if (!post) {
@@ -370,7 +380,7 @@ export class PostService {
       updatedPost = await this.prisma.userPost.update({
         where: { id: postId },
         data: { view_count: { increment: 1 } },
-        include: { user: true, topic: true },
+        include: postInclude,
       });
     }
 
@@ -394,10 +404,12 @@ export class PostService {
 
   // Get Post by Slug
   async getPostBySlug(slug: string, userId?: number): Promise<PostResponseDto> {
-    // Slug now includes hash, so we can search directly
+    // Slug now includes hash, so we can search directly. Only resolve the id
+    // here — getPostById() below does the real fetch (with view-count bump),
+    // so there's no need to pull user/topic relations twice.
     const post = await this.prisma.userPost.findFirst({
       where: { post_slug: slug },
-      include: { user: true, topic: true },
+      select: { id: true },
     });
 
     if (!post) {

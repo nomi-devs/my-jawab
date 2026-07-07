@@ -85,10 +85,17 @@ export class CommentService {
 
     // Handle Post Comment
     if (createCommentDto.post_id) {
-      // Validate post exists
+      // Validate post exists — select everything needed for the notification
+      // below too, so we don't have to re-fetch the same row later.
       const post = await this.prisma.userPost.findUnique({
         where: { id: createCommentDto.post_id },
-        select: { id: true, post_status: true },
+        select: {
+          id: true,
+          post_status: true,
+          user_id: true,
+          post_title: true,
+          post_slug: true,
+        },
       });
 
       if (!post) {
@@ -128,23 +135,24 @@ export class CommentService {
       // Update post comment count
       await this.incrementPostCommentCount(createCommentDto.post_id);
 
-      // Notify post owner OR parent-comment author (reply takes priority)
-      const postFull = await this.prisma.userPost.findUnique({
-        where: { id: createCommentDto.post_id },
-        select: { id: true, user_id: true, post_title: true, post_slug: true },
-      });
-      const actor = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, username: true },
-      });
+      // Notify post owner OR parent-comment author (reply takes priority).
+      // `post` above already has everything needed — no need to re-fetch it.
+      const [actor, parentComment] = await Promise.all([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, username: true },
+        }),
+        createCommentDto.parent_comment_id
+          ? this.prisma.postComment.findUnique({
+              where: { id: createCommentDto.parent_comment_id },
+              select: { id: true, user_id: true },
+            })
+          : Promise.resolve(null),
+      ]);
       const actorName = actor?.username || 'Someone';
 
       if (createCommentDto.parent_comment_id) {
         // Notify parent comment author about the reply
-        const parentComment = await this.prisma.postComment.findUnique({
-          where: { id: createCommentDto.parent_comment_id },
-          select: { id: true, user_id: true },
-        });
         if (parentComment) {
           await this.safeNotify({
             user_id: parentComment.user_id,
@@ -152,21 +160,21 @@ export class CommentService {
             notification_type: NotificationType.reply,
             title: 'Someone replied to your comment',
             body: `${actorName} replied to your comment`,
-            action_url: postFull ? `/posts/${postFull.post_slug}` : undefined,
+            action_url: `/posts/${post.post_slug}`,
             related_id: savedComment.id,
             related_type: 'comment',
           });
         }
-      } else if (postFull) {
+      } else {
         // Notify post owner about the new comment
         await this.safeNotify({
-          user_id: postFull.user_id,
+          user_id: post.user_id,
           actor_id: userId,
           notification_type: NotificationType.comment,
           title: 'New comment on your post',
-          body: `${actorName} commented on "${postFull.post_title}"`,
-          action_url: `/posts/${postFull.post_slug}`,
-          related_id: postFull.id,
+          body: `${actorName} commented on "${post.post_title}"`,
+          action_url: `/posts/${post.post_slug}`,
+          related_id: post.id,
           related_type: 'post',
         });
       }
@@ -178,10 +186,17 @@ export class CommentService {
 
     // Handle Poll Comment
     if (createCommentDto.poll_id) {
-      // Validate poll exists
+      // Validate poll exists — select everything needed for the notification
+      // below too, so we don't have to re-fetch the same row later.
       const poll = await this.prisma.userPoll.findUnique({
         where: { id: createCommentDto.poll_id },
-        select: { id: true, poll_status: true },
+        select: {
+          id: true,
+          poll_status: true,
+          user_id: true,
+          poll_title: true,
+          poll_slug: true,
+        },
       });
 
       if (!poll) {
@@ -218,22 +233,23 @@ export class CommentService {
         },
       });
 
-      // Notify poll owner OR parent-comment author
-      const pollFull = await this.prisma.userPoll.findUnique({
-        where: { id: createCommentDto.poll_id },
-        select: { id: true, user_id: true, poll_title: true, poll_slug: true },
-      });
-      const actor = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, username: true },
-      });
+      // Notify poll owner OR parent-comment author.
+      // `poll` above already has everything needed — no need to re-fetch it.
+      const [actor, parentComment] = await Promise.all([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, username: true },
+        }),
+        createCommentDto.parent_comment_id
+          ? this.prisma.pollComment.findUnique({
+              where: { id: createCommentDto.parent_comment_id },
+              select: { id: true, user_id: true },
+            })
+          : Promise.resolve(null),
+      ]);
       const actorName = actor?.username || 'Someone';
 
       if (createCommentDto.parent_comment_id) {
-        const parentComment = await this.prisma.pollComment.findUnique({
-          where: { id: createCommentDto.parent_comment_id },
-          select: { id: true, user_id: true },
-        });
         if (parentComment) {
           await this.safeNotify({
             user_id: parentComment.user_id,
@@ -241,20 +257,20 @@ export class CommentService {
             notification_type: NotificationType.reply,
             title: 'Someone replied to your comment',
             body: `${actorName} replied to your comment`,
-            action_url: pollFull ? `/polls/${pollFull.poll_slug}` : undefined,
+            action_url: `/polls/${poll.poll_slug}`,
             related_id: savedComment.id,
             related_type: 'comment',
           });
         }
-      } else if (pollFull) {
+      } else {
         await this.safeNotify({
-          user_id: pollFull.user_id,
+          user_id: poll.user_id,
           actor_id: userId,
           notification_type: NotificationType.comment,
           title: 'New comment on your poll',
-          body: `${actorName} commented on "${pollFull.poll_title}"`,
-          action_url: `/polls/${pollFull.poll_slug}`,
-          related_id: pollFull.id,
+          body: `${actorName} commented on "${poll.poll_title}"`,
+          action_url: `/polls/${poll.poll_slug}`,
+          related_id: poll.id,
           related_type: 'poll',
         });
       }
@@ -345,7 +361,17 @@ export class CommentService {
       orderBy,
       take: limit,
       skip,
-      include: { user: true, post: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        post: {
+          select: {
+            id: true,
+            post_slug: true,
+            post_title: true,
+            post_image: true,
+          },
+        },
+      },
     });
 
     // Get unique user IDs for batch profile loading
@@ -354,46 +380,65 @@ export class CommentService {
       if (comment.user_id) userIds.add(comment.user_id);
     });
 
+    const commentIds = comments.map((comment) => comment.id);
+
+    const [profiles, userLikes, replyCounts] = await Promise.all([
+      userIds.size > 0
+        ? this.prisma.userProfile.findMany({
+            where: { user_id: { in: Array.from(userIds) } },
+            select: { user_id: true, full_name: true, profile_picture: true },
+          })
+        : Promise.resolve([] as any[]),
+      userId && commentIds.length > 0
+        ? this.prisma.commentLike.findMany({
+            where: { comment_id: { in: commentIds }, user_id: userId },
+            select: { comment_id: true, like_status: true },
+          })
+        : Promise.resolve([] as any[]),
+      commentIds.length > 0
+        ? this.prisma.postComment.groupBy({
+            by: ['parent_comment_id'],
+            where: { parent_comment_id: { in: commentIds }, is_approved: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
+
     const userProfilesMap = new Map<number, any>();
-    if (userIds.size > 0) {
-      const profiles = await this.prisma.userProfile.findMany({
-        where: { user_id: { in: Array.from(userIds) } },
-        select: { user_id: true, full_name: true, profile_picture: true },
-      });
-      profiles.forEach((profile) => {
-        userProfilesMap.set(profile.user_id, profile);
-      });
-    }
+    profiles.forEach((profile) => {
+      userProfilesMap.set(profile.user_id, profile);
+    });
+    const userLikeByComment = new Map<number, string>();
+    userLikes.forEach((like) => {
+      userLikeByComment.set(like.comment_id, like.like_status);
+    });
+    const replyCountByComment = new Map<number, number>();
+    replyCounts.forEach((row) => {
+      if (row.parent_comment_id !== null) {
+        replyCountByComment.set(row.parent_comment_id, row._count._all);
+      }
+    });
 
     // Process comments
-    const commentsWithData = await Promise.all(
-      comments.map(async (comment) => {
-        const response: any = { ...comment };
+    const commentsWithData = comments.map((comment) => {
+      const response: any = { ...comment };
 
-        // Attach profile data to user
-        if (comment.user && userProfilesMap.has(comment.user.id)) {
-          const profile = userProfilesMap.get(comment.user.id);
-          (comment.user as any).profile_picture =
-            profile?.profile_picture || null;
-          (comment.user as any).full_name = profile?.full_name || null;
-        }
+      // Attach profile data to user
+      if (comment.user && userProfilesMap.has(comment.user.id)) {
+        const profile = userProfilesMap.get(comment.user.id);
+        (comment.user as any).profile_picture =
+          profile?.profile_picture || null;
+        (comment.user as any).full_name = profile?.full_name || null;
+      }
 
-        // Get user like status
-        if (userId) {
-          const userLike = await this.prisma.commentLike.findFirst({
-            where: { comment_id: comment.id, user_id: userId },
-          });
-          response.user_like_status = userLike?.like_status || null;
-        }
+      if (userId) {
+        response.user_like_status = userLikeByComment.get(comment.id) || null;
+      }
 
-        // Get replies count
-        response.replies_count = await this.prisma.postComment.count({
-          where: { parent_comment_id: comment.id, is_approved: true },
-        });
+      response.replies_count = replyCountByComment.get(comment.id) || 0;
 
-        return response;
-      }),
-    );
+      return response;
+    });
 
     return {
       data: commentsWithData.map((comment) =>
@@ -454,7 +499,10 @@ export class CommentService {
       orderBy,
       take: limit,
       skip,
-      include: { user: true, poll: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        poll: { select: { id: true, poll_slug: true, poll_title: true } },
+      },
     });
 
     // Get unique user IDs for batch profile loading
@@ -463,41 +511,54 @@ export class CommentService {
       if (comment.user_id) userIds.add(comment.user_id);
     });
 
+    const commentIds = comments.map((comment) => comment.id);
+
+    const [profiles, replyCounts] = await Promise.all([
+      userIds.size > 0
+        ? this.prisma.userProfile.findMany({
+            where: { user_id: { in: Array.from(userIds) } },
+            select: { user_id: true, full_name: true, profile_picture: true },
+          })
+        : Promise.resolve([] as any[]),
+      commentIds.length > 0
+        ? this.prisma.pollComment.groupBy({
+            by: ['parent_comment_id'],
+            where: { parent_comment_id: { in: commentIds }, is_approved: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
+
     const userProfilesMap = new Map<number, any>();
-    if (userIds.size > 0) {
-      const profiles = await this.prisma.userProfile.findMany({
-        where: { user_id: { in: Array.from(userIds) } },
-        select: { user_id: true, full_name: true, profile_picture: true },
-      });
-      profiles.forEach((profile) => {
-        userProfilesMap.set(profile.user_id, profile);
-      });
-    }
+    profiles.forEach((profile) => {
+      userProfilesMap.set(profile.user_id, profile);
+    });
+    const replyCountByComment = new Map<number, number>();
+    replyCounts.forEach((row) => {
+      if (row.parent_comment_id !== null) {
+        replyCountByComment.set(row.parent_comment_id, row._count._all);
+      }
+    });
 
     // Process comments
-    const commentsWithData = await Promise.all(
-      comments.map(async (comment) => {
-        const response: any = { ...comment };
+    const commentsWithData = comments.map((comment) => {
+      const response: any = { ...comment };
 
-        // Attach profile data to user
-        if (comment.user && userProfilesMap.has(comment.user.id)) {
-          const profile = userProfilesMap.get(comment.user.id);
-          (comment.user as any).profile_picture =
-            profile?.profile_picture || null;
-          (comment.user as any).full_name = profile?.full_name || null;
-        }
+      // Attach profile data to user
+      if (comment.user && userProfilesMap.has(comment.user.id)) {
+        const profile = userProfilesMap.get(comment.user.id);
+        (comment.user as any).profile_picture =
+          profile?.profile_picture || null;
+        (comment.user as any).full_name = profile?.full_name || null;
+      }
 
-        // Note: Poll comments don't have likes yet
-        response.user_like_status = null;
+      // Note: Poll comments don't have likes yet
+      response.user_like_status = null;
 
-        // Get replies count
-        response.replies_count = await this.prisma.pollComment.count({
-          where: { parent_comment_id: comment.id, is_approved: true },
-        });
+      response.replies_count = replyCountByComment.get(comment.id) || 0;
 
-        return response;
-      }),
-    );
+      return response;
+    });
 
     return {
       data: commentsWithData.map((comment) =>
@@ -691,7 +752,17 @@ export class CommentService {
       orderBy,
       take: limit,
       skip,
-      include: { user: true, post: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        post: {
+          select: {
+            id: true,
+            post_slug: true,
+            post_title: true,
+            post_image: true,
+          },
+        },
+      },
     });
 
     // Load user profiles
@@ -700,40 +771,60 @@ export class CommentService {
       if (reply.user_id) userIds.add(reply.user_id);
     });
 
+    const replyIds = replies.map((reply) => reply.id);
+
+    const [profiles, userLikes, nestedReplyCounts] = await Promise.all([
+      userIds.size > 0
+        ? this.prisma.userProfile.findMany({
+            where: { user_id: { in: Array.from(userIds) } },
+            select: { user_id: true, full_name: true, profile_picture: true },
+          })
+        : Promise.resolve([] as any[]),
+      userId && replyIds.length > 0
+        ? this.prisma.commentLike.findMany({
+            where: { comment_id: { in: replyIds }, user_id: userId },
+            select: { comment_id: true, like_status: true },
+          })
+        : Promise.resolve([] as any[]),
+      replyIds.length > 0
+        ? this.prisma.postComment.groupBy({
+            by: ['parent_comment_id'],
+            where: { parent_comment_id: { in: replyIds }, is_approved: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
+
     const userProfilesMap = new Map<number, any>();
-    if (userIds.size > 0) {
-      const profiles = await this.prisma.userProfile.findMany({
-        where: { user_id: { in: Array.from(userIds) } },
-        select: { user_id: true, full_name: true, profile_picture: true },
-      });
-      profiles.forEach((profile) => {
-        userProfilesMap.set(profile.user_id, profile);
-      });
-    }
+    profiles.forEach((profile) => {
+      userProfilesMap.set(profile.user_id, profile);
+    });
+    const userLikeByComment = new Map<number, string>();
+    userLikes.forEach((like) => {
+      userLikeByComment.set(like.comment_id, like.like_status);
+    });
+    const replyCountByComment = new Map<number, number>();
+    nestedReplyCounts.forEach((row) => {
+      if (row.parent_comment_id !== null) {
+        replyCountByComment.set(row.parent_comment_id, row._count._all);
+      }
+    });
 
-    const repliesWithData = await Promise.all(
-      replies.map(async (reply: any) => {
-        if (reply.user && userProfilesMap.has(reply.user.id)) {
-          const profile = userProfilesMap.get(reply.user.id);
-          reply.user.profile_picture = profile?.profile_picture || null;
-          reply.user.full_name = profile?.full_name || null;
-        }
+    const repliesWithData = replies.map((reply: any) => {
+      if (reply.user && userProfilesMap.has(reply.user.id)) {
+        const profile = userProfilesMap.get(reply.user.id);
+        reply.user.profile_picture = profile?.profile_picture || null;
+        reply.user.full_name = profile?.full_name || null;
+      }
 
-        if (userId) {
-          const userLike = await this.prisma.commentLike.findFirst({
-            where: { comment_id: reply.id, user_id: userId },
-          });
-          reply.user_like_status = userLike?.like_status || null;
-        }
+      if (userId) {
+        reply.user_like_status = userLikeByComment.get(reply.id) || null;
+      }
 
-        // Get replies count for each reply
-        reply.replies_count = await this.prisma.postComment.count({
-          where: { parent_comment_id: reply.id, is_approved: true },
-        });
+      reply.replies_count = replyCountByComment.get(reply.id) || 0;
 
-        return reply;
-      }),
-    );
+      return reply;
+    });
 
     return {
       data: repliesWithData.map((reply) =>
@@ -786,7 +877,10 @@ export class CommentService {
       orderBy,
       take: limit,
       skip,
-      include: { user: true, poll: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        poll: { select: { id: true, poll_slug: true, poll_title: true } },
+      },
     });
 
     // Load user profiles
@@ -795,36 +889,49 @@ export class CommentService {
       if (reply.user_id) userIds.add(reply.user_id);
     });
 
+    const replyIds = replies.map((reply) => reply.id);
+
+    const [profiles, nestedReplyCounts] = await Promise.all([
+      userIds.size > 0
+        ? this.prisma.userProfile.findMany({
+            where: { user_id: { in: Array.from(userIds) } },
+            select: { user_id: true, full_name: true, profile_picture: true },
+          })
+        : Promise.resolve([] as any[]),
+      replyIds.length > 0
+        ? this.prisma.pollComment.groupBy({
+            by: ['parent_comment_id'],
+            where: { parent_comment_id: { in: replyIds }, is_approved: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
+
     const userProfilesMap = new Map<number, any>();
-    if (userIds.size > 0) {
-      const profiles = await this.prisma.userProfile.findMany({
-        where: { user_id: { in: Array.from(userIds) } },
-        select: { user_id: true, full_name: true, profile_picture: true },
-      });
-      profiles.forEach((profile) => {
-        userProfilesMap.set(profile.user_id, profile);
-      });
-    }
+    profiles.forEach((profile) => {
+      userProfilesMap.set(profile.user_id, profile);
+    });
+    const replyCountByComment = new Map<number, number>();
+    nestedReplyCounts.forEach((row) => {
+      if (row.parent_comment_id !== null) {
+        replyCountByComment.set(row.parent_comment_id, row._count._all);
+      }
+    });
 
-    const repliesWithData = await Promise.all(
-      replies.map(async (reply: any) => {
-        if (reply.user && userProfilesMap.has(reply.user.id)) {
-          const profile = userProfilesMap.get(reply.user.id);
-          reply.user.profile_picture = profile?.profile_picture || null;
-          reply.user.full_name = profile?.full_name || null;
-        }
+    const repliesWithData = replies.map((reply: any) => {
+      if (reply.user && userProfilesMap.has(reply.user.id)) {
+        const profile = userProfilesMap.get(reply.user.id);
+        reply.user.profile_picture = profile?.profile_picture || null;
+        reply.user.full_name = profile?.full_name || null;
+      }
 
-        // Poll comments don't have likes yet
-        reply.user_like_status = null;
+      // Poll comments don't have likes yet
+      reply.user_like_status = null;
 
-        // Get replies count for each reply
-        reply.replies_count = await this.prisma.pollComment.count({
-          where: { parent_comment_id: reply.id, is_approved: true },
-        });
+      reply.replies_count = replyCountByComment.get(reply.id) || 0;
 
-        return reply;
-      }),
-    );
+      return reply;
+    });
 
     return {
       data: repliesWithData.map((reply) =>

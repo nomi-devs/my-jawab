@@ -224,35 +224,56 @@ export class CommunityService {
       this.prisma.community.count({ where }),
     ]);
 
-    // Load additional data if requested
-    const communitiesWithCounts = await Promise.all(
-      communities.map(async (community) => {
-        // member_count is a denormalized column (kept in sync by join()/leave()),
-        // already present on `community` — no need to count CommunityUser rows here.
-        const response: any = { ...community };
+    // Load additional data if requested — batched across the whole page
+    // instead of one topic-count/membership query per community.
+    const communityIds = communities.map((community) => community.id);
 
-        if (include_topic_count) {
-          const topicCount = await this.prisma.communityTopic.count({
-            where: { community_id: community.id, is_active: true },
-          });
-          response.topic_count = topicCount;
-        }
-
-        if (userId) {
-          const membership = await this.prisma.communityUser.findFirst({
+    const [topicCounts, memberships] = await Promise.all([
+      include_topic_count && communityIds.length > 0
+        ? this.prisma.communityTopic.groupBy({
+            by: ['community_id'],
+            where: { community_id: { in: communityIds }, is_active: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+      userId && communityIds.length > 0
+        ? this.prisma.communityUser.findMany({
             where: {
-              community_id: community.id,
+              community_id: { in: communityIds },
               user_id: userId,
               is_active: true,
             },
-          });
-          response.is_member = !!membership;
-          response.user_role = membership?.role || null;
-        }
+            select: { community_id: true, role: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
 
-        return response;
-      }),
-    );
+    const topicCountByCommunity = new Map<number, number>();
+    topicCounts.forEach((row) => {
+      topicCountByCommunity.set(row.community_id, row._count._all);
+    });
+    const membershipByCommunity = new Map<number, string>();
+    memberships.forEach((membership) => {
+      membershipByCommunity.set(membership.community_id, membership.role);
+    });
+
+    const communitiesWithCounts = communities.map((community) => {
+      // member_count is a denormalized column (kept in sync by join()/leave()),
+      // already present on `community` — no need to count CommunityUser rows here.
+      const response: any = { ...community };
+
+      if (include_topic_count) {
+        response.topic_count = topicCountByCommunity.get(community.id) || 0;
+      }
+
+      if (userId) {
+        const role = membershipByCommunity.get(community.id);
+        response.is_member = !!role;
+        response.user_role = role || null;
+      }
+
+      return response;
+    });
 
     return {
       data: communitiesWithCounts.map((community) =>
@@ -323,37 +344,46 @@ export class CommunityService {
         orderBy: { [sort_by]: sortOrderLower },
         skip,
         take: limit,
+        include: {
+          members: {
+            where: { user_id: userId, is_active: true },
+            select: { role: true },
+          },
+        },
       }),
       this.prisma.community.count({ where: communityWhere }),
     ]);
 
-    // Load additional data
-    const communitiesWithCounts = await Promise.all(
-      communities.map(async (community) => {
-        // member_count is a denormalized column (kept in sync by join()/leave()).
-        const response: any = { ...community };
+    // Load additional data — batched across the page. Membership is fetched
+    // via `include` on the main query below rather than a per-community
+    // lookup, since `communityWhere` already guarantees the user is a member.
+    const communityIds = communities.map((community) => community.id);
+    const topicCounts =
+      include_topic_count && communityIds.length > 0
+        ? await this.prisma.communityTopic.groupBy({
+            by: ['community_id'],
+            where: { community_id: { in: communityIds }, is_active: true },
+            _count: { _all: true },
+          })
+        : [];
+    const topicCountByCommunity = new Map<number, number>();
+    topicCounts.forEach((row) => {
+      topicCountByCommunity.set(row.community_id, row._count._all);
+    });
 
-        if (include_topic_count) {
-          const topicCount = await this.prisma.communityTopic.count({
-            where: { community_id: community.id, is_active: true },
-          });
-          response.topic_count = topicCount;
-        }
+    const communitiesWithCounts = communities.map((community: any) => {
+      // member_count is a denormalized column (kept in sync by join()/leave()).
+      const response: any = { ...community };
 
-        // Get membership info (user is definitely a member, but get role)
-        const membership = await this.prisma.communityUser.findFirst({
-          where: {
-            community_id: community.id,
-            user_id: userId,
-            is_active: true,
-          },
-        });
-        response.is_member = true; // User is definitely a member
-        response.user_role = membership?.role || null;
+      if (include_topic_count) {
+        response.topic_count = topicCountByCommunity.get(community.id) || 0;
+      }
 
-        return response;
-      }),
-    );
+      response.is_member = true; // communityWhere already guarantees this
+      response.user_role = community.members?.[0]?.role || null;
+
+      return response;
+    });
 
     return {
       data: communitiesWithCounts.map((community) =>
@@ -444,48 +474,78 @@ export class CommunityService {
       this.prisma.community.count({ where: communityWhere }),
     ]);
 
-    // Load additional data if requested
-    const communitiesWithCounts = await Promise.all(
-      communities.map(async (community) => {
-        // member_count is a denormalized column (kept in sync by join()/leave()).
-        const response: any = { ...community };
+    // Load additional data — batched across the page instead of 3 queries
+    // per community (topic count, membership check, matching topics).
+    const communityIds = communities.map((community) => community.id);
 
-        if (include_topic_count) {
-          const topicCount = await this.prisma.communityTopic.count({
-            where: { community_id: community.id, is_active: true },
-          });
-          response.topic_count = topicCount;
-        }
+    const [topicCounts, memberships, matchingTopicRows] = await Promise.all([
+      include_topic_count && communityIds.length > 0
+        ? this.prisma.communityTopic.groupBy({
+            by: ['community_id'],
+            where: { community_id: { in: communityIds }, is_active: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+      communityIds.length > 0
+        ? this.prisma.communityUser.findMany({
+            where: {
+              community_id: { in: communityIds },
+              user_id: userId,
+              is_active: true,
+            },
+            select: { community_id: true, role: true },
+          })
+        : Promise.resolve([] as any[]),
+      communityIds.length > 0
+        ? this.prisma.communityTopic.findMany({
+            where: {
+              community_id: { in: communityIds },
+              topic_id: { in: subscribedTopicIds },
+              is_active: true,
+            },
+            include: {
+              topic: { select: { id: true, topic_slug: true, topic_name: true } },
+            },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
 
-        // Check membership
-        const membership = await this.prisma.communityUser.findFirst({
-          where: {
-            community_id: community.id,
-            user_id: userId,
-            is_active: true,
-          },
-        });
-        response.is_member = !!membership;
-        response.user_role = membership?.role || null;
+    const topicCountByCommunity = new Map<number, number>();
+    topicCounts.forEach((row) => {
+      topicCountByCommunity.set(row.community_id, row._count._all);
+    });
+    const membershipByCommunity = new Map<number, string>();
+    memberships.forEach((membership) => {
+      membershipByCommunity.set(membership.community_id, membership.role);
+    });
+    const matchingTopicsByCommunity = new Map<number, any[]>();
+    matchingTopicRows.forEach((ct) => {
+      const list = matchingTopicsByCommunity.get(ct.community_id) || [];
+      list.push({
+        id: ct.topic.id,
+        topic_slug: ct.topic.topic_slug,
+        topic_name: ct.topic.topic_name,
+      });
+      matchingTopicsByCommunity.set(ct.community_id, list);
+    });
 
-        // Get matching topics (topics that user subscribed to and community has)
-        const matchingTopics = await this.prisma.communityTopic.findMany({
-          where: {
-            community_id: community.id,
-            topic_id: { in: subscribedTopicIds },
-            is_active: true,
-          },
-          include: { topic: true },
-        });
-        response.matching_topics = matchingTopics.map((ct) => ({
-          id: ct.topic.id,
-          topic_slug: ct.topic.topic_slug,
-          topic_name: ct.topic.topic_name,
-        }));
+    const communitiesWithCounts = communities.map((community) => {
+      // member_count is a denormalized column (kept in sync by join()/leave()).
+      const response: any = { ...community };
 
-        return response;
-      }),
-    );
+      if (include_topic_count) {
+        response.topic_count = topicCountByCommunity.get(community.id) || 0;
+      }
+
+      const role = membershipByCommunity.get(community.id);
+      response.is_member = !!role;
+      response.user_role = role || null;
+
+      response.matching_topics =
+        matchingTopicsByCommunity.get(community.id) || [];
+
+      return response;
+    });
 
     return {
       data: communitiesWithCounts.map((community) =>
@@ -547,32 +607,53 @@ export class CommunityService {
       this.prisma.community.count({ where }),
     ]);
 
-    // Enrich with membership info, topic count, etc.
-    const enriched = await Promise.all(
-      communities.map(async (community) => {
-        const response: any = { ...community };
+    // Enrich with membership info, topic count, etc. — batched across the page.
+    const communityIds = communities.map((community) => community.id);
 
-        if (include_topic_count) {
-          response.topic_count = await this.prisma.communityTopic.count({
-            where: { community_id: community.id, is_active: true },
-          });
-        }
-
-        if (userId) {
-          const membership = await this.prisma.communityUser.findFirst({
+    const [topicCounts, memberships] = await Promise.all([
+      include_topic_count && communityIds.length > 0
+        ? this.prisma.communityTopic.groupBy({
+            by: ['community_id'],
+            where: { community_id: { in: communityIds }, is_active: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([] as any[]),
+      userId && communityIds.length > 0
+        ? this.prisma.communityUser.findMany({
             where: {
-              community_id: community.id,
+              community_id: { in: communityIds },
               user_id: userId,
               is_active: true,
             },
-          });
-          response.is_member = !!membership;
-          response.user_role = membership?.role || null;
-        }
+            select: { community_id: true, role: true },
+          })
+        : Promise.resolve([] as any[]),
+    ]);
 
-        return response;
-      }),
-    );
+    const topicCountByCommunity = new Map<number, number>();
+    topicCounts.forEach((row) => {
+      topicCountByCommunity.set(row.community_id, row._count._all);
+    });
+    const membershipByCommunity = new Map<number, string>();
+    memberships.forEach((membership) => {
+      membershipByCommunity.set(membership.community_id, membership.role);
+    });
+
+    const enriched = communities.map((community) => {
+      const response: any = { ...community };
+
+      if (include_topic_count) {
+        response.topic_count = topicCountByCommunity.get(community.id) || 0;
+      }
+
+      if (userId) {
+        const role = membershipByCommunity.get(community.id);
+        response.is_member = !!role;
+        response.user_role = role || null;
+      }
+
+      return response;
+    });
 
     return {
       data: enriched.map((community) => this.mapToResponseDto(community)),
@@ -601,21 +682,24 @@ export class CommunityService {
     const response: any = { ...community };
     // member_count is a denormalized column (kept in sync by join()/leave()).
 
-    // Get topic count
-    const topicCount = await this.prisma.communityTopic.count({
-      where: { community_id: communityId, is_active: true },
-    });
+    // Topic count and membership check are independent — run together.
+    const [topicCount, membership] = await Promise.all([
+      this.prisma.communityTopic.count({
+        where: { community_id: communityId, is_active: true },
+      }),
+      userId
+        ? this.prisma.communityUser.findFirst({
+            where: {
+              community_id: communityId,
+              user_id: userId,
+              is_active: true,
+            },
+          })
+        : Promise.resolve(null),
+    ]);
     response.topic_count = topicCount;
 
-    // Get user membership if userId provided
     if (userId) {
-      const membership = await this.prisma.communityUser.findFirst({
-        where: {
-          community_id: communityId,
-          user_id: userId,
-          is_active: true,
-        },
-      });
       response.is_member = !!membership;
       response.user_role = membership?.role || null;
     }

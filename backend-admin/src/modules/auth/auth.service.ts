@@ -15,7 +15,7 @@ import * as bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import appleSignin from 'apple-signin-auth';
 import { PrismaService } from '../../prisma/prisma.service';
-import { DeviceType as PrismaDeviceType } from '@prisma/client';
+import { DeviceType as PrismaDeviceType, AuthType } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyDto } from './dto/verify.dto';
@@ -23,6 +23,7 @@ import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { SocialAuthDto } from './dto/social-auth.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { EmailTemplatesService } from '../email/services/email-templates.service';
 import { SmsService } from '../sms/sms.service';
@@ -485,6 +486,146 @@ export class AuthService {
     };
   }
 
+  /**
+   * Frontend-friendly social login: the client has already completed the
+   * Google/Apple sign-in flow and decoded the profile, so this trusts the
+   * posted fields directly instead of re-verifying a raw ID token. That's a
+   * deliberate tradeoff (matches the mobile team's existing contract) — it
+   * means this endpoint itself has no cryptographic proof the caller owns
+   * the claimed account.
+   */
+  async socialAuth(dto: SocialAuthDto): Promise<AuthResponseDto> {
+    const providerType = dto.providerType;
+    const providerIdField =
+      providerType === 'google' ? 'google_id' : 'apple_id';
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ [providerIdField]: dto.providerId }, { email: dto.email }],
+      },
+    });
+
+    let user;
+    if (existingUser) {
+      if (existingUser.is_deleted) {
+        throw new UnauthorizedException(
+          'This account has been deleted. You cannot log in. Please contact support if this is a mistake.',
+        );
+      }
+
+      // Lazy-link/backfill: this account may have been found by email alone
+      // (first time signing in with this provider) or is missing details
+      // the provider profile now supplies.
+      const updateData: any = {};
+      if (!(existingUser as any)[providerIdField]) {
+        updateData[providerIdField] = dto.providerId;
+      }
+      if (!existingUser.is_verified) updateData.is_verified = true;
+      if (!existingUser.is_active) updateData.is_active = true;
+      if (dto.phone && !existingUser.phone_number) {
+        updateData.phone_number = dto.countryCode
+          ? `${dto.countryCode}${dto.phone}`
+          : dto.phone;
+      }
+
+      user =
+        Object.keys(updateData).length > 0
+          ? await this.prisma.user.update({
+              where: { id: existingUser.id },
+              data: updateData,
+            })
+          : existingUser;
+    } else {
+      const username = await this.generateUniqueUsername(dto.name || dto.email);
+      // No password was ever set by the user — derive one from the provider
+      // id so password_hash is never null (same reasoning as email/phone
+      // signup: a hash always exists once auth_type stops being 'email').
+      const passwordHash = await bcrypt.hash(
+        `${providerType}:${dto.providerId}`,
+        10,
+      );
+
+      user = await this.prisma.user.create({
+        data: {
+          username,
+          email: dto.email,
+          phone_number: dto.phone
+            ? dto.countryCode
+              ? `${dto.countryCode}${dto.phone}`
+              : dto.phone
+            : null,
+          password_hash: passwordHash,
+          auth_type: providerType as AuthType,
+          is_active: true,
+          is_verified: true,
+          [providerIdField]: dto.providerId,
+        },
+      });
+
+      if (dto.name || dto.profilePic) {
+        await this.prisma.userProfile.create({
+          data: {
+            user_id: user.id,
+            full_name: dto.name || null,
+            profile_picture: dto.profilePic || null,
+          },
+        });
+      }
+    }
+
+    if (dto.device_id) {
+      await this.registerDevice(user.id, {
+        device_id: dto.device_id,
+        device_type: dto.device_type || 'web',
+        device_token: dto.deviceToken,
+      });
+    }
+
+    const tokens = await this.generateTokens(user);
+
+    return {
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        auth_type: user.auth_type,
+        is_active: user.is_active,
+        is_verified: user.is_verified,
+      },
+      ...tokens,
+    };
+  }
+
+  /**
+   * Builds a unique username from a display name or email local-part —
+   * social logins never collect one from the user directly.
+   */
+  private async generateUniqueUsername(seed: string): Promise<string> {
+    const base =
+      seed
+        .split('@')[0]
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 20) || 'user';
+
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const candidate =
+        attempt === 0
+          ? base
+          : `${base}_${Math.floor(1000 + Math.random() * 9000)}`;
+      const existing = await this.prisma.user.findUnique({
+        where: { username: candidate },
+        select: { id: true },
+      });
+      if (!existing) return candidate;
+    }
+
+    // Extremely unlikely fallback if 20 random suffixes all collided.
+    return `${base}_${Date.now()}`;
+  }
+
   async verify(verifyDto: VerifyDto): Promise<{ message: string }> {
     const user = await this.prisma.user.findFirst({
       where: {
@@ -609,7 +750,6 @@ export class AuthService {
     };
   }
 
-
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     // Validate at least one identifier is provided
     // Values are already trimmed by @Transform decorator
@@ -619,7 +759,7 @@ export class AuthService {
         : null;
     const phone =
       forgotPasswordDto.phone_number &&
-        forgotPasswordDto.phone_number.length > 0
+      forgotPasswordDto.phone_number.length > 0
         ? forgotPasswordDto.phone_number
         : null;
 
