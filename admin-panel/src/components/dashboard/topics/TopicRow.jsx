@@ -40,7 +40,7 @@ const TopicRow = React.memo(
               <img
                 src={normalizeMediaUrl(topic.topic_image)}
                 alt={topic.topic_name || topic.name}
-                className="w-8 h-8 rounded-lg object-cover border border-purple-200 dark:border-gray-600 flex-shrink-0"
+                className="w-8 h-8 rounded-lg object-cover border border-purple-200 dark:border-gray-600 shrink-0"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   const fallback = e.target.nextElementSibling;
@@ -49,7 +49,7 @@ const TopicRow = React.memo(
               />
             ) : null}
             <div
-              className={`w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0 ${topic.topic_image && (!topic.parent_id || topic.parent_id === 0) ? 'hidden' : ''}`}
+              className={`w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white shrink-0 ${topic.topic_image && (!topic.parent_id || topic.parent_id === 0) ? 'hidden' : ''}`}
             >
               <Hash size={14} />
             </div>

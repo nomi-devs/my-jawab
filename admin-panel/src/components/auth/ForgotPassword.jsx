@@ -73,7 +73,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 transition-colors duration-300">
+    <div className="min-h-screen bg-linear-to-br from-purple-50 via-white to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 transition-colors duration-300">
       <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-sm overflow-hidden border border-purple-100 dark:border-gray-700 relative transition-colors duration-300">
         {/* Back Button */}
         <button
@@ -133,7 +133,7 @@ const ForgotPassword = () => {
               <form onSubmit={handleSubmit} className="space-y-4 text-start">
                 {error && (
                   <div className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm animate-in slide-in-from-top duration-200 flex items-start gap-2">
-                    <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>{error}</span>
                   </div>
                 )}

@@ -246,7 +246,7 @@ const UsersHeader = React.memo(
             <button
               onClick={onAddClick}
               disabled={loading}
-              className="purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              className="purple-gradient hover:bg-linear-to-r hover:from-purple-700 hover:to-purple-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <UserPlus size={16} />
               <span>{t('usersHeader.addUser')}</span>
@@ -278,7 +278,7 @@ const UsersHeader = React.memo(
           </div>
 
           {/* Role Filter */}
-          <div className="relative flex-shrink-0">
+          <div className="relative shrink-0">
             <Filter className="absolute start-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 pointer-events-none" />
             <select
               value={selectedRole}
@@ -294,7 +294,7 @@ const UsersHeader = React.memo(
           </div>
 
           {/* Status Filter */}
-          <div className="relative flex-shrink-0">
+          <div className="relative shrink-0">
             <select
               value={selectedStatus}
               onChange={handleStatusChange}
@@ -308,7 +308,7 @@ const UsersHeader = React.memo(
           </div>
 
           {/* Verification Filter */}
-          <div className="relative flex-shrink-0">
+          <div className="relative shrink-0">
             <select
               value={selectedVerified}
               onChange={handleVerifiedChange}
@@ -322,7 +322,7 @@ const UsersHeader = React.memo(
           </div>
 
           {/* Sort By Filter */}
-          <div className="relative flex-shrink-0">
+          <div className="relative shrink-0">
             <select
               value={selectedSortBy}
               onChange={handleSortByChange}

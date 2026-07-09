@@ -339,7 +339,7 @@ const DeletedUsersPage = () => {
       <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
         <AlertTriangle
           size={14}
-          className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+          className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"
         />
         <div className="text-[11px] text-amber-800 dark:text-amber-300">
           {t('warning')}

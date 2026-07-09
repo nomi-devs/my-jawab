@@ -61,7 +61,7 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
             </div>
             <button
               onClick={() => onViewDetails && onViewDetails(user)}
-              className="p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+              className="p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors shrink-0"
               title={t('usersGrid.viewDetails')}
             >
               <Eye size={16} />

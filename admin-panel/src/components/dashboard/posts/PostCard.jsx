@@ -65,7 +65,7 @@ const PostCard = React.memo(
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Author Avatar */}
-              <div className="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-900/30 flex-shrink-0 overflow-hidden border-2 border-white dark:border-gray-700">
+              <div className="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-900/30 shrink-0 overflow-hidden border-2 border-white dark:border-gray-700">
                 <img
                   src={post.author.avatar}
                   alt={post.author.name}

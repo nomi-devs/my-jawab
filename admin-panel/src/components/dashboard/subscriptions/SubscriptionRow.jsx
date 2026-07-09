@@ -40,7 +40,7 @@ const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
     <tr className="hover:bg-purple-50/50 dark:hover:bg-gray-700/30 transition-colors animate-fadeIn">
       <td className="px-4 py-3 align-top">
         <div className="flex items-start gap-2">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <Package className="w-7 h-7 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="flex-1 min-w-0">

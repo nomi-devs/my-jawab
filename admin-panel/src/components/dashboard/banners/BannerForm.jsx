@@ -301,7 +301,7 @@ const BannerForm = ({
           {t('bannerForm.targetTitle')}
         </h3>
         <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 flex items-start gap-1.5">
-          <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
+          <AlertCircle size={12} className="mt-0.5 shrink-0" />
           <span>{t('bannerForm.targetHint')}</span>
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -419,7 +419,7 @@ const BannerForm = ({
             type="button"
             onClick={() => setFormData((prev) => ({ ...prev, is_active: !prev.is_active }))}
             disabled={isSubmitting}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${formData.is_active ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${formData.is_active ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
           >
             <span
               className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${formData.is_active ? 'translate-x-6' : 'translate-x-1'}`}

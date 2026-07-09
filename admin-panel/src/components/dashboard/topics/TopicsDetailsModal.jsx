@@ -320,7 +320,7 @@ const TopicsDetailsModal = ({
                   <img
                     src={normalizeMediaUrl(topic.topic_image)}
                     alt={topic.topic_name || topic.name}
-                    className="w-10 h-10 rounded-lg object-cover border border-purple-200 dark:border-gray-600 flex-shrink-0"
+                    className="w-10 h-10 rounded-lg object-cover border border-purple-200 dark:border-gray-600 shrink-0"
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'flex';
@@ -328,7 +328,7 @@ const TopicsDetailsModal = ({
                   />
                 ) : null}
                 <div
-                  className={`w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0 ${topic.topic_image && topic.parent_id === 0 ? 'hidden' : ''}`}
+                  className={`w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center text-white shrink-0 ${topic.topic_image && topic.parent_id === 0 ? 'hidden' : ''}`}
                 >
                   <Hash size={18} className="text-white" />
                 </div>
@@ -690,7 +690,7 @@ const TopicsDetailsModal = ({
         </div>
 
         {/* Standardized Fixed Modal Footer */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
           <div className="flex items-center gap-3">
             {onDelete && (
               <button

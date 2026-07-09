@@ -73,7 +73,7 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/70">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[90%] h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -91,7 +91,7 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
         </div>
 
         {/* Tabs */}
-        <div className="flex-shrink-0 flex border-b border-purple-100 dark:border-gray-700">
+        <div className="shrink-0 flex border-b border-purple-100 dark:border-gray-700">
           <button
             onClick={() => setActiveTab('details')}
             className={`px-4 py-2.5 text-xs font-medium transition-colors ${
@@ -257,7 +257,7 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
         </div>
 
         {/* Standardized Fixed Modal Footer */}
-        <div className="flex-shrink-0 flex items-center justify-end px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
+        <div className="shrink-0 flex items-center justify-end px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
           <button
             onClick={onClose}
             className="px-6 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"

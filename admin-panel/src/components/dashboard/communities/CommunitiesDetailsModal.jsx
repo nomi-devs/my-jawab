@@ -185,7 +185,7 @@ const CommunitiesDetailsModal = ({
             {community && (
               <>
                 {(community.community_image || communityData?.community_image) && !imageError ? (
-                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-purple-200 dark:border-gray-600 flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-purple-200 dark:border-gray-600 shrink-0">
                     <img
                       src={community.community_image || communityData?.community_image}
                       alt={community.community_name || community.name}
@@ -195,7 +195,7 @@ const CommunitiesDetailsModal = ({
                   </div>
                 ) : (
                   <div
-                    className={`w-12 h-12 rounded-lg ${community.color || 'bg-blue-500'} flex items-center justify-center text-white flex-shrink-0`}
+                    className={`w-12 h-12 rounded-lg ${community.color || 'bg-blue-500'} flex items-center justify-center text-white shrink-0`}
                   >
                     {community.icon || <Globe size={18} className="text-white" />}
                   </div>
@@ -589,7 +589,7 @@ const CommunitiesDetailsModal = ({
         </div>
 
         {/* Standardized Fixed Modal Footer */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
           <div className="flex items-center gap-3">
             {onDelete && (
               <button

@@ -338,7 +338,7 @@ const SearchBar = React.memo(() => {
                             className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                           >
                             {user.avatar ? (
-                              <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 flex-shrink-0 border border-purple-200 dark:border-gray-600">
+                              <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 shrink-0 border border-purple-200 dark:border-gray-600">
                                 <img
                                   src={user.avatar}
                                   alt={user.name}
@@ -351,7 +351,7 @@ const SearchBar = React.memo(() => {
                                 />
                               </div>
                             ) : (
-                              <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition-colors">
+                              <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center me-2.5 shrink-0 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition-colors">
                                 {getResultIcon(user.type)}
                               </div>
                             )}
@@ -398,7 +398,7 @@ const SearchBar = React.memo(() => {
                               className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                             >
                               {hasImage ? (
-                                <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 flex-shrink-0 border border-orange-200 dark:border-gray-600 relative">
+                                <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 shrink-0 border border-orange-200 dark:border-gray-600 relative">
                                   <img
                                     src={
                                       (post.thumbnail && post.thumbnail.trim()) ||
@@ -419,15 +419,15 @@ const SearchBar = React.memo(() => {
                                   )}
                                 </div>
                               ) : hasVideo ? (
-                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors relative">
+                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors relative">
                                   <Video size={16} className="text-orange-500" />
                                 </div>
                               ) : hasAudio ? (
-                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors relative">
+                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors relative">
                                   <Music size={16} className="text-orange-500" />
                                 </div>
                               ) : (
-                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors">
+                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors">
                                   {getResultIcon(post.type)}
                                 </div>
                               )}
@@ -465,7 +465,7 @@ const SearchBar = React.memo(() => {
                               className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                             >
                               {hasImage ? (
-                                <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 flex-shrink-0 border border-blue-200 dark:border-gray-600">
+                                <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 shrink-0 border border-blue-200 dark:border-gray-600">
                                   <img
                                     src={community.image}
                                     alt={community.name}
@@ -478,7 +478,7 @@ const SearchBar = React.memo(() => {
                                   />
                                 </div>
                               ) : (
-                                <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors">
+                                <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center me-2.5 shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors">
                                   {getResultIcon(community.type)}
                                 </div>
                               )}
@@ -510,7 +510,7 @@ const SearchBar = React.memo(() => {
                             onClick={() => handleResultClick(topic)}
                             className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                           >
-                            <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-green-200 dark:group-hover:bg-green-900/60 transition-colors">
+                            <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center me-2.5 shrink-0 group-hover:bg-green-200 dark:group-hover:bg-green-900/60 transition-colors">
                               {getResultIcon(topic.type)}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -570,7 +570,7 @@ const SearchBar = React.memo(() => {
                     >
                       <Clock
                         size={14}
-                        className="text-gray-400 dark:text-gray-500 me-2.5 flex-shrink-0"
+                        className="text-gray-400 dark:text-gray-500 me-2.5 shrink-0"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300 transition-colors truncate">
                         {term}

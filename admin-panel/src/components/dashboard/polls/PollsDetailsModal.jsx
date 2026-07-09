@@ -218,7 +218,7 @@ const PollsDetailsModal = ({
           <div className="flex items-center gap-4 flex-1 min-w-0">
             {poll && (
               <>
-                <div className="w-12 h-12 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0">
+                <div className="w-12 h-12 rounded-lg bg-purple-500 flex items-center justify-center text-white shrink-0">
                   <BarChart3 size={24} className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -547,7 +547,7 @@ const PollsDetailsModal = ({
         </div>
 
         {/* Standardized Fixed Modal Footer */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
           <div className="flex items-center gap-2">
             <button
               onClick={() => {

@@ -75,7 +75,7 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
             )}
           </div>
           <span
-            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium flex-shrink-0
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium shrink-0
             ${
               poll.is_featured
                 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'

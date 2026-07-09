@@ -83,7 +83,7 @@ const PollRow = React.memo(
         {/* Poll Title & Icon */}
         <td className="p-2 transition-colors">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white shrink-0">
               <BarChart3 size={14} />
             </div>
             <div className="min-w-0 flex-1">

@@ -81,7 +81,7 @@ const CommentRow = React.memo(
         <td className="p-2 transition-colors">
           <div className="flex items-center gap-2">
             <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold transition-colors flex-shrink-0 ${
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold transition-colors shrink-0 ${
                 comment.user?.role === 'admin'
                   ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
                   : comment.user?.role === 'moderator'

@@ -202,7 +202,7 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Fixed Modal Header */}
-        <div className="flex-shrink-0 px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
+        <div className="shrink-0 px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <BarChart3 className="text-purple-600 dark:text-purple-400" size={18} />
@@ -390,7 +390,7 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
               </p>
               {validationError && (
                 <div className="mt-2 inline-flex items-start gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-[11px] text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-200 dark:border-red-700">
-                  <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
+                  <AlertCircle size={12} className="mt-0.5 shrink-0" />
                   <span>{validationError}</span>
                 </div>
               )}
@@ -399,7 +399,7 @@ const AddPollModal = React.memo(({ isOpen, onClose, onAddPoll }) => {
         </form>
 
         {/* Standardized Fixed Modal Footer */}
-        <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
+        <div className="shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
           <button
             type="button"
             onClick={handleClose}

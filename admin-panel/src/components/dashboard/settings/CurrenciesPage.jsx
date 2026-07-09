@@ -281,7 +281,7 @@ const CurrenciesPage = () => {
             </div>
 
             {/* Status Filter */}
-            <div className="relative flex-shrink-0 w-full sm:w-auto">
+            <div className="relative shrink-0 w-full sm:w-auto">
               <Filter className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5 pointer-events-none" />
               <select
                 value={statusFilter}

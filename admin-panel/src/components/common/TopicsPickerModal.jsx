@@ -209,10 +209,10 @@ const TopicsPickerModal = React.memo(
                             <img
                               src={parent.image}
                               alt={parent.name || 'Topic'}
-                              className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 flex-shrink-0"
+                              className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
                             />
                           ) : (
-                            <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center text-[12px] font-semibold text-purple-700 dark:text-purple-300 flex-shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center text-[12px] font-semibold text-purple-700 dark:text-purple-300 shrink-0">
                               {parent.name?.[0]?.toUpperCase() || '#'}
                             </div>
                           )}
@@ -257,7 +257,7 @@ const TopicsPickerModal = React.memo(
           </div>
 
           {/* Footer */}
-          <div className="flex-shrink-0 px-5 py-3 border-t border-purple-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col sm:flex-row gap-2">
+          <div className="shrink-0 px-5 py-3 border-t border-purple-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col sm:flex-row gap-2">
             <button
               type="button"
               onClick={handleClose}

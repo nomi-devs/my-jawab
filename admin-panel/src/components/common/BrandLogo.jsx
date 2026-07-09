@@ -34,7 +34,7 @@ const BrandLogo = ({ size = 'md', className = '', showText = false, variant = 'm
   return (
     <div className={`flex items-center ${className}`}>
       <div
-        className={`${sizes.container} purple-gradient rounded-xl flex items-center justify-center shadow-md overflow-hidden flex-shrink-0`}
+        className={`${sizes.container} purple-gradient rounded-xl flex items-center justify-center shadow-md overflow-hidden shrink-0`}
       >
         {!imageError ? (
           <img

@@ -83,7 +83,7 @@ const PostRow = React.memo(
                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'user'}`
               }
               alt={post.author?.name || t('postRow.userFallback')}
-              className="w-7 h-7 rounded-full bg-purple-200 dark:bg-purple-900/30 border border-white dark:border-gray-700 transition-transform duration-200 hover:scale-105 flex-shrink-0"
+              className="w-7 h-7 rounded-full bg-purple-200 dark:bg-purple-900/30 border border-white dark:border-gray-700 transition-transform duration-200 hover:scale-105 shrink-0"
               loading="lazy"
             />
             <div className="min-w-0 flex-1">
@@ -100,7 +100,7 @@ const PostRow = React.memo(
               <img
                 src={normalizeMediaUrl(post.media?.url || post.raw?.post_image)}
                 alt="Post thumbnail"
-                className="w-12 h-12 rounded-lg object-cover border border-purple-200 dark:border-gray-600 flex-shrink-0"
+                className="w-12 h-12 rounded-lg object-cover border border-purple-200 dark:border-gray-600 shrink-0"
                 loading="lazy"
                 onError={(e) => {
                   e.target.style.display = 'none';

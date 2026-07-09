@@ -68,10 +68,10 @@ const Alert = React.memo(
         <div
           className={`${style.bg} ${style.border} border rounded-lg p-3 md:p-4 shadow-lg flex items-start gap-3 transition-colors`}
         >
-          <div className="flex-shrink-0 mt-0.5">{style.icon}</div>
+          <div className="shrink-0 mt-0.5">{style.icon}</div>
           <div className="flex-1 min-w-0">
             <p
-              className={`${style.text} text-sm md:text-base font-medium break-words transition-colors`}
+              className={`${style.text} text-sm md:text-base font-medium wrap-break-word transition-colors`}
             >
               {message}
             </p>
@@ -79,7 +79,7 @@ const Alert = React.memo(
           {onClose && (
             <button
               onClick={onClose}
-              className={`flex-shrink-0 ${style.text} hover:opacity-70 transition-opacity p-1`}
+              className={`shrink-0 ${style.text} hover:opacity-70 transition-opacity p-1`}
               aria-label={t('close')}
             >
               <X size={16} />

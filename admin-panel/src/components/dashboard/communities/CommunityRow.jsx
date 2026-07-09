@@ -47,7 +47,7 @@ const CommunityRow = React.memo(
         <td className="p-2 transition-colors">
           <div className="flex items-center gap-2">
             {community.community_image && !imageError ? (
-              <div className="w-10 h-10 rounded-lg overflow-hidden border border-purple-200 dark:border-gray-600 flex-shrink-0">
+              <div className="w-10 h-10 rounded-lg overflow-hidden border border-purple-200 dark:border-gray-600 shrink-0">
                 <img
                   src={community.community_image}
                   alt={community.name}
@@ -57,7 +57,7 @@ const CommunityRow = React.memo(
               </div>
             ) : (
               <div
-                className={`w-10 h-10 rounded-lg ${community.color || 'bg-blue-500'} flex items-center justify-center text-white flex-shrink-0`}
+                className={`w-10 h-10 rounded-lg ${community.color || 'bg-blue-500'} flex items-center justify-center text-white shrink-0`}
               >
                 {community.icon || <Globe size={14} />}
               </div>

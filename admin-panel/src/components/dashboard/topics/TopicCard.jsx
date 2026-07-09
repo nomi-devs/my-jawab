@@ -158,7 +158,7 @@ const TopicCard = React.memo(
               <img
                 src={normalizeMediaUrl(topic.topic_image)}
                 alt={topic.topic_name || topic.name}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover border border-purple-200 dark:border-gray-600 flex-shrink-0"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover border border-purple-200 dark:border-gray-600 shrink-0"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   const fallback = e.target.nextElementSibling;
@@ -167,7 +167,7 @@ const TopicCard = React.memo(
               />
             ) : null}
             <div
-              className={`p-2 sm:p-3 rounded-xl bg-purple-500 relative flex-shrink-0 ${topic.topic_image && (!topic.parent_id || topic.parent_id === 0) ? 'hidden' : 'flex items-center justify-center'}`}
+              className={`p-2 sm:p-3 rounded-xl bg-purple-500 relative shrink-0 ${topic.topic_image && (!topic.parent_id || topic.parent_id === 0) ? 'hidden' : 'flex items-center justify-center'}`}
             >
               <Hash size={18} className="text-white sm:w-5 sm:h-5" />
             </div>
@@ -179,7 +179,7 @@ const TopicCard = React.memo(
                   </h3>
                 </div>
                 {/* Status badges - shown inline with topic name */}
-                <div className="flex items-center gap-1 flex-shrink-0 mt-1 sm:mt-0">
+                <div className="flex items-center gap-1 shrink-0 mt-1 sm:mt-0">
                   {!propTopic && (
                     <span className="px-1.5 sm:px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full whitespace-nowrap">
                       {t('topicCard.mockData')}
@@ -260,7 +260,7 @@ const TopicCard = React.memo(
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <div className="flex items-center">
               <svg
-                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 me-1.5 flex-shrink-0"
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 me-1.5 shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -280,7 +280,7 @@ const TopicCard = React.memo(
             {topic.updated_at && (
               <div className="flex items-center">
                 <svg
-                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 me-1.5 flex-shrink-0"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 me-1.5 shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

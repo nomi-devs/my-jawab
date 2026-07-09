@@ -42,7 +42,7 @@ const TableSkeleton = ({
           {effectiveWidths.map((width, idx) => (
             <div
               key={idx}
-              className={`h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse ${width} flex-shrink-0`}
+              className={`h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse ${width} shrink-0`}
             />
           ))}
         </div>
@@ -62,7 +62,7 @@ const TableSkeleton = ({
               return (
                 <div
                   key={colIndex}
-                  className={`${width} flex-shrink-0 flex items-center ${
+                  className={`${width} shrink-0 flex items-center ${
                     isActionsCol ? 'justify-end' : ''
                   }`}
                 >

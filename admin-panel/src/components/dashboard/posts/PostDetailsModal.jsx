@@ -270,7 +270,7 @@ const PostDetailsModal = ({
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {post && (
               <>
-                <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
                   <FileText size={18} className="text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -633,7 +633,7 @@ const PostDetailsModal = ({
                                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user?.username || 'user'}`
                               }
                               alt={comment.user?.username || comment.user?.name}
-                              className="w-10 h-10 rounded-full border-2 border-purple-200 dark:border-purple-700 flex-shrink-0"
+                              className="w-10 h-10 rounded-full border-2 border-purple-200 dark:border-purple-700 shrink-0"
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">

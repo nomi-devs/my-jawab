@@ -134,7 +134,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[9999] animate-in fade-in duration-200 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden border border-purple-100 dark:border-gray-700 flex flex-col animate-in zoom-in-95 duration-300">
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-purple-100 dark:border-gray-700">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-purple-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <ImageIcon className="text-purple-600 dark:text-purple-400" size={20} />
@@ -352,7 +352,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
           <div className="flex items-center gap-3">
             {onDelete && (
               <button

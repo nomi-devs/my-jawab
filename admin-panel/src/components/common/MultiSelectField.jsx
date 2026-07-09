@@ -189,7 +189,7 @@ const MultiSelectField = ({
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div
-                        className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
                           isSelected
                             ? 'border-purple-600 bg-purple-600'
                             : 'border-gray-300 dark:border-gray-600'
@@ -203,7 +203,7 @@ const MultiSelectField = ({
                         {opt.label}
                       </span>
                     </div>
-                    <span className="text-[10px] text-gray-400 font-mono flex-shrink-0">
+                    <span className="text-[10px] text-gray-400 font-mono shrink-0">
                       #{opt.id}
                     </span>
                   </button>

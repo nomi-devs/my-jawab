@@ -230,7 +230,7 @@ const PollsHeader = React.memo(
           </div>
 
           {/* Status Filter */}
-          <div className="relative flex-shrink-0">
+          <div className="relative shrink-0">
             <Filter className="absolute start-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 pointer-events-none" />
             <select
               value={selectedStatus}
@@ -246,7 +246,7 @@ const PollsHeader = React.memo(
           </div>
 
           {/* Sort By Filter */}
-          <div className="relative flex-shrink-0">
+          <div className="relative shrink-0">
             <select
               value={selectedSortBy}
               onChange={handleSortByChange}

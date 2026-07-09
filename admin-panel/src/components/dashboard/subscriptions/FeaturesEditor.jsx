@@ -116,7 +116,7 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700"
               >
                 <div className="flex items-start gap-2 min-w-0 flex-1">
-                  <Icon size={14} className="text-purple-500 mt-0.5 flex-shrink-0" />
+                  <Icon size={14} className="text-purple-500 mt-0.5 shrink-0" />
                   <div className="min-w-0">
                     <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
                       {t(`featuresEditor.features.${f.i18nKey}.label`)}
@@ -126,7 +126,7 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
                     </div>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer ms-2 flex-shrink-0">
+                <label className="relative inline-flex items-center cursor-pointer ms-2 shrink-0">
                   <input
                     type="checkbox"
                     checked={isOn}
@@ -202,7 +202,7 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
                     type="button"
                     onClick={() => (isUnlimited ? set(f.key, 0) : setUnlimited(f.key))}
                     disabled={disabled}
-                    className={`flex-shrink-0 px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded border transition-colors ${
+                    className={`shrink-0 px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded border transition-colors ${
                       isUnlimited
                         ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
                         : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-purple-200 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-gray-600'

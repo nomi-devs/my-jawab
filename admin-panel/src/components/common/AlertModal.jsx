@@ -127,7 +127,7 @@ const AlertModal = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex-shrink-0 flex justify-end px-5 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
+        <div className="shrink-0 flex justify-end px-5 py-4 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 transition-colors">
           <button
             type="button"
             onClick={onClose}
