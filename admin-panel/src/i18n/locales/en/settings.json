@@ -1,0 +1,119 @@
+{
+  "appSettingsPage": {
+    "title": "Application Settings",
+    "subtitle": "Configure app-wide parameters and preferences.",
+    "refreshTitle": "Refresh settings",
+    "tabs": {
+      "general": "General Settings",
+      "currency": "Currency Settings",
+      "points": "Points & Gamification"
+    },
+    "general": {
+      "heading": "General Configuration",
+      "appName": {
+        "label": "App Name",
+        "description": "The display name of the application.",
+        "readOnly": "Read only"
+      }
+    },
+    "currency": {
+      "heading": "Currency Configuration",
+      "primaryLabel": "Primary System Currency",
+      "primaryDescription": "This currency will be used for all transactions and price displays across the platform. Ensure the selected currency is properly configured.",
+      "selectPlaceholder": "Select Currency"
+    },
+    "points": {
+      "heading": "Points & Gamification",
+      "description": "Points users earn for contributing content, shown on their profile's \"Points earned\" card. Changes apply immediately to new activity points already awarded are not recalculated.",
+      "items": {
+        "questionCreated": {
+          "label": "Asking a Question",
+          "description": "Points awarded when a user posts a new question."
+        },
+        "pollCreated": {
+          "label": "Creating a Poll",
+          "description": "Points awarded when a user creates a new poll."
+        },
+        "answerCreated": {
+          "label": "Answering (Comment)",
+          "description": "Points awarded when a user comments on a post or poll. Weighted highest since answering is the core value of the app."
+        }
+      }
+    },
+    "persisting": "Persisting changes to database...",
+    "comingSoon": {
+      "title": "Coming Soon",
+      "description": "These settings are being finalized and will be available in the next system update."
+    },
+    "footer": {
+      "platformVersion": "Platform {{version}}",
+      "lastUpdated": "Last updated: {{date}}"
+    },
+    "alerts": {
+      "fetchError": "Failed to load settings. Please try again.",
+      "updateSuccess": "Setting updated successfully!",
+      "updateError": "Failed to update setting."
+    }
+  },
+  "currenciesPage": {
+    "title": "Currency Management",
+    "totalCurrencies": "Total Currencies: {{count}}",
+    "refreshTitle": "Refresh currencies",
+    "addCurrency": "Add Currency",
+    "searchPlaceholder": "Search by name or code...",
+    "allStatus": "All Status",
+    "clearFilters": "Clear Filters",
+    "table": {
+      "currencyName": "Currency Name",
+      "code": "Code",
+      "symbol": "Symbol",
+      "default": "Default",
+      "setAsDefault": "Set as Default",
+      "activateFirst": "Activate currency first to set as default",
+      "setDefaultTitle": "Set as default currency",
+      "editTitle": "Edit Currency",
+      "deleteTitle": "Delete Currency",
+      "noResults": "No currencies found matching your search."
+    },
+    "modals": {
+      "addTitle": "Add New Currency",
+      "editTitle": "Edit Currency",
+      "deleteTitle": "Delete Currency",
+      "deleteMessage": "Are you sure you want to delete {{name}}? This action cannot be undone."
+    },
+    "alerts": {
+      "fetchError": "Failed to load currencies. Please try again.",
+      "addSuccess": "Currency added successfully!",
+      "addError": "Failed to add currency.",
+      "editSuccess": "Currency updated successfully!",
+      "editError": "Failed to update currency.",
+      "deleteSuccess": "Currency deleted successfully!",
+      "deleteError": "Failed to delete currency.",
+      "setDefaultSuccess": "Default currency updated successfully!",
+      "setDefaultError": "Failed to set default currency."
+    }
+  },
+  "currencyModal": {
+    "subtitle": "Fill in the currency details",
+    "fields": {
+      "name": {
+        "label": "Currency Name",
+        "placeholder": "e.g. US Dollar",
+        "error": "Name is required"
+      },
+      "code": {
+        "label": "Code (3-4 chars)",
+        "error": "Code is required"
+      },
+      "symbol": {
+        "label": "Symbol",
+        "error": "Symbol is required"
+      },
+      "isActive": "Mark as Active"
+    },
+    "buttons": {
+      "update": "Update Currency",
+      "create": "Create Currency"
+    }
+  }
+}

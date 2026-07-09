@@ -1,0 +1,101 @@
+{
+  "notAvailable": "غير متاح",
+  "viewDetails": "عرض التفاصيل",
+  "status": {
+    "pending": "قيد الانتظار",
+    "completed": "مكتمل",
+    "failed": "فشل",
+    "all": "كل الحالات"
+  },
+  "methods": {
+    "creditCard": "بطاقة ائتمان",
+    "debitCard": "بطاقة خصم",
+    "paypal": "باي بال",
+    "bankTransfer": "تحويل بنكي",
+    "cash": "نقدًا",
+    "all": "كل طرق الدفع"
+  },
+  "addModal": {
+    "title": "إضافة دفعة",
+    "userSubscription": "اشتراك المستخدم *",
+    "selectSubscription": "اختر الاشتراك...",
+    "userOptionPrefix": "المستخدم",
+    "amount": "المبلغ *",
+    "statusLabel": "الحالة *",
+    "paymentMethod": "طريقة الدفع *",
+    "currency": "العملة *",
+    "selectCurrency": "اختر العملة...",
+    "paymentGateway": "بوابة الدفع *",
+    "transactionId": "رقم المعاملة *",
+    "creating": "جارٍ الإنشاء...",
+    "createPayment": "إنشاء الدفعة",
+    "createFailed": "فشل إنشاء الدفعة. يرجى المحاولة مرة أخرى."
+  },
+  "paymentCard": {
+    "amount": "المبلغ",
+    "method": "الطريقة",
+    "userId": "معرّف المستخدم",
+    "plan": "الخطة"
+  },
+  "detailsModal": {
+    "titlePrefix": "دفعة",
+    "paymentInformation": "معلومات الدفعة",
+    "amount": "المبلغ",
+    "status": "الحالة",
+    "paymentMethod": "طريقة الدفع",
+    "gateway": "بوابة الدفع",
+    "transactionId": "رقم المعاملة",
+    "currency": "العملة",
+    "subscription": "الاشتراك",
+    "subscriptionPlan": "خطة الاشتراك",
+    "subscriptionStatus": "حالة الاشتراك",
+    "timestamps": "التوقيتات",
+    "created": "تاريخ الإنشاء",
+    "lastUpdated": "آخر تحديث"
+  },
+  "header": {
+    "allPayments": "كل المدفوعات",
+    "totalPayments": "إجمالي المدفوعات: {{count}}",
+    "listView": "عرض القائمة",
+    "gridView": "عرض الشبكة",
+    "refreshPayments": "تحديث المدفوعات",
+    "addPayment": "إضافة دفعة",
+    "searchPlaceholder": "البحث في المدفوعات...",
+    "sortDate": "الترتيب: التاريخ",
+    "sortAmount": "الترتيب: المبلغ",
+    "sortStatus": "الترتيب: الحالة",
+    "sortNewestTitle": "ترتيب الأحدث أولاً (↓)",
+    "sortOldestTitle": "ترتيب الأقدم أولاً (↑)",
+    "sortDesc": "تنازلي",
+    "sortAsc": "تصاعدي",
+    "clear": "مسح",
+    "clearAllFilters": "مسح كل الفلاتر",
+    "noFiltersToClear": "لا توجد فلاتر لمسحها",
+    "searchLabel": "بحث:",
+    "statusLabel": "الحالة:",
+    "methodLabel": "الطريقة:",
+    "sortLabel": "الترتيب:",
+    "removeSearch": "إزالة البحث",
+    "removeStatusFilter": "إزالة فلتر الحالة",
+    "removeMethodFilter": "إزالة فلتر الطريقة"
+  },
+  "list": {
+    "loading": "جارٍ تحميل المدفوعات...",
+    "noPaymentsFound": "لم يتم العثور على مدفوعات",
+    "createFirstPayment": "أنشئ أول دفعة للبدء",
+    "columns": {
+      "transaction": "المعاملة",
+      "userSubscription": "المستخدم والاشتراك",
+      "amountMethod": "المبلغ والطريقة"
+    }
+  },
+  "page": {
+    "successCreated": "تم إنشاء الدفعة بنجاح!",
+    "noPaymentsFound": "لم يتم العثور على مدفوعات",
+    "tryChangingFilters": "حاول تغيير بحثك أو الفلاتر",
+    "startAdding": "ابدأ بإضافة أول دفعة",
+    "addFirstPayment": "إضافة أول دفعة",
+    "loading": "جارٍ تحميل المدفوعات...",
+    "updating": "جارٍ التحديث..."
+  }
+}

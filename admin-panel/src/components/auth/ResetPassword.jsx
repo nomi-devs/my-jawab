@@ -1,10 +1,12 @@
 // src/components/auth/ResetPassword.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Lock, Loader2, CheckCircle, XCircle, Key, Eye, EyeOff } from 'lucide-react';
 import authApi from '../../api/authApi';
 
 const ResetPassword = () => {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,38 +36,38 @@ const ResetPassword = () => {
 
   const validateForm = () => {
     if (!formData.email.trim()) {
-      setError('Email is required');
+      setError(t('resetPassword.emailRequired'));
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
+      setError(t('resetPassword.emailInvalid'));
       return false;
     }
 
     if (!formData.reset_code.trim()) {
-      setError('Reset code is required');
+      setError(t('resetPassword.resetCodeRequired'));
       return false;
     }
 
     if (formData.reset_code.length !== 6) {
-      setError('Reset code must be 6 digits');
+      setError(t('resetPassword.resetCodeLength'));
       return false;
     }
 
     if (!formData.new_password) {
-      setError('New password is required');
+      setError(t('resetPassword.newPasswordRequired'));
       return false;
     }
 
     if (formData.new_password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('resetPassword.passwordMinLength'));
       return false;
     }
 
     if (formData.new_password !== formData.confirm_password) {
-      setError('Passwords do not match');
+      setError(t('resetPassword.passwordMismatch'));
       return false;
     }
 
@@ -98,16 +100,16 @@ const ResetPassword = () => {
         // Auto redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/login', {
-            state: { message: 'Password reset successfully! Please login with your new password.' },
+            state: { message: t('resetPassword.loginSuccessMessage') },
           });
         }, 3000);
       } else {
-        throw new Error('Failed to reset password');
+        throw new Error(t('resetPassword.failedToReset'));
       }
     } catch (err) {
       console.error('Reset password error:', err);
 
-      let errorMessage = 'Failed to reset password. Please try again.';
+      let errorMessage = t('resetPassword.genericError');
 
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
@@ -144,10 +146,10 @@ const ResetPassword = () => {
         {/* Back Button */}
         <button
           onClick={handleBack}
-          className="absolute top-4 left-4 p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors z-10"
+          className="absolute top-4 start-4 p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors z-10"
           disabled={loading}
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-6 h-6 rtl:rotate-180" />
         </button>
 
         <div className="p-6">
@@ -158,24 +160,24 @@ const ResetPassword = () => {
                 <CheckCircle className="w-6 h-6" />
               </div>
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                Password Reset Successful!
+                {t('resetPassword.successTitle')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-                Your password has been reset successfully.
+                {t('resetPassword.successMessage')}
               </p>
               <div className="space-y-3">
                 <p className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-2.5 rounded-lg">
-                  You can now login with your new password. Redirecting to login...
+                  {t('resetPassword.redirectingInfo')}
                 </p>
-                <div className="flex items-center justify-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span>Redirecting to login...</span>
+                  <span>{t('resetPassword.redirectingToLogin')}</span>
                 </div>
                 <button
                   onClick={handleBack}
                   className="w-full px-4 py-2.5 border border-purple-200 dark:border-gray-600 text-purple-600 dark:text-purple-400 font-medium rounded-lg hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors text-sm"
                 >
-                  Go to Login Now
+                  {t('resetPassword.goToLoginNow')}
                 </button>
               </div>
             </div>
@@ -185,12 +187,14 @@ const ResetPassword = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 mb-4 text-purple-600 dark:text-purple-400">
                 <Key className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Reset Password</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                {t('resetPassword.title')}
+              </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-                Enter the reset code from your email and set a new password.
+                {t('resetPassword.subtitle')}
               </p>
 
-              <form onSubmit={handleSubmit} className="space-y-4 text-left">
+              <form onSubmit={handleSubmit} className="space-y-4 text-start">
                 {error && (
                   <div className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm animate-in slide-in-from-top duration-200 flex items-start gap-2">
                     <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -201,7 +205,7 @@ const ResetPassword = () => {
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    Email Address
+                    {t('resetPassword.emailLabel')}
                   </label>
                   <input
                     type="email"
@@ -209,7 +213,7 @@ const ResetPassword = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 text-sm"
-                    placeholder="admin@social.com"
+                    placeholder={t('resetPassword.emailPlaceholder')}
                     required
                     disabled={loading || !!emailFromState}
                   />
@@ -218,7 +222,7 @@ const ResetPassword = () => {
                 {/* Reset Code */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    6-Digit Reset Code
+                    {t('resetPassword.resetCodeLabel')}
                   </label>
                   <input
                     type="text"
@@ -227,7 +231,7 @@ const ResetPassword = () => {
                     onChange={handleInputChange}
                     maxLength="6"
                     className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 text-center text-xl tracking-widest"
-                    placeholder="123456"
+                    placeholder={t('resetPassword.resetCodePlaceholder')}
                     required
                     disabled={loading}
                   />
@@ -238,7 +242,7 @@ const ResetPassword = () => {
                   {/* New Password */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                      New Password
+                      {t('resetPassword.newPasswordLabel')}
                     </label>
                     <div className="relative">
                       <input
@@ -246,15 +250,15 @@ const ResetPassword = () => {
                         name="new_password"
                         value={formData.new_password}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 pr-10 text-sm"
-                        placeholder="••••••••"
+                        className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 pe-10 text-sm"
+                        placeholder={t('resetPassword.passwordPlaceholder')}
                         required
                         disabled={loading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                        className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                         disabled={loading}
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -265,7 +269,7 @@ const ResetPassword = () => {
                   {/* Confirm Password */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                      Confirm New Password
+                      {t('resetPassword.confirmPasswordLabel')}
                     </label>
                     <div className="relative">
                       <input
@@ -273,15 +277,15 @@ const ResetPassword = () => {
                         name="confirm_password"
                         value={formData.confirm_password}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 pr-10 text-sm"
-                        placeholder="••••••••"
+                        className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 pe-10 text-sm"
+                        placeholder={t('resetPassword.passwordPlaceholder')}
                         required
                         disabled={loading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                        className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                         disabled={loading}
                       >
                         {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -298,33 +302,33 @@ const ResetPassword = () => {
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Resetting Password...
+                      {t('resetPassword.resettingPassword')}
                     </>
                   ) : (
                     <>
                       <Lock className="w-5 h-5" />
-                      Reset Password
+                      {t('resetPassword.resetPasswordButton')}
                     </>
                   )}
                 </button>
 
                 <div className="text-center pt-3 border-t border-gray-100 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Don't have a reset code?{' '}
+                    {t('resetPassword.noResetCode')}{' '}
                     <Link
                       to="/forgot-password"
                       className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
                     >
-                      Request Reset Code
+                      {t('resetPassword.requestResetCode')}
                     </Link>
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    Remember your password?{' '}
+                    {t('resetPassword.rememberPassword')}{' '}
                     <Link
                       to="/login"
                       className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
                     >
-                      Back to Login
+                      {t('resetPassword.backToLogin')}
                     </Link>
                   </p>
                 </div>

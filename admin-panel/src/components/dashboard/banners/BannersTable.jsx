@@ -1,5 +1,6 @@
 // src/components/dashboard/banners/BannersTable.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image as ImageIcon } from 'lucide-react';
 import BannerRow from './BannerRow';
 
@@ -16,6 +17,7 @@ const BannersTable = React.memo(
     onAddClick,
     hasFilters = false,
   }) => {
+    const { t } = useTranslation('banners');
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Refreshing overlay */}
@@ -23,9 +25,11 @@ const BannersTable = React.memo(
           className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {t('bannersTable.updating')}
+              </span>
             </div>
           </div>
         </div>
@@ -36,19 +40,19 @@ const BannersTable = React.memo(
               <ImageIcon className="w-8 h-8 text-gray-400 dark:text-gray-500" />
             </div>
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              No banners found
+              {t('bannersTable.noBannersFound')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               {hasFilters
-                ? 'Try changing your search or filters'
-                : 'Start by adding your first banner'}
+                ? t('bannersTable.tryChangingFilters')
+                : t('bannersTable.startAdding')}
             </p>
             {!hasFilters && (
               <button
                 onClick={onAddClick}
                 className="px-6 py-2 purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white text-sm font-semibold rounded-lg shadow-sm hover:shadow-md active:scale-95 transition-all"
               >
-                Add First Banner
+                {t('bannersTable.addFirstBanner')}
               </button>
             )}
           </div>
@@ -57,18 +61,18 @@ const BannersTable = React.memo(
             className="overflow-x-auto transition-all duration-300 ease-in-out"
             style={{ opacity: isRefreshing ? 0.6 : 1, scrollbarGutter: 'stable' }}
           >
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-start border-collapse">
               <thead className="bg-purple-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium transition-colors">
                 <tr>
-                  <th className="p-3 w-12 text-center">#</th>
-                  <th className="p-3">Banner</th>
-                  <th className="p-3">Type</th>
-                  <th className="p-3">Link</th>
-                  <th className="p-3">Targeting</th>
-                  <th className="p-3 text-center">Order</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Validity</th>
-                  <th className="p-3 text-right">Actions</th>
+                  <th className="p-3 w-12 text-center">{t('bannersTable.columns.hash')}</th>
+                  <th className="p-3">{t('bannersTable.columns.banner')}</th>
+                  <th className="p-3">{t('common:type')}</th>
+                  <th className="p-3">{t('bannersTable.columns.link')}</th>
+                  <th className="p-3">{t('bannersTable.columns.targeting')}</th>
+                  <th className="p-3 text-center">{t('bannersTable.columns.order')}</th>
+                  <th className="p-3">{t('common:status')}</th>
+                  <th className="p-3">{t('bannersTable.columns.validity')}</th>
+                  <th className="p-3 text-end">{t('common:actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-100 dark:divide-gray-700 text-sm">

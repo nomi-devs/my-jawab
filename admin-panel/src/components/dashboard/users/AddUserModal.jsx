@@ -1,8 +1,10 @@
 // src/components/dashboard/users/AddUserModal.jsx
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, UserPlus, Mail, User, Shield, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
+  const { t } = useTranslation('users');
   const [formData, setFormData] = useState({
     email: '',
     handle: '',
@@ -58,16 +60,16 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Fixed Modal Header */}
         <div className="flex-shrink-0 px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <UserPlus className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Add New User
+                {t('addUserModal.title')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                Fill in the user details
+                {t('addUserModal.subtitle')}
               </p>
             </div>
           </div>
@@ -91,9 +93,9 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               {/* Email */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Mail size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Email Address *</span>
+                    <span>{t('addUserModal.emailLabel')}</span>
                   </div>
                 </label>
                 <input
@@ -103,7 +105,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                  placeholder="john@example.com"
+                  placeholder={t('addUserModal.emailPlaceholder')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -111,9 +113,9 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               {/* Username */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <User size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Username *</span>
+                    <span>{t('addUserModal.usernameLabel')}</span>
                   </div>
                 </label>
                 <input
@@ -123,7 +125,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                  placeholder="username"
+                  placeholder={t('addUserModal.usernamePlaceholder')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -131,9 +133,9 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               {/* Password */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Shield size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Password * (min 6 characters)</span>
+                    <span>{t('addUserModal.passwordLabel')}</span>
                   </div>
                 </label>
                 <div className="relative">
@@ -144,14 +146,14 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                     onChange={handleInputChange}
                     required
                     minLength={6}
-                    className="w-full px-3 py-2 pr-10 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                    placeholder="Enter password"
+                    className="w-full px-3 py-2 pe-10 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
+                    placeholder={t('addUserModal.passwordPlaceholder')}
                     disabled={isSubmitting}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
+                    className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
                     disabled={isSubmitting}
                     tabIndex={-1}
                   >
@@ -163,9 +165,9 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               {/* Role and Status - Side by side */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Shield size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Role</span>
+                    <span>{t('addUserModal.roleLabel')}</span>
                   </div>
                 </label>
                 <select
@@ -175,20 +177,24 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                   disabled={isSubmitting}
                 >
-                  <option value="user">User</option>
-                  <option value="pro_user">Pro User</option>
-                  <option value="admin">Admin</option>
+                  <option value="user">{t('addUserModal.roleUser')}</option>
+                  <option value="pro_user">{t('addUserModal.roleProUser')}</option>
+                  <option value="admin">{t('addUserModal.roleAdmin')}</option>
                 </select>
               </div>
 
               {/* Status */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Status
+                  {t('addUserModal.statusLabel')}
                 </label>
                 <label
                   className="relative inline-flex items-center cursor-pointer"
-                  title={formData.status === 'Active' ? 'Deactivate user' : 'Activate user'}
+                  title={
+                    formData.status === 'Active'
+                      ? t('addUserModal.statusDeactivateTitle')
+                      : t('addUserModal.statusActivateTitle')
+                  }
                 >
                   <input
                     type="checkbox"
@@ -209,11 +215,15 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               {/* Verified Account */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Verified Account
+                  {t('addUserModal.verifiedLabel')}
                 </label>
                 <label
                   className="relative inline-flex items-center cursor-pointer"
-                  title={formData.is_verified ? 'Unverify user' : 'Verify user'}
+                  title={
+                    formData.is_verified
+                      ? t('addUserModal.verifiedUnverifyTitle')
+                      : t('addUserModal.verifiedVerifyTitle')
+                  }
                 >
                   <input
                     type="checkbox"
@@ -244,7 +254,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
@@ -255,12 +265,12 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Adding...</span>
+                  <span>{t('addUserModal.adding')}</span>
                 </>
               ) : (
                 <>
                   <UserPlus size={16} />
-                  <span>Add User</span>
+                  <span>{t('addUserModal.addUser')}</span>
                 </>
               )}
             </button>

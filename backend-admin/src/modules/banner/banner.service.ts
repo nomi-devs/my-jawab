@@ -44,7 +44,7 @@ export class BannerService {
         imageUrl = this.mediaClientService.buildFileUrl(
           mediaResponse.file_path,
         );
-      } catch (error) {
+      } catch (error:any) {
         this.logger.error(`Failed to upload banner image: ${error.message}`);
         throw new BadRequestException('Failed to upload banner image');
       }
@@ -120,7 +120,7 @@ export class BannerService {
         updateData.banner_image = this.mediaClientService.buildFileUrl(
           mediaResponse.file_path,
         );
-      } catch (error) {
+      } catch (error:any) {
         this.logger.error(`Failed to upload banner image: ${error.message}`);
         throw new BadRequestException('Failed to upload banner image');
       }

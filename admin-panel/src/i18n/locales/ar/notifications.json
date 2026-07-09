@@ -1,0 +1,17 @@
+{
+  "pageTitle": "الإشعارات",
+  "pageSubtitle": "عرض وإدارة جميع إشعارات الاشتراكات والمدفوعات الخاصة بك.",
+  "markAllAsRead": "تعليم الكل كمقروء",
+  "loadingNotifications": "جارٍ تحميل الإشعارات...",
+  "tryAgain": "حاول مرة أخرى",
+  "noNotifications": "لا توجد إشعارات",
+  "allCaughtUp": "لقد اطّلعت على كل شيء!",
+  "totalNotifications": "{{count}} إشعار إجمالاً",
+  "unreadCount": "{{count}} غير مقروء",
+  "justNow": "الآن",
+  "minutesAgo": "منذ {{count}} دقيقة",
+  "hoursAgo": "منذ {{count}} ساعة",
+  "daysAgo": "منذ {{count}} يوم",
+  "defaultNotificationTitle": "إشعار",
+  "loadFailed": "فشل تحميل الإشعارات"
+}

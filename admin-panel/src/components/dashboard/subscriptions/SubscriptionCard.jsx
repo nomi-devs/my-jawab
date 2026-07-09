@@ -1,8 +1,10 @@
 // src/components/dashboard/subscriptions/SubscriptionCard.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, Edit, Trash2, Package } from 'lucide-react';
 
 const SubscriptionCard = ({ subscription, onEdit, onDelete, onViewDetails }) => {
+  const { t } = useTranslation('subscriptions');
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -33,7 +35,7 @@ const SubscriptionCard = ({ subscription, onEdit, onDelete, onViewDetails }) => 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-purple-100 dark:border-gray-700 p-4 hover:shadow-md transition-shadow animate-fadeIn">
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <Package className="w-8 h-8 text-purple-600 dark:text-purple-400" />
           <div>
             <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -53,7 +55,7 @@ const SubscriptionCard = ({ subscription, onEdit, onDelete, onViewDetails }) => 
               : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
           }`}
         >
-          {subscription.is_active ? 'Active' : 'Inactive'}
+          {subscription.is_active ? t('common:active') : t('common:inactive')}
         </span>
       </div>
 
@@ -65,13 +67,17 @@ const SubscriptionCard = ({ subscription, onEdit, onDelete, onViewDetails }) => 
 
       <div className="space-y-2 mb-3">
         <div className="flex justify-between items-center">
-          <span className="text-[10px] text-gray-500 dark:text-gray-400">Price</span>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+            {t('subscriptionCard.price')}
+          </span>
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {formatPrice(subscription.subscription_price)}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-[10px] text-gray-500 dark:text-gray-400">Duration</span>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+            {t('subscriptionCard.duration')}
+          </span>
           <span className="text-xs text-gray-700 dark:text-gray-300">
             {formatDuration(
               subscription.subscription_duration,
@@ -89,27 +95,27 @@ const SubscriptionCard = ({ subscription, onEdit, onDelete, onViewDetails }) => 
                 day: 'numeric',
                 year: 'numeric',
               })
-            : 'N/A'}
+            : t('subscriptionCard.notAvailable')}
         </span>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => onViewDetails && onViewDetails(subscription)}
             className="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded transition-colors"
-            title="View Details"
+            title={t('subscriptionCard.viewDetails')}
           >
             <Eye size={14} />
           </button>
           <button
             onClick={() => onEdit && onEdit(subscription)}
             className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
-            title="Edit"
+            title={t('common:edit')}
           >
             <Edit size={14} />
           </button>
           <button
             onClick={() => onDelete && onDelete(subscription)}
             className="p-1 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-            title="Delete"
+            title={t('common:delete')}
           >
             <Trash2 size={14} />
           </button>

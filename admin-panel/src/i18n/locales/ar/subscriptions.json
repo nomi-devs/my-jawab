@@ -1,0 +1,206 @@
+{
+  "addSubscriptionModal": {
+    "title": "إضافة اشتراك",
+    "subscriptionType": "نوع الاشتراك *",
+    "subscriptionName": "اسم الاشتراك *",
+    "namePlaceholder": "مثال: باقة برو",
+    "description": "الوصف",
+    "descriptionPlaceholder": "صف باقة الاشتراك...",
+    "price": "السعر *",
+    "pricePlaceholder": "29.99",
+    "currency": "العملة *",
+    "selectCurrency": "اختر...",
+    "duration": "المدة *",
+    "durationPlaceholder": "30",
+    "durationType": "النوع *",
+    "planTypes": {
+      "free": "مجاني",
+      "pro": "برو",
+      "premium": "بريميوم"
+    },
+    "durationTypes": {
+      "days": "أيام",
+      "weeks": "أسابيع",
+      "months": "أشهر",
+      "years": "سنوات"
+    },
+    "activeStatus": "حالة التفعيل",
+    "activeStatusDescription": "تفعيل أو تعطيل هذا الاشتراك",
+    "create": "إنشاء الاشتراك",
+    "creating": "جارٍ الإنشاء...",
+    "errors": {
+      "nameRequired": "اسم الاشتراك مطلوب",
+      "priceRequired": "السعر مطلوب",
+      "priceMin": "يجب أن يكون السعر 0 أو أكثر",
+      "durationRequired": "المدة مطلوبة",
+      "durationMin": "يجب ألا تقل المدة عن 1",
+      "currencyRequired": "العملة مطلوبة",
+      "createFailed": "فشل إنشاء الاشتراك. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "editSubscriptionModal": {
+    "title": "تعديل الاشتراك",
+    "subscriptionType": "نوع الاشتراك *",
+    "subscriptionName": "اسم الاشتراك *",
+    "description": "الوصف",
+    "price": "السعر *",
+    "currency": "العملة *",
+    "selectCurrency": "اختر...",
+    "duration": "المدة *",
+    "durationType": "النوع *",
+    "planTypes": {
+      "free": "مجاني",
+      "pro": "برو",
+      "premium": "بريميوم"
+    },
+    "durationTypes": {
+      "days": "أيام",
+      "weeks": "أسابيع",
+      "months": "أشهر",
+      "years": "سنوات"
+    },
+    "activeStatus": "حالة التفعيل",
+    "activeStatusDescription": "تفعيل أو تعطيل هذا الاشتراك",
+    "update": "تحديث الاشتراك",
+    "updating": "جارٍ التحديث...",
+    "errors": {
+      "nameRequired": "اسم الاشتراك مطلوب",
+      "priceRequired": "السعر مطلوب",
+      "priceMin": "يجب أن يكون السعر 0 أو أكثر",
+      "durationRequired": "المدة مطلوبة",
+      "durationMin": "يجب ألا تقل المدة عن 1",
+      "currencyRequired": "العملة مطلوبة",
+      "updateFailed": "فشل تحديث الاشتراك. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "featuresEditor": {
+    "entitlementsTitle": "الصلاحيات",
+    "quotasTitle": "الحصص والحدود",
+    "quotasHint": "(استخدم -1 لغير محدود، و0 للتعطيل)",
+    "unlimited": "غير محدود",
+    "toggleUnlimitedTitle": "تبديل غير محدود (-1)",
+    "features": {
+      "canCreatePolls": { "label": "إنشاء استطلاعات الرأي", "description": "السماح بإنشاء استطلاعات الرأي" },
+      "canCreateCommunities": {
+        "label": "إنشاء المجتمعات",
+        "description": "السماح بإنشاء مجتمعات جديدة"
+      },
+      "videoUploads": {
+        "label": "رفع الفيديوهات",
+        "description": "السماح بإرفاق فيديوهات مع المنشورات"
+      },
+      "verifiedBadge": {
+        "label": "شارة التوثيق",
+        "description": "إظهار شارة التوثيق على الملف الشخصي"
+      },
+      "prioritySupport": {
+        "label": "دعم ذو أولوية",
+        "description": "الوصول إلى قناة الدعم ذات الأولوية"
+      },
+      "earlyAccess": {
+        "label": "وصول مبكر",
+        "description": "الوصول إلى الميزات التجريبية"
+      },
+      "adsEnabled": {
+        "label": "عرض الإعلانات",
+        "description": "إذا كانت مفعّلة، يرى مستخدمو هذه الباقة إعلانات في الخلاصة"
+      }
+    },
+    "quotas": {
+      "dailyPostLimit": { "label": "الحد اليومي للمنشورات", "unit": "منشور/يوم" },
+      "dailyCommentLimit": { "label": "الحد اليومي للتعليقات", "unit": "تعليق/يوم" },
+      "maxCommunitiesJoined": { "label": "الحد الأقصى للمجتمعات المنضمّة", "unit": "مجتمع" },
+      "maxTopicSubscriptions": { "label": "الحد الأقصى للمواضيع المشترك بها", "unit": "موضوع" },
+      "maxVideoSize": { "label": "الحد الأقصى لحجم الفيديو", "unit": "ميغابايت" },
+      "maxBioLength": { "label": "الحد الأقصى لطول النبذة", "unit": "حرف" }
+    },
+    "featuresConfigured_one": "ميزة واحدة مُهيّأة",
+    "featuresConfigured_other": "{{count}} ميزة مُهيّأة",
+    "savedPrefix": "يُحفظ بصيغة JSON في عمود",
+    "savedSuffix": ""
+  },
+  "subscriptionCard": {
+    "price": "السعر",
+    "duration": "المدة",
+    "notAvailable": "غير متوفر",
+    "viewDetails": "عرض التفاصيل"
+  },
+  "subscriptionRow": {
+    "notAvailable": "غير متوفر",
+    "viewDetails": "عرض التفاصيل"
+  },
+  "subscriptionDetailsModal": {
+    "defaultTitle": "تفاصيل الاشتراك",
+    "tabs": {
+      "details": "التفاصيل",
+      "users": "المستخدمون ({{count}})"
+    },
+    "basicInformation": "المعلومات الأساسية",
+    "subscriptionName": "اسم الاشتراك",
+    "price": "السعر",
+    "duration": "المدة",
+    "notAvailable": "غير متوفر",
+    "noUsersSubscribed": "لا يوجد مستخدمون مشتركون في هذه الباقة",
+    "subscriptionActive": "الاشتراك نشط",
+    "statusLabel": "الحالة: {{status}}",
+    "startedLabel": "بدأ في: {{date}}"
+  },
+  "subscriptionsHeader": {
+    "allSubscriptions": "جميع الاشتراكات",
+    "totalSubscriptions": "إجمالي الاشتراكات: {{count}}",
+    "listView": "عرض القائمة",
+    "gridView": "عرض الشبكة",
+    "refreshTitle": "تحديث الاشتراكات",
+    "addSubscription": "إضافة اشتراك",
+    "searchPlaceholder": "ابحث عن الاشتراكات...",
+    "filterTypeAll": "جميع الأنواع",
+    "filterStatusAll": "جميع الحالات",
+    "planTypes": {
+      "free": "مجاني",
+      "pro": "برو",
+      "premium": "بريميوم"
+    },
+    "sortDate": "ترتيب: التاريخ",
+    "sortName": "ترتيب: الاسم",
+    "sortPrice": "ترتيب: السعر",
+    "sortDesc": "تنازلي",
+    "sortAsc": "تصاعدي",
+    "sortTitleNewest": "الأحدث أولاً (↓)",
+    "sortTitleOldest": "الأقدم أولاً (↑)",
+    "clear": "مسح",
+    "clearAllFiltersTitle": "مسح جميع الفلاتر",
+    "noFiltersTitle": "لا توجد فلاتر لمسحها",
+    "activeFilterSearch": "بحث:",
+    "activeFilterType": "النوع:",
+    "activeFilterStatus": "الحالة:",
+    "activeFilterSort": "ترتيب:",
+    "removeSearchTitle": "إزالة البحث",
+    "removeTypeFilterTitle": "إزالة فلتر النوع",
+    "removeStatusFilterTitle": "إزالة فلتر الحالة"
+  },
+  "subscriptionsList": {
+    "loadingSubscriptions": "جارٍ تحميل الاشتراكات...",
+    "noSubscriptionsFound": "لا توجد اشتراكات",
+    "createFirstSubscription": "أنشئ أول اشتراك للبدء",
+    "tableHeaders": {
+      "subscription": "الاشتراك",
+      "typeAndPrice": "النوع والسعر",
+      "duration": "المدة"
+    }
+  },
+  "subscriptionsPage": {
+    "deleteSubscriptionTitle": "حذف الاشتراك",
+    "deleteConfirmMessage": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteSuccess": "تم حذف الاشتراك \"{{name}}\" بنجاح!",
+    "deleteFailed": "فشل حذف الاشتراك. يرجى المحاولة مرة أخرى.",
+    "createSuccess": "تم إنشاء الاشتراك بنجاح!",
+    "updateSuccess": "تم تحديث الاشتراك بنجاح!",
+    "noSubscriptionsFound": "لا توجد اشتراكات",
+    "tryChangingFilters": "جرّب تغيير البحث أو الفلاتر",
+    "startAddingFirst": "ابدأ بإضافة أول اشتراك لك",
+    "addFirstSubscription": "إضافة أول اشتراك",
+    "loadingSubscriptions": "جارٍ تحميل الاشتراكات...",
+    "updating": "جارٍ التحديث...",
+    "itemName": "اشتراكات"
+  }
+}

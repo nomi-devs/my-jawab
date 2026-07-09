@@ -1,9 +1,11 @@
 // src/components/dashboard/topics/AddTopicModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Hash, Save } from 'lucide-react';
 import topicsApi from '../../../api/topicsApi';
 
 const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
+  const { t } = useTranslation('topics');
   const [formData, setFormData] = useState({
     topic_name: '',
     topic_slug: '',
@@ -127,16 +129,16 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Modal Header */}
         <div className="flex-shrink-0 px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <Hash className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Add New Topic
+                {t('addTopicModal.title')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                Create a new topic to organize content
+                {t('addTopicModal.subtitle')}
               </p>
             </div>
           </div>
@@ -160,9 +162,9 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
               {/* Topic Name - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Hash size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Topic Name *</span>
+                    <span>{t('addTopicModal.topicName')}</span>
                   </div>
                 </label>
                 <input
@@ -172,14 +174,16 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                  placeholder="Enter topic name"
+                  placeholder={t('addTopicModal.topicNamePlaceholder')}
                   disabled={isSubmitting}
                 />
                 {/* Auto-generated Slug Display */}
                 {formData.topic_slug && (
                   <div className="mt-1.5 flex items-center gap-2">
                     <Hash size={12} className="text-gray-400 dark:text-gray-500" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Slug:</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('addTopicModal.slug')}
+                    </span>
                     <code className="text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded border border-purple-200 dark:border-purple-700 font-mono">
                       {formData.topic_slug}
                     </code>
@@ -190,9 +194,9 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
               {/* Parent Topic (Category) - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Hash size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Parent Topic (Category)</span>
+                    <span>{t('addTopicModal.parentTopic')}</span>
                   </div>
                 </label>
                 <select
@@ -202,7 +206,7 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                   disabled={isSubmitting || loadingParents}
                 >
-                  <option value={0}>None (Main Category)</option>
+                  <option value={0}>{t('addTopicModal.parentTopicNone')}</option>
                   {parentTopics.map((parent) => (
                     <option key={parent.id} value={parent.id}>
                       {parent.topic_name}
@@ -210,15 +214,14 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Select a parent topic to create a subtopic, or leave as "None" to create a main
-                  category
+                  {t('addTopicModal.parentTopicHelp')}
                 </p>
               </div>
 
               {/* Description - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Description
+                  {t('common:description')}
                 </label>
                 <textarea
                   name="topic_description"
@@ -226,7 +229,7 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
                   onChange={handleInputChange}
                   rows="3"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all resize-none"
-                  placeholder="Describe this topic..."
+                  placeholder={t('addTopicModal.descriptionPlaceholder')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -235,18 +238,18 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
               {(!formData.parent_id || formData.parent_id === 0) && (
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    Topic Image
+                    {t('addTopicModal.topicImage')}
                   </label>
                   <input
                     type="file"
                     name="topic_image"
                     onChange={handleFileChange}
                     accept="image/*"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:me-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
                     disabled={isSubmitting}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Maximum file size: 10MB. Only parent topics can have images.
+                    {t('addTopicModal.topicImageHelp')}
                   </p>
                 </div>
               )}
@@ -256,10 +259,10 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-colors">
                   <div>
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
-                      Active
+                      {t('common:active')}
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                      Topic will be visible to users
+                      {t('addTopicModal.activeHelp')}
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -271,7 +274,7 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
                       className="sr-only peer"
                       disabled={isSubmitting}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 rtl:peer-checked:after:-translate-x-full"></div>
                   </label>
                 </div>
               </div>
@@ -287,7 +290,7 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
             className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             type="submit"
@@ -298,12 +301,12 @@ const AddTopicModal = React.memo(({ isOpen, onClose, onAddTopic }) => {
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Adding...</span>
+                <span>{t('addTopicModal.adding')}</span>
               </>
             ) : (
               <>
                 <Save size={16} />
-                <span>Add Topic</span>
+                <span>{t('addTopicModal.addTopic')}</span>
               </>
             )}
           </button>

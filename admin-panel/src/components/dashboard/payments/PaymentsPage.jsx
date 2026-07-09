@@ -1,5 +1,6 @@
 // src/components/dashboard/payments/PaymentsPage.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CreditCard } from 'lucide-react';
 import PaymentsHeader from './PaymentsHeader';
 import PaymentsList from './PaymentsList';
@@ -11,6 +12,7 @@ import TableSkeleton from '../../common/TableSkeleton';
 import { usePaymentsList, usePaymentActions } from '../../../hooks/usePayments';
 
 const PaymentsPage = () => {
+  const { t } = useTranslation('payments');
   /*
    * UI State
    */
@@ -112,9 +114,9 @@ const PaymentsPage = () => {
 
   const handleAddSuccess = useCallback(() => {
     setShowAddModal(false);
-    setSuccessMessage('Payment created successfully!');
+    setSuccessMessage(t('page.successCreated'));
     setTimeout(() => setSuccessMessage(''), 3000);
-  }, []);
+  }, [t]);
 
   // Initial loading: shimmer skeleton instead of circle loader
   if (loading && payments.length === 0) {
@@ -145,7 +147,7 @@ const PaymentsPage = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
 
@@ -154,7 +156,7 @@ const PaymentsPage = () => {
         isOpen={!!localError}
         onClose={() => setLocalError(null)}
         type="error"
-        title="Error"
+        title={t('common:error')}
         message={localError}
       />
 
@@ -207,9 +209,9 @@ const PaymentsPage = () => {
           }`}
         >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('page.updating')}</span>
             </div>
           </div>
         </div>
@@ -226,7 +228,7 @@ const PaymentsPage = () => {
             <div className="p-12">
               <div className="flex flex-col items-center justify-center">
                 <div className="w-12 h-12 border-4 border-purple-200 dark:border-purple-700 border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Loading payments...</p>
+                <p className="text-gray-600 dark:text-gray-400">{t('page.loading')}</p>
               </div>
             </div>
           ) : payments.length === 0 ? (
@@ -235,18 +237,18 @@ const PaymentsPage = () => {
                 <CreditCard className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No payments found
+                {t('page.noPaymentsFound')}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all' || methodFilter !== 'all'
-                  ? 'Try changing your search or filters'
-                  : 'Start by adding your first payment'}
+                  ? t('page.tryChangingFilters')
+                  : t('page.startAdding')}
               </p>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
-                Add First Payment
+                {t('page.addFirstPayment')}
               </button>
             </div>
           ) : (

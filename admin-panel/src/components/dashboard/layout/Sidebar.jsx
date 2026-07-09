@@ -1,6 +1,7 @@
 // src/components/dashboard/layout/Sidebar.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import authApi from '../../../api/authApi';
 
 import {
@@ -27,7 +28,17 @@ import BrandLogo from '../../common/BrandLogo';
 import ConfirmationModal from '../../common/ConfirmationModal';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, sidebarCollapsed = false, onLogout }) => {
+  const { t, i18n } = useTranslation('layout');
+  const isRTL = i18n.dir() === 'rtl';
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const handler = (e) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -65,78 +76,78 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, sidebarCollapsed = false, onLogo
     {
       id: 'dashboard',
       path: '/dashboard',
-      label: 'Dashboard',
+      label: t('sidebar.dashboard'),
       icon: LayoutDashboard,
     },
-    { id: 'users', path: '/users', label: 'Users', icon: Users },
-    { id: 'users-deleted', path: '/users/deleted', label: 'Deleted Users', icon: UserX },
-    { id: 'topics', path: '/topics', label: 'Topics', icon: Hash },
-    { id: 'sub-topics', path: '/sub-topics', label: 'Sub Topics', icon: Hash },
+    { id: 'users', path: '/users', label: t('sidebar.users'), icon: Users },
+    { id: 'users-deleted', path: '/users/deleted', label: t('sidebar.deletedUsers'), icon: UserX },
+    { id: 'topics', path: '/topics', label: t('sidebar.topics'), icon: Hash },
+    { id: 'sub-topics', path: '/sub-topics', label: t('sidebar.subTopics'), icon: Hash },
     {
       id: 'communities',
       path: '/communities',
-      label: 'Communities',
+      label: t('sidebar.communities'),
       icon: Globe,
     },
-    { id: 'posts', path: '/posts', label: 'Posts', icon: FileText },
+    { id: 'posts', path: '/posts', label: t('sidebar.posts'), icon: FileText },
     {
       id: 'polls',
       path: '/polls',
-      label: 'Polls',
+      label: t('sidebar.polls'),
       icon: BarChart3,
     },
     {
       id: 'comments',
       path: '/comments',
-      label: 'Comments',
+      label: t('sidebar.comments'),
       icon: MessageCircle,
     },
     {
       id: 'subscriptions',
       path: '/subscriptions',
-      label: 'Subscriptions',
+      label: t('sidebar.subscriptions'),
       icon: Package,
     },
     {
       id: 'payments',
       path: '/payments',
-      label: 'Payments',
+      label: t('sidebar.payments'),
       icon: CreditCard,
     },
     {
       id: 'currencies',
       path: '/currencies',
-      label: 'Currencies',
+      label: t('sidebar.currencies'),
       icon: Coins,
     },
     {
       id: 'settings',
       path: '/settings',
-      label: 'App Settings',
+      label: t('sidebar.appSettings'),
       icon: Settings,
     },
     {
       id: 'banners',
       path: '/banners',
-      label: 'Banners',
+      label: t('sidebar.banners'),
       icon: ImageIcon,
     },
     {
       id: 'privacy-policy',
       path: '/privacy-policy',
-      label: 'Privacy Policy',
+      label: t('sidebar.privacyPolicy'),
       icon: Shield,
     },
     {
       id: 'support',
       path: '/support',
-      label: 'Support',
+      label: t('sidebar.support'),
       icon: Headphones,
     },
     {
       id: 'profile',
       path: '/profile',
-      label: 'Profile',
+      label: t('sidebar.profile'),
       icon: User,
     },
   ];
@@ -149,10 +160,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, sidebarCollapsed = false, onLogo
         onClose={() => setShowLogoutConfirm(false)}
         onConfirm={performLogout}
         type="warning"
-        title="Confirm Logout"
-        message="Are you sure you want to log out? You will need to log in again to access the admin panel."
-        confirmText="Log Out"
-        cancelText="Cancel"
+        title={t('sidebar.confirmLogoutTitle')}
+        message={t('sidebar.confirmLogoutMessage')}
+        confirmText={t('sidebar.logOut')}
+        cancelText={t('common:cancel')}
         isLoading={isLoggingOut}
       />
 
@@ -164,14 +175,18 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, sidebarCollapsed = false, onLogo
       )}
 
       <div
-        className={`fixed lg:static inset-y-0 left-0 w-64 ${
+        className={`fixed lg:static inset-y-0 start-0 w-64 ${
           sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'
-        } bg-white dark:bg-gray-800 border-r border-purple-100 dark:border-gray-700 z-30 transform transition-all duration-300 ease-in-out shadow-lg lg:shadow-none flex flex-col h-screen ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        } bg-white dark:bg-gray-800 border-e border-purple-100 dark:border-gray-700 z-30 transform transition-all duration-300 ease-in-out shadow-lg lg:shadow-none flex flex-col h-screen`}
+        style={{
+          transform:
+            isDesktop || sidebarOpen
+              ? 'translateX(0)'
+              : isRTL ? 'translateX(100%)' : 'translateX(-100%)',
+        }}
       >
         {/* Logo/Brand Section */}
-        <div className="h-16 flex items-center px-5 border-b border-purple-100 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-white dark:from-gray-800 dark:to-gray-900 transition-colors">
+        <div className="h-16 flex items-center px-5 border-b border-purple-100 dark:border-gray-700 bg-linear-to-r from-purple-50 to-white dark:from-gray-800 dark:to-gray-900 transition-colors">
           <BrandLogo size="md" showText={!sidebarCollapsed} />
         </div>
 
@@ -186,7 +201,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, sidebarCollapsed = false, onLogo
                 onClick={() => setSidebarOpen(false)}
                 title={sidebarCollapsed ? item.label : undefined}
                 className={({ isActive }) =>
-                  `group relative w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm ${
+                  `group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm ${
                     isActive
                       ? 'purple-gradient text-white font-semibold shadow-md shadow-purple-500/20'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700/50 hover:text-purple-700 dark:hover:text-purple-400 hover:shadow-sm'
@@ -196,7 +211,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, sidebarCollapsed = false, onLogo
                 {({ isActive }) => (
                   <>
                     <div
-                      className={`flex-shrink-0 transition-transform duration-200 ${
+                      className={`shrink-0 transition-transform duration-200 ${
                         isActive
                           ? 'text-white'
                           : 'text-purple-500 dark:text-purple-400 group-hover:scale-110'
@@ -229,11 +244,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, sidebarCollapsed = false, onLogo
                             : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                         }`}
                       >
-                        Hot
+                        {t('sidebar.hot')}
                       </span>
                     )}
                     {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full opacity-80"></div>
+                      <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full opacity-80"></div>
                     )}
                   </>
                 )}
@@ -243,18 +258,18 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, sidebarCollapsed = false, onLogo
         </div>
 
         {/* Logout Button - Pinned at Bottom */}
-        <div className="mt-auto border-t border-purple-100 dark:border-gray-700 bg-gradient-to-b from-white via-purple-50/30 to-purple-50/50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 transition-colors z-10">
+        <div className="mt-auto border-t border-purple-100 dark:border-gray-700 bg-linear-to-b from-white via-purple-50/30 to-purple-50/50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 transition-colors z-10">
           <div className="p-3">
             <button
               onClick={handleLogout}
-              title={sidebarCollapsed ? 'Log Out' : undefined}
-              className="group relative w-full flex items-center justify-center space-x-2.5 px-4 py-3 bg-gradient-to-r from-red-50 to-red-50/50 dark:from-red-900/20 dark:to-red-900/10 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-red-50 dark:hover:from-red-900/30 dark:hover:to-red-900/20 hover:border-red-300 dark:hover:border-red-700 rounded-xl transition-all duration-200 text-sm font-semibold hover:shadow-md hover:shadow-red-500/10 active:scale-[0.98]"
+              title={sidebarCollapsed ? t('sidebar.logOut') : undefined}
+              className="group relative w-full flex items-center justify-center gap-2.5 px-4 py-3 bg-linear-to-r from-red-50 to-red-50/50 dark:from-red-900/20 dark:to-red-900/10 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-red-50 dark:hover:from-red-900/30 dark:hover:to-red-900/20 hover:border-red-300 dark:hover:border-red-700 rounded-xl transition-all duration-200 text-sm font-semibold hover:shadow-md hover:shadow-red-500/10 active:scale-[0.98]"
             >
               <LogOut
                 size={18}
                 className="group-hover:rotate-12 transition-transform duration-200"
               />
-              {!sidebarCollapsed && <span>Log Out</span>}
+              {!sidebarCollapsed && <span>{t('sidebar.logOut')}</span>}
               <div className="absolute inset-0 rounded-xl bg-red-500/0 group-hover:bg-red-500/5 dark:group-hover:bg-red-500/10 transition-colors duration-200"></div>
             </button>
           </div>

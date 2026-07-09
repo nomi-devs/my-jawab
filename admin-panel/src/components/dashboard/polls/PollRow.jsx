@@ -1,5 +1,6 @@
 // src/components/dashboard/polls/PollRow.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart3,
   Users,
@@ -14,6 +15,7 @@ import {
 
 const PollRow = React.memo(
   ({ poll, onEdit, onDelete, onViewDetails, index = 0, serialNumber = 0 }) => {
+    const { t } = useTranslation('polls');
     const formatDate = (dateString) => {
       if (!dateString) return 'N/A';
       const date = new Date(dateString);
@@ -25,7 +27,7 @@ const PollRow = React.memo(
     };
 
     const truncateText = (text, maxLength = 60) => {
-      if (!text) return 'No description';
+      if (!text) return t('pollRow.noDescription');
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
     };
@@ -37,24 +39,24 @@ const PollRow = React.memo(
       if (isExpired || status === 'ended') {
         return (
           <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-            <span className="w-1 h-1 rounded-full mr-1 bg-gray-500 dark:bg-gray-400"></span>
-            Ended
+            <span className="w-1 h-1 rounded-full me-1 bg-gray-500 dark:bg-gray-400"></span>
+            {t('pollRow.ended')}
           </span>
         );
       }
       if (status === 'published') {
         return (
           <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30">
-            <span className="w-1 h-1 rounded-full mr-1 bg-green-500 dark:bg-green-400"></span>
-            Published
+            <span className="w-1 h-1 rounded-full me-1 bg-green-500 dark:bg-green-400"></span>
+            {t('pollRow.published')}
           </span>
         );
       }
       if (status === 'draft') {
         return (
           <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30">
-            <span className="w-1 h-1 rounded-full mr-1 bg-yellow-500 dark:bg-yellow-400"></span>
-            Draft
+            <span className="w-1 h-1 rounded-full me-1 bg-yellow-500 dark:bg-yellow-400"></span>
+            {t('pollRow.draft')}
           </span>
         );
       }
@@ -80,13 +82,13 @@ const PollRow = React.memo(
         </td>
         {/* Poll Title & Icon */}
         <td className="p-2 transition-colors">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0">
               <BarChart3 size={14} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-xs text-gray-800 dark:text-gray-200 transition-colors truncate">
-                {poll.poll_title || poll.title || 'Untitled Poll'}
+                {poll.poll_title || poll.title || t('pollRow.untitledPoll')}
               </div>
               <div className="text-gray-500 dark:text-gray-400 text-[10px] transition-colors truncate">
                 {truncateText(poll.poll_description || poll.description, 40)}
@@ -109,11 +111,11 @@ const PollRow = React.memo(
             <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30">
               {poll.is_featured ? (
                 <>
-                  <TrendingUp size={9} className="mr-0.5" />
-                  Featured
+                  <TrendingUp size={9} className="me-0.5" />
+                  {t('pollRow.featured')}
                 </>
               ) : (
-                <>Not Featured</>
+                <>{t('pollRow.notFeatured')}</>
               )}
             </span>
           </div>
@@ -121,17 +123,17 @@ const PollRow = React.memo(
 
         {/* Stats */}
         <td className="p-2 transition-colors">
-          <div className="flex items-center space-x-2 text-[10px] text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
             {getTotalVotes() > 0 && (
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center gap-1">
                 <Users size={10} />
-                <span>{getTotalVotes()} votes</span>
+                <span>{t('pollRow.votes', { count: getTotalVotes() })}</span>
               </div>
             )}
 
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center gap-1">
               <BarChart3 size={10} />
-              <span>{poll.view_count} views</span>
+              <span>{t('pollRow.views', { count: poll.view_count || 0 })}</span>
             </div>
           </div>
         </td>
@@ -142,12 +144,12 @@ const PollRow = React.memo(
         </td>
 
         {/* Actions */}
-        <td className="p-2 text-right transition-colors">
-          <div className="flex items-center justify-end space-x-1">
+        <td className="p-2 text-end transition-colors">
+          <div className="flex items-center justify-end gap-1">
             <button
               onClick={() => onViewDetails && onViewDetails(poll)}
               className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded transition-colors"
-              title="View Details"
+              title={t('pollRow.viewDetails')}
             >
               <Eye size={14} />
             </button>
@@ -155,14 +157,14 @@ const PollRow = React.memo(
             <button
               onClick={() => onEdit && onEdit(poll)}
               className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/10 rounded transition-colors"
-              title="Edit Poll"
+              title={t('pollRow.editPoll')}
             >
               <Edit size={14} />
             </button>
             <button
               onClick={() => onDelete && onDelete(poll)}
               className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-              title="Delete Poll"
+              title={t('pollRow.deletePoll')}
             >
               <Trash2 size={14} />
             </button>

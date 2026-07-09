@@ -1,12 +1,14 @@
 // src/components/auth/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import authApi from '../../api/authApi';
 import BRANDING from '../../constants/branding';
 import BrandLogo from '../common/BrandLogo';
 
 const Login = ({ onLogin, onForgotPassword }) => {
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ const Login = ({ onLogin, onForgotPassword }) => {
       const token = res.data.access_token;
 
       if (!token) {
-        setError('Token not returned from backend');
+        setError(t('login.tokenMissing'));
         setLoading(false);
         return;
       }
@@ -86,7 +88,7 @@ const Login = ({ onLogin, onForgotPassword }) => {
       console.error('Login error:', err);
       // Show more specific error message if available
       const errorMessage =
-        err.response?.data?.message || err.response?.data?.error || 'Invalid email or password';
+        err.response?.data?.message || err.response?.data?.error || t('login.invalidCredentials');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -111,7 +113,7 @@ const Login = ({ onLogin, onForgotPassword }) => {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-white">{BRANDING.name}</h2>
-          <p className="text-purple-100 mt-1 text-sm">Welcome back, Admin</p>
+          <p className="text-purple-100 mt-1 text-sm">{t('login.welcomeBack')}</p>
         </div>
 
         {/* Form */}
@@ -119,20 +121,20 @@ const Login = ({ onLogin, onForgotPassword }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-sm animate-fade-in transition-colors">
-                <strong>Error:</strong> {error}
+                <strong>{t('common:error')}:</strong> {error}
               </div>
             )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                Email Address
+                {t('login.emailLabel')}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 text-sm"
-                placeholder="admin@social.com"
+                placeholder={t('login.emailPlaceholder')}
                 required
                 disabled={loading}
               />
@@ -140,22 +142,22 @@ const Login = ({ onLogin, onForgotPassword }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                Password
+                {t('login.passwordLabel')}
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 text-sm"
-                  placeholder="••••••••"
+                  className="w-full px-3 py-2 pe-10 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 text-sm"
+                  placeholder={t('login.passwordPlaceholder')}
                   required
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
+                  className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
                   disabled={loading}
                   tabIndex={-1}
                 >
@@ -165,7 +167,7 @@ const Login = ({ onLogin, onForgotPassword }) => {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -174,7 +176,7 @@ const Login = ({ onLogin, onForgotPassword }) => {
                   disabled={loading}
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400 transition-colors">
-                  Remember me
+                  {t('login.rememberMe')}
                 </span>
               </label>
               <button
@@ -183,7 +185,7 @@ const Login = ({ onLogin, onForgotPassword }) => {
                 className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors disabled:opacity-50"
                 disabled={loading}
               >
-                Forgot Password?
+                {t('login.forgotPassword')}
               </button>
             </div>
 
@@ -195,7 +197,7 @@ const Login = ({ onLogin, onForgotPassword }) => {
               {loading ? (
                 <span className="flex items-center justify-center">
                   <svg
-                    className="animate-spin h-4 w-4 mr-2 text-white"
+                    className="animate-spin h-4 w-4 me-2 text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -214,22 +216,22 @@ const Login = ({ onLogin, onForgotPassword }) => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Signing In...
+                  {t('login.signingIn')}
                 </span>
               ) : (
-                'Sign In'
+                t('login.signIn')
               )}
             </button>
 
             <div className="text-center pt-3 border-t border-gray-100 dark:border-gray-700">
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                Don't have an account?{' '}
+                {t('login.noAccount')}{' '}
                 <button
                   type="button"
                   className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
                   onClick={() => navigate('/reset')}
                 >
-                  Contact Administrator
+                  {t('login.contactAdministrator')}
                 </button>
               </p>
             </div>

@@ -12,19 +12,21 @@
 //   - maxHeight: number   dropdown max height in px (default 240)
 //
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, X, Search, Check, Loader2 } from 'lucide-react';
 
 const MultiSelectField = ({
   options = [],
   value = [],
   onChange,
-  placeholder = 'Select items...',
+  placeholder,
   loading = false,
   disabled = false,
   searchable = true,
   maxHeight = 240,
-  emptyText = 'No options available',
+  emptyText,
 }) => {
+  const { t } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const wrapperRef = useRef(null);
@@ -89,7 +91,9 @@ const MultiSelectField = ({
         }`}
       >
         {selectedOptions.length === 0 ? (
-          <span className="text-xs text-gray-400 dark:text-gray-500 px-1">{placeholder}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 px-1">
+            {placeholder ?? t('multiSelect.selectItems')}
+          </span>
         ) : (
           selectedOptions.map((opt) => (
             <span
@@ -110,13 +114,13 @@ const MultiSelectField = ({
           ))
         )}
 
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ms-auto flex items-center gap-1">
           {selectedOptions.length > 0 && !disabled && (
             <button
               type="button"
               onClick={clearAll}
               className="p-0.5 text-gray-400 hover:text-red-500"
-              title="Clear all"
+              title={t('clearAll')}
             >
               <X size={14} />
             </button>
@@ -140,15 +144,15 @@ const MultiSelectField = ({
               <div className="relative">
                 <Search
                   size={13}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
-                  placeholder="Search..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded focus:ring-2 focus:ring-purple-500 outline-none"
+                  placeholder={t('multiSelect.searchPlaceholder')}
+                  className="w-full ps-8 pe-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded focus:ring-2 focus:ring-purple-500 outline-none"
                   autoFocus
                 />
               </div>
@@ -162,12 +166,14 @@ const MultiSelectField = ({
           >
             {loading ? (
               <div className="flex items-center justify-center py-8 text-gray-400">
-                <Loader2 size={16} className="animate-spin mr-2" />
-                <span className="text-xs">Loading...</span>
+                <Loader2 size={16} className="animate-spin me-2" />
+                <span className="text-xs">{t('loading')}</span>
               </div>
             ) : filteredOptions.length === 0 ? (
               <div className="py-6 text-center text-xs text-gray-400">
-                {options.length === 0 ? emptyText : 'No matches'}
+                {options.length === 0
+                  ? (emptyText ?? t('multiSelect.noOptionsAvailable'))
+                  : t('multiSelect.noMatches')}
               </div>
             ) : (
               filteredOptions.map((opt) => {
@@ -209,13 +215,13 @@ const MultiSelectField = ({
           {/* Footer count */}
           {selectedOptions.length > 0 && (
             <div className="px-3 py-2 border-t border-purple-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 text-[10px] text-gray-500 flex items-center justify-between">
-              <span>{selectedOptions.length} selected</span>
+              <span>{t('multiSelect.selectedCount', { count: selectedOptions.length })}</span>
               <button
                 type="button"
                 onClick={clearAll}
                 className="text-red-500 hover:text-red-700 font-medium"
               >
-                Clear all
+                {t('clearAll')}
               </button>
             </div>
           )}

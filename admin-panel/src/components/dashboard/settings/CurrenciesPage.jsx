@@ -1,5 +1,6 @@
 // src/components/dashboard/settings/CurrenciesPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Edit, Trash2, Search, RefreshCw, DollarSign, Filter, X, Check } from 'lucide-react';
 import currenciesApi from '../../../api/currenciesApi';
 import appSettingsApi from '../../../api/appSettingsApi';
@@ -11,6 +12,7 @@ import PaginationFooter from '../../common/PaginationFooter';
 import RefreshButton from '../../common/RefreshButton';
 
 const CurrenciesPage = () => {
+  const { t } = useTranslation('settings');
   const [currencies, setCurrencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,11 +44,11 @@ const CurrenciesPage = () => {
       );
     } catch (error) {
       console.error('Failed to fetch currencies:', error);
-      showAlert('error', 'Error', 'Failed to load currencies. Please try again.');
+      showAlert('error', t('common:error'), t('currenciesPage.alerts.fetchError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchCurrencies();
@@ -60,12 +62,16 @@ const CurrenciesPage = () => {
     setIsActionLoading(true);
     try {
       await currenciesApi.createCurrency(data);
-      showAlert('success', 'Success', 'Currency added successfully!');
+      showAlert('success', t('common:success'), t('currenciesPage.alerts.addSuccess'));
       setShowAddModal(false);
       fetchCurrencies();
     } catch (error) {
       console.error('Failed to add currency:', error);
-      showAlert('error', 'Error', error.response?.data?.message || 'Failed to add currency.');
+      showAlert(
+        'error',
+        t('common:error'),
+        error.response?.data?.message || t('currenciesPage.alerts.addError'),
+      );
     } finally {
       setIsActionLoading(false);
     }
@@ -75,12 +81,16 @@ const CurrenciesPage = () => {
     setIsActionLoading(true);
     try {
       await currenciesApi.updateCurrency(selectedCurrency.id, data);
-      showAlert('success', 'Success', 'Currency updated successfully!');
+      showAlert('success', t('common:success'), t('currenciesPage.alerts.editSuccess'));
       setShowEditModal(false);
       fetchCurrencies();
     } catch (error) {
       console.error('Failed to update currency:', error);
-      showAlert('error', 'Error', error.response?.data?.message || 'Failed to update currency.');
+      showAlert(
+        'error',
+        t('common:error'),
+        error.response?.data?.message || t('currenciesPage.alerts.editError'),
+      );
     } finally {
       setIsActionLoading(false);
     }
@@ -95,12 +105,16 @@ const CurrenciesPage = () => {
     setIsActionLoading(true);
     try {
       await currenciesApi.deleteCurrency(currencyToDelete.id);
-      showAlert('success', 'Success', 'Currency deleted successfully!');
+      showAlert('success', t('common:success'), t('currenciesPage.alerts.deleteSuccess'));
       setShowDeleteConfirm(false);
       fetchCurrencies();
     } catch (error) {
       console.error('Failed to delete currency:', error);
-      showAlert('error', 'Error', error.response?.data?.message || 'Failed to delete currency.');
+      showAlert(
+        'error',
+        t('common:error'),
+        error.response?.data?.message || t('currenciesPage.alerts.deleteError'),
+      );
     } finally {
       setIsActionLoading(false);
     }
@@ -111,13 +125,13 @@ const CurrenciesPage = () => {
     try {
       await appSettingsApi.updateSetting('app_currency', { setting_value: currencyId.toString() });
       setDefaultCurrencyId(currencyId);
-      showAlert('success', 'Success', 'Default currency updated successfully!');
+      showAlert('success', t('common:success'), t('currenciesPage.alerts.setDefaultSuccess'));
     } catch (error) {
       console.error('Failed to set default currency:', error);
       showAlert(
         'error',
-        'Error',
-        error.response?.data?.message || 'Failed to set default currency.',
+        t('common:error'),
+        error.response?.data?.message || t('currenciesPage.alerts.setDefaultError'),
       );
     } finally {
       setIsActionLoading(false);
@@ -179,8 +193,10 @@ const CurrenciesPage = () => {
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleConfirmDelete}
         type="danger"
-        title="Delete Currency"
-        message={`Are you sure you want to delete ${currencyToDelete?.currency_name}? This action cannot be undone.`}
+        title={t('currenciesPage.modals.deleteTitle')}
+        message={t('currenciesPage.modals.deleteMessage', {
+          name: currencyToDelete?.currency_name,
+        })}
         isLoading={isActionLoading}
       />
 
@@ -189,7 +205,7 @@ const CurrenciesPage = () => {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSave={handleAddCurrency}
-        title="Add New Currency"
+        title={t('currenciesPage.modals.addTitle')}
         isLoading={isActionLoading}
       />
 
@@ -199,7 +215,7 @@ const CurrenciesPage = () => {
           onClose={() => setShowEditModal(false)}
           onSave={handleEditCurrency}
           currency={selectedCurrency}
-          title="Edit Currency"
+          title={t('currenciesPage.modals.editTitle')}
           isLoading={isActionLoading}
         />
       )}
@@ -211,10 +227,12 @@ const CurrenciesPage = () => {
           <div>
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <DollarSign className="text-purple-600 w-5 h-5" />
-              Currency Management
+              {t('currenciesPage.title')}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {loading ? 'Loading...' : `Total Currencies: ${currencies.length}`}
+              {loading
+                ? t('common:loading')
+                : t('currenciesPage.totalCurrencies', { count: currencies.length })}
             </p>
           </div>
 
@@ -222,7 +240,7 @@ const CurrenciesPage = () => {
             <RefreshButton
               onClick={fetchCurrencies}
               loading={loading}
-              title="Refresh currencies"
+              title={t('currenciesPage.refreshTitle')}
               size={18}
             />
 
@@ -231,7 +249,7 @@ const CurrenciesPage = () => {
               className="flex items-center justify-center gap-1.5 px-3 py-1.5 purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white rounded-lg transition-all text-xs font-medium shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap"
             >
               <Plus size={16} />
-              Add Currency
+              {t('currenciesPage.addCurrency')}
             </button>
           </div>
         </div>
@@ -241,13 +259,13 @@ const CurrenciesPage = () => {
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             {/* Search Input */}
             <div className="relative flex-1 w-full sm:w-auto sm:min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search by name or code..."
+                placeholder={t('currenciesPage.searchPlaceholder')}
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="w-full pl-9 pr-8 py-1.5 text-sm bg-white dark:bg-gray-800 border border-purple-100 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                className="w-full ps-9 pe-8 py-1.5 text-sm bg-white dark:bg-gray-800 border border-purple-100 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none transition-all"
               />
               {searchTerm && (
                 <button
@@ -255,7 +273,7 @@ const CurrenciesPage = () => {
                     setSearchTerm('');
                     setCurrentPage(1);
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  className="absolute end-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 >
                   <X size={14} />
                 </button>
@@ -264,15 +282,15 @@ const CurrenciesPage = () => {
 
             {/* Status Filter */}
             <div className="relative flex-shrink-0 w-full sm:w-auto">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5 pointer-events-none" />
+              <Filter className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5 pointer-events-none" />
               <select
                 value={statusFilter}
                 onChange={handleStatusFilterChange}
-                className="appearance-none w-full sm:w-auto min-w-[140px] pl-9 pr-8 py-1.5 text-sm bg-white dark:bg-gray-800 border border-purple-100 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer transition-all"
+                className="appearance-none w-full sm:w-auto min-w-[140px] ps-9 pe-8 py-1.5 text-sm bg-white dark:bg-gray-800 border border-purple-100 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer transition-all"
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="all">{t('currenciesPage.allStatus')}</option>
+                <option value="active">{t('common:active')}</option>
+                <option value="inactive">{t('common:inactive')}</option>
               </select>
             </div>
 
@@ -287,7 +305,7 @@ const CurrenciesPage = () => {
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <X size={14} />
-              <span>Clear Filters</span>
+              <span>{t('currenciesPage.clearFilters')}</span>
             </button>
           </div>
         </div>
@@ -301,12 +319,12 @@ const CurrenciesPage = () => {
               <thead>
                 <tr className="bg-purple-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium transition-colors">
                   <th className="px-6 py-4 w-16">#</th>
-                  <th className="px-6 py-4">Currency Name</th>
-                  <th className="px-6 py-4">Code</th>
-                  <th className="px-6 py-4 text-center">Symbol</th>
-                  <th className="px-6 py-4 text-center">Status</th>
-                  <th className="px-6 py-4 text-center">Default</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">{t('currenciesPage.table.currencyName')}</th>
+                  <th className="px-6 py-4">{t('currenciesPage.table.code')}</th>
+                  <th className="px-6 py-4 text-center">{t('currenciesPage.table.symbol')}</th>
+                  <th className="px-6 py-4 text-center">{t('common:status')}</th>
+                  <th className="px-6 py-4 text-center">{t('currenciesPage.table.default')}</th>
+                  <th className="px-6 py-4 text-end">{t('common:actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-100 dark:divide-gray-700">
@@ -343,16 +361,16 @@ const CurrenciesPage = () => {
                             }`}
                           >
                             <span
-                              className={`w-1 h-1 rounded-full mr-1.5 ${currency.is_active ? 'bg-green-500' : 'bg-red-500'}`}
+                              className={`w-1 h-1 rounded-full me-1.5 ${currency.is_active ? 'bg-green-500' : 'bg-red-500'}`}
                             ></span>
-                            {currency.is_active ? 'Active' : 'Inactive'}
+                            {currency.is_active ? t('common:active') : t('common:inactive')}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
                           {currency.id === defaultCurrencyId ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                              <Check size={10} className="mr-1" />
-                              Default
+                              <Check size={10} className="me-1" />
+                              {t('currenciesPage.table.default')}
                             </span>
                           ) : (
                             <button
@@ -361,30 +379,30 @@ const CurrenciesPage = () => {
                               className="px-2 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title={
                                 !currency.is_active
-                                  ? 'Activate currency first to set as default'
-                                  : 'Set as default currency'
+                                  ? t('currenciesPage.table.activateFirst')
+                                  : t('currenciesPage.table.setDefaultTitle')
                               }
                             >
-                              Set as Default
+                              {t('currenciesPage.table.setAsDefault')}
                             </button>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end space-x-1">
+                        <td className="px-6 py-4 text-end">
+                          <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => {
                                 setSelectedCurrency(currency);
                                 setShowEditModal(true);
                               }}
                               className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
-                              title="Edit Currency"
+                              title={t('currenciesPage.table.editTitle')}
                             >
                               <Edit size={14} />
                             </button>
                             <button
                               onClick={() => handleDeleteConfirm(currency)}
                               className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              title="Delete Currency"
+                              title={t('currenciesPage.table.deleteTitle')}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -401,7 +419,7 @@ const CurrenciesPage = () => {
                     >
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 text-gray-300 dark:text-gray-600" />
-                        <p className="text-sm">No currencies found matching your search.</p>
+                        <p className="text-sm">{t('currenciesPage.table.noResults')}</p>
                       </div>
                     </td>
                   </tr>

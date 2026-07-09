@@ -1,6 +1,7 @@
 // src/components/dashboard/users-deleted/DeletedUsersPage.jsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserX, Search, X, RotateCcw, Trash2, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import userApi from '../../../api/userApi';
 import AlertModal from '../../common/AlertModal';
 import ConfirmationModal from '../../common/ConfirmationModal';
@@ -24,6 +25,7 @@ const formatDate = (d) => {
 };
 
 const DeletedUsersPage = () => {
+  const { t } = useTranslation('deletedUsers');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -77,7 +79,7 @@ const DeletedUsersPage = () => {
       setTotalPages(meta.total_pages || 1);
     } catch (err) {
       console.error('Failed to fetch deleted users:', err);
-      showAlert('error', 'Error', err.response?.data?.message || 'Failed to load deleted users.');
+      showAlert('error', t('alerts.errorTitle'), err.response?.data?.message || t('alerts.failedToLoad'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -100,10 +102,10 @@ const DeletedUsersPage = () => {
       await userApi.restoreUser(selectedUser.id);
       setShowRestoreConfirm(false);
       setSelectedUser(null);
-      showAlert('success', 'Restored', 'User restored successfully!');
+      showAlert('success', t('alerts.restoredTitle'), t('alerts.restoredMessage'));
       fetchDeletedUsers();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to restore user.';
+      const msg = err.response?.data?.message || t('alerts.failedToRestore');
       showAlert('error', 'Error', msg);
     } finally {
       setActionLoading(false);
@@ -122,10 +124,10 @@ const DeletedUsersPage = () => {
       await userApi.hardDeleteUser(selectedUser.id);
       setShowHardDeleteConfirm(false);
       setSelectedUser(null);
-      showAlert('success', 'Deleted', 'User permanently deleted.');
+      showAlert('success', t('alerts.deletedTitle'), t('alerts.deletedMessage'));
       fetchDeletedUsers();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to permanently delete user.';
+      const msg = err.response?.data?.message || t('alerts.failedToDelete');
       showAlert('error', 'Error', msg);
       setShowHardDeleteConfirm(false);
     } finally {
@@ -157,10 +159,10 @@ const DeletedUsersPage = () => {
         }}
         onConfirm={confirmRestore}
         type="info"
-        title="Restore User"
-        message={`Restore user "${selectedUser?.username || selectedUser?.email}"? They will be able to log in again.`}
-        confirmText="Restore"
-        cancelText="Cancel"
+        title={t('restoreModal.title')}
+        message={t('restoreModal.message', { name: selectedUser?.username || selectedUser?.email })}
+        confirmText={t('restoreModal.confirm')}
+        cancelText={t('restoreModal.cancel')}
         isLoading={actionLoading}
       />
 
@@ -172,10 +174,10 @@ const DeletedUsersPage = () => {
         }}
         onConfirm={confirmHardDelete}
         type="error"
-        title="Permanently Delete User"
-        message={`This CANNOT be undone. "${selectedUser?.username || selectedUser?.email}" will be removed from the database completely. Only works if the user has no posts, polls, or comments.`}
-        confirmText="Permanently Delete"
-        cancelText="Cancel"
+        title={t('hardDeleteModal.title')}
+        message={t('hardDeleteModal.message', { name: selectedUser?.username || selectedUser?.email })}
+        confirmText={t('hardDeleteModal.confirm')}
+        cancelText={t('hardDeleteModal.cancel')}
         isLoading={actionLoading}
       />
 
@@ -185,21 +187,20 @@ const DeletedUsersPage = () => {
           <div>
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <UserX className="text-red-500 w-5 h-5" />
-              Deleted Users
+              {t('title')}
               <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                 {totalUsers}
               </span>
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Soft-deleted user accounts. Restore to re-activate, or permanently delete (only if
-              user has no content).
+              {t('subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
             <RefreshButton
               onClick={fetchDeletedUsers}
               loading={refreshing}
-              title="Refresh"
+              title={t('refresh')}
               size={18}
             />
           </div>
@@ -211,7 +212,7 @@ const DeletedUsersPage = () => {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search deleted users..."
+              placeholder={t('searchPlaceholder')}
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               className="w-full pl-9 pr-8 py-1.5 text-sm bg-white dark:bg-gray-800 border border-purple-100 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
@@ -236,7 +237,7 @@ const DeletedUsersPage = () => {
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('updating')}</span>
             </div>
           </div>
         </div>
@@ -247,12 +248,10 @@ const DeletedUsersPage = () => {
               <UserX className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              No deleted users
+              {t('noDeletedUsers')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              {hasSearch
-                ? 'No deleted users match your search.'
-                : 'There are no deleted users in the system.'}
+              {hasSearch ? t('noMatch') : t('noUsersInSystem')}
             </p>
           </div>
         ) : (
@@ -260,12 +259,12 @@ const DeletedUsersPage = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-red-50 dark:bg-red-900/20 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium">
                 <tr>
-                  <th className="p-3 w-12 text-center">#</th>
-                  <th className="p-3">User</th>
-                  <th className="p-3">Email</th>
-                  <th className="p-3">Role</th>
-                  <th className="p-3">Deleted At</th>
-                  <th className="p-3 text-right">Actions</th>
+                  <th className="p-3 w-12 text-center">{t('columns.hash')}</th>
+                  <th className="p-3">{t('columns.user')}</th>
+                  <th className="p-3">{t('columns.email')}</th>
+                  <th className="p-3">{t('columns.role')}</th>
+                  <th className="p-3">{t('columns.deletedAt')}</th>
+                  <th className="p-3 text-end">{t('columns.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-100 dark:divide-gray-700 text-sm">
@@ -311,19 +310,19 @@ const DeletedUsersPage = () => {
                             type="button"
                             onClick={() => handleRestore(user)}
                             className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                            title="Restore"
+                            title={t('restore')}
                           >
                             <RotateCcw size={12} />
-                            Restore
+                            {t('restore')}
                           </button>
                           <button
                             type="button"
                             onClick={() => handleHardDelete(user)}
                             className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                            title="Permanently delete (only if user has no content)"
+                            title={t('hardDelete')}
                           >
                             <Trash2 size={12} />
-                            Hard Delete
+                            {t('hardDelete')}
                           </button>
                         </div>
                       </td>
@@ -343,9 +342,7 @@ const DeletedUsersPage = () => {
           className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
         />
         <div className="text-[11px] text-amber-800 dark:text-amber-300">
-          <strong>Hard delete</strong> is irreversible. It only works for users who have no posts,
-          polls, or comments. If a user has any content, permanent deletion is blocked use{' '}
-          <strong>Restore</strong> to bring them back or keep them soft-deleted.
+          {t('warning')}
         </div>
       </div>
 
@@ -356,7 +353,7 @@ const DeletedUsersPage = () => {
           onPageChange={setCurrentPage}
           totalItems={totalUsers}
           itemsPerPage={itemsPerPage}
-          itemName="deleted users"
+          itemName={t('itemName')}
         />
       )}
     </div>

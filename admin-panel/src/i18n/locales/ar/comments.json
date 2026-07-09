@@ -1,0 +1,94 @@
+{
+  "commentRow": {
+    "na": "غير متوفر",
+    "noContent": "لا يوجد محتوى",
+    "anonymous": "مجهول",
+    "unknownPost": "منشور غير معروف",
+    "status": {
+      "reported": "مُبلَّغ عنه",
+      "pending": "قيد المراجعة",
+      "approved": "معتمد"
+    },
+    "likes": "الإعجابات",
+    "unlikes": "عدم الإعجاب",
+    "viewDetails": "عرض التفاصيل",
+    "approveComment": "اعتماد التعليق",
+    "unapproveComment": "إلغاء اعتماد التعليق",
+    "deleteComment": "حذف التعليق"
+  },
+  "commentsDetailsModal": {
+    "title": "تفاصيل التعليق",
+    "notAvailable": "غير متوفر",
+    "status": {
+      "reported": "مُبلَّغ عنه",
+      "pending": "قيد المراجعة",
+      "approved": "معتمد"
+    },
+    "loadError": "فشل تحميل تفاصيل التعليق",
+    "content": "المحتوى",
+    "noContent": "لا يوجد محتوى",
+    "likes": "الإعجابات",
+    "post": "المنشور",
+    "unknown": "غير معروف",
+    "author": "الكاتب",
+    "anonymous": "مجهول"
+  },
+  "commentsHeader": {
+    "title": "جميع التعليقات",
+    "totalComments": "إجمالي التعليقات: {{count}}",
+    "listView": "عرض القائمة",
+    "gridView": "عرض الشبكة",
+    "refreshComments": "تحديث التعليقات",
+    "searchPlaceholder": "البحث في التعليقات...",
+    "allStatus": "جميع الحالات",
+    "approved": "معتمد",
+    "pending": "قيد المراجعة",
+    "sortDate": "الترتيب: التاريخ",
+    "sortLikes": "الترتيب: الإعجابات",
+    "sortNewestFirst": "الترتيب: الأحدث أولاً (↓)",
+    "sortOldestFirst": "الترتيب: الأقدم أولاً (↑)",
+    "desc": "تنازلي",
+    "asc": "تصاعدي",
+    "clear": "مسح",
+    "clearAllFilters": "مسح جميع الفلاتر",
+    "noFiltersToClear": "لا توجد فلاتر لمسحها",
+    "searchLabel": "بحث:",
+    "removeSearch": "إزالة البحث",
+    "statusLabel": "الحالة:",
+    "removeStatusFilter": "إزالة فلتر الحالة",
+    "sortLabel": "الترتيب:"
+  },
+  "commentsView": {
+    "deleteCommentTitle": "حذف التعليق",
+    "deleteConfirmMessage": "هل أنت متأكد من حذف هذا التعليق؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteSuccess": "تم حذف التعليق بنجاح!",
+    "approveSuccess": "تم اعتماد التعليق بنجاح!",
+    "unapproveSuccess": "تم إلغاء اعتماد التعليق بنجاح!",
+    "deleteFailed": "فشل حذف التعليق: {{message}}",
+    "approveFailed": "فشل اعتماد التعليق: {{message}}",
+    "unapproveFailed": "فشل إلغاء اعتماد التعليق: {{message}}",
+    "loadError": "فشل تحميل التعليقات",
+    "minutesAgo": "منذ {{count}} د",
+    "hoursAgo": "منذ {{count}} س",
+    "daysAgo": "منذ {{count}} يوم",
+    "status": {
+      "reported": "مُبلَّغ عنه",
+      "pending": "قيد المراجعة",
+      "approved": "معتمد"
+    },
+    "loadingComments": "جارٍ تحميل التعليقات...",
+    "noCommentsFound": "لا توجد تعليقات",
+    "tryChangingFilters": "حاول تغيير البحث أو الفلاتر",
+    "noCommentsYet": "لم يتم نشر أي تعليقات بعد",
+    "updating": "جارٍ التحديث...",
+    "tableHeaders": {
+      "user": "المستخدم",
+      "content": "المحتوى",
+      "postStats": "المنشور والإحصائيات"
+    },
+    "viewDetails": "عرض التفاصيل",
+    "approveComment": "اعتماد التعليق",
+    "unapproveComment": "إلغاء اعتماد التعليق",
+    "deleteComment": "حذف التعليق"
+  }
+}

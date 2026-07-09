@@ -1,5 +1,6 @@
 // src/components/dashboard/topics/TopicsDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Hash,
@@ -27,6 +28,7 @@ const TopicsDetailsModal = ({
   onEdit,
   onDelete,
 }) => {
+  const { t } = useTranslation('topics');
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(true);
   const [topicDetails, setTopicDetails] = useState(null);
@@ -90,7 +92,7 @@ const TopicsDetailsModal = ({
       }
     } catch (err) {
       console.error('Error fetching topic details:', err);
-      setError('Failed to load topic details');
+      setError(t('topicsDetailsModal.failedToLoad'));
       // Use provided topicData as fallback
       if (topicData) {
         const normalizedTopic = {
@@ -170,7 +172,7 @@ const TopicsDetailsModal = ({
     } catch (err) {
       console.error('Error deleting sub-topic:', err);
       const errorMsg =
-        err.response?.data?.message || 'Failed to delete sub-topic. Please try again.';
+        err.response?.data?.message || t('topicsDetailsModal.failedDeleteSubTopic');
       setError(errorMsg);
       // Don't close the modal on error - let user see the error message
       // The error will be displayed in the confirmation modal message
@@ -200,7 +202,7 @@ const TopicsDetailsModal = ({
       }
     } catch (err) {
       console.error('Error updating sub-topic status:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to update sub-topic status';
+      const errorMsg = err.response?.data?.message || t('topicsDetailsModal.failedUpdateSubTopicStatus');
       setError(errorMsg);
       // Refresh the list to get the correct state
       await fetchSubTopics();
@@ -271,7 +273,7 @@ const TopicsDetailsModal = ({
       await fetchTopicDetails();
     } catch (err) {
       console.error('Error updating topic status:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to update topic status';
+      const errorMsg = err.response?.data?.message || t('topicsDetailsModal.failedUpdateStatus');
       setError(errorMsg);
       // Refresh to get correct state on error
       await fetchTopicDetails();
@@ -281,7 +283,7 @@ const TopicsDetailsModal = ({
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return t('topicsDetailsModal.notAvailable');
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       month: 'long',
@@ -300,8 +302,10 @@ const TopicsDetailsModal = ({
   const isActive = topic ? normalizeIsActive(topic.is_active) : false;
 
   const tabs = [
-    { id: 'details', label: 'Details', icon: Hash },
-    ...(isParentTopic ? [{ id: 'subtopics', label: 'Sub-topics', icon: List }] : []),
+    { id: 'details', label: t('topicsDetailsModal.tabs.details'), icon: Hash },
+    ...(isParentTopic
+      ? [{ id: 'subtopics', label: t('topicsDetailsModal.tabs.subtopics'), icon: List }]
+      : []),
   ];
 
   return (
@@ -309,7 +313,7 @@ const TopicsDetailsModal = ({
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col overflow-hidden animate-slideInFromTop">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {topic && (
               <>
                 {topic.topic_image && topic.parent_id === 0 ? (
@@ -330,7 +334,9 @@ const TopicsDetailsModal = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
-                    {loading ? 'Loading...' : topic.topic_name || topic.name || 'Topic Details'}
+                    {loading
+                      ? t('common:loading')
+                      : topic.topic_name || topic.name || t('topicsDetailsModal.topicDetails')}
                   </h2>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     <span
@@ -341,16 +347,18 @@ const TopicsDetailsModal = ({
                       }`}
                     >
                       <span
-                        className={`w-1 h-1 rounded-full mr-1 ${
+                        className={`w-1 h-1 rounded-full me-1 ${
                           isActive
                             ? 'bg-green-500 dark:bg-green-400'
                             : 'bg-gray-500 dark:bg-gray-400'
                         }`}
                       ></span>
-                      {isActive ? 'Active' : 'Inactive'}
+                      {isActive ? t('common:active') : t('common:inactive')}
                     </span>
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30">
-                      {topic.parent_id && topic.parent_id > 0 ? 'Subtopic' : 'Category'}
+                      {topic.parent_id && topic.parent_id > 0
+                        ? t('topicsDetailsModal.subtopic')
+                        : t('topicsDetailsModal.category')}
                     </span>
                   </div>
                 </div>
@@ -359,7 +367,7 @@ const TopicsDetailsModal = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ml-3"
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ms-3"
           >
             <X size={18} />
           </button>
@@ -388,7 +396,7 @@ const TopicsDetailsModal = ({
                 <Icon size={14} />
                 {tab.label}
                 {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 dark:bg-purple-400"></div>
+                  <div className="absolute bottom-0 start-0 end-0 h-0.5 bg-purple-600 dark:bg-purple-400"></div>
                 )}
               </button>
             );
@@ -414,7 +422,7 @@ const TopicsDetailsModal = ({
                   {topic.topic_image && (!topic.parent_id || topic.parent_id === 0) && (
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Topic Image
+                        {t('addTopicModal.topicImage')}
                       </h3>
                       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                         <img
@@ -432,11 +440,13 @@ const TopicsDetailsModal = ({
                   {/* Description */}
                   <div>
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                      Description
+                      {t('common:description')}
                     </h3>
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                       <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                        {topic.topic_description || topic.description || 'No description'}
+                        {topic.topic_description ||
+                          topic.description ||
+                          t('topicsDetailsModal.noDescription')}
                       </p>
                     </div>
                   </div>
@@ -445,28 +455,30 @@ const TopicsDetailsModal = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Slug
+                        {t('topicsDetailsModal.slug')}
                       </h3>
                       <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
                         <p className="text-gray-700 dark:text-gray-300 font-mono text-sm">
-                          {topic.topic_slug || topic.slug || 'No slug'}
+                          {topic.topic_slug || topic.slug || t('topicsDetailsModal.noSlug')}
                         </p>
                       </div>
                     </div>
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Type
+                        {t('common:type')}
                       </h3>
                       <div className="flex items-center gap-2">
                         <FolderTree size={14} className="text-purple-500" />
                         <span className="text-xs text-gray-700 dark:text-gray-300">
-                          {topic.parent_id && topic.parent_id > 0 ? 'Subtopic' : 'Category'}
+                          {topic.parent_id && topic.parent_id > 0
+                            ? t('topicsDetailsModal.subtopic')
+                            : t('topicsDetailsModal.category')}
                         </span>
                       </div>
                     </div>
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Parent Topic
+                        {t('addTopicModal.parentTopic')}
                       </h3>
                       <div className="text-gray-700 dark:text-gray-300">
                         {topic.parent_name ? (
@@ -474,17 +486,19 @@ const TopicsDetailsModal = ({
                             {topic.parent_name}
                           </span>
                         ) : topic.parent_id && topic.parent_id > 0 ? (
-                          <span className="text-gray-500 dark:text-gray-400">Has Parent Topic</span>
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {t('topicsDetailsModal.hasParentTopic')}
+                          </span>
                         ) : (
                           <span className="text-purple-600 dark:text-purple-400 font-medium">
-                            Root Category
+                            {t('topicsDetailsModal.rootCategory')}
                           </span>
                         )}
                       </div>
                     </div>
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Created
+                        {t('common:created')}
                       </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Calendar size={18} />
@@ -500,12 +514,14 @@ const TopicsDetailsModal = ({
                 <div className="px-6 py-5">
                   <div className="mb-4">
                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                      Sub-topics of "{topic.topic_name || topic.name}"
+                      {t('topicsDetailsModal.subtopicsOf', {
+                        name: topic.topic_name || topic.name,
+                      })}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {subTopics.length > 0
-                        ? `${subTopics.length} sub-topic${subTopics.length !== 1 ? 's' : ''} found`
-                        : 'No sub-topics found'}
+                        ? t('topicsDetailsModal.subtopicsFound', { count: subTopics.length })
+                        : t('topicsDetailsModal.noSubtopicsFound')}
                     </p>
                   </div>
 
@@ -522,23 +538,23 @@ const TopicsDetailsModal = ({
                         <table className="w-full">
                           <thead className="bg-purple-50 dark:bg-gray-700/50 border-b border-purple-100 dark:border-gray-700">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
-                                Name
+                              <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                {t('common:name')}
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
-                                Slug
+                              <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                {t('topicsDetailsModal.slug')}
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
-                                Description
+                              <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                {t('common:description')}
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
-                                Status
+                              <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                {t('common:status')}
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
-                                Created
+                              <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                {t('common:created')}
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
-                                Actions
+                              <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                {t('common:actions')}
                               </th>
                             </tr>
                           </thead>
@@ -560,14 +576,14 @@ const TopicsDetailsModal = ({
                                   </td>
                                   <td className="px-4 py-3">
                                     <span className="text-xs font-mono text-gray-600 dark:text-gray-400">
-                                      {subTopic.topic_slug || subTopic.slug || 'N/A'}
+                                      {subTopic.topic_slug || subTopic.slug || t('topicsDetailsModal.notAvailable')}
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
                                     <span className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 max-w-xs">
                                       {subTopic.topic_description ||
                                         subTopic.description ||
-                                        'No description'}
+                                        t('topicsDetailsModal.noDescription')}
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
@@ -579,13 +595,13 @@ const TopicsDetailsModal = ({
                                       }`}
                                     >
                                       <span
-                                        className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                        className={`w-1.5 h-1.5 rounded-full me-1.5 ${
                                           isActiveRow
                                             ? 'bg-green-500 dark:bg-green-400'
                                             : 'bg-gray-500 dark:bg-gray-400'
                                         }`}
                                       ></span>
-                                      {isActiveRow ? 'Active' : 'Inactive'}
+                                      {isActiveRow ? t('common:active') : t('common:inactive')}
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
@@ -605,7 +621,7 @@ const TopicsDetailsModal = ({
                                           handleSubTopicEdit(subTopic);
                                         }}
                                         className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                        title="Edit sub-topic"
+                                        title={t('topicsDetailsModal.editSubtopic')}
                                       >
                                         <Edit size={16} />
                                       </button>
@@ -616,8 +632,8 @@ const TopicsDetailsModal = ({
                                         onClick={(e) => e.stopPropagation()}
                                         title={
                                           isActiveRow
-                                            ? 'Deactivate sub-topic'
-                                            : 'Activate sub-topic'
+                                            ? t('topicsDetailsModal.deactivateSubtopic')
+                                            : t('topicsDetailsModal.activateSubtopic')
                                         }
                                       >
                                         <input
@@ -629,7 +645,7 @@ const TopicsDetailsModal = ({
                                           }}
                                           className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 rtl:peer-checked:after:-translate-x-full"></div>
                                       </label>
 
                                       {/* Delete Button */}
@@ -640,7 +656,7 @@ const TopicsDetailsModal = ({
                                           setShowDeleteConfirm(true);
                                         }}
                                         className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                        title="Delete sub-topic"
+                                        title={t('topicsDetailsModal.deleteSubtopic')}
                                       >
                                         <Trash2 size={16} />
                                       </button>
@@ -660,10 +676,10 @@ const TopicsDetailsModal = ({
                         className="mx-auto text-gray-400 dark:text-gray-500 mb-3"
                       />
                       <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                        No sub-topics found
+                        {t('topicsDetailsModal.noSubtopicsFound')}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                        This parent topic doesn't have any child topics yet.
+                        {t('topicsDetailsModal.noSubtopicsYet')}
                       </p>
                     </div>
                   )}
@@ -685,7 +701,7 @@ const TopicsDetailsModal = ({
                 className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-xs font-medium"
               >
                 <Trash2 size={16} />
-                <span>Delete</span>
+                <span>{t('common:delete')}</span>
               </button>
             )}
             {onEdit && (
@@ -697,11 +713,11 @@ const TopicsDetailsModal = ({
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-xs font-medium"
               >
                 <Edit size={16} />
-                <span>Edit</span>
+                <span>{t('common:edit')}</span>
               </button>
             )}
             {/* Status Toggle in Footer */}
-            <div className="flex items-center gap-2 pl-3 ml-1 border-l border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 ps-3 ms-1 border-s border-gray-200 dark:border-gray-700">
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -715,14 +731,14 @@ const TopicsDetailsModal = ({
                   className="sr-only peer"
                 />
                 <div
-                  className={`w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 rtl:peer-checked:after:-translate-x-full ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                 ></div>
               </label>
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {isActive ? 'Active' : 'Inactive'}
+                {isActive ? t('common:active') : t('common:inactive')}
               </span>
               {updatingStatus && (
-                <Loader2 size={14} className="animate-spin text-purple-600 ml-1" />
+                <Loader2 size={14} className="animate-spin text-purple-600 ms-1" />
               )}
             </div>
           </div>
@@ -731,7 +747,7 @@ const TopicsDetailsModal = ({
               onClick={onClose}
               className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95"
             >
-              Close
+              {t('common:close')}
             </button>
           </div>
         </div>
@@ -747,16 +763,18 @@ const TopicsDetailsModal = ({
         }}
         onConfirm={handleDeleteSubTopic}
         type="danger"
-        title="Delete Sub-topic"
+        title={t('topicsDetailsModal.deleteSubtopicTitle')}
         message={
           error
             ? error
             : subTopicToDelete
-              ? `Are you sure you want to permanently delete "${subTopicToDelete.topic_name || subTopicToDelete.name}"? This action cannot be undone.`
+              ? t('topicsDetailsModal.deleteSubtopicMessage', {
+                  name: subTopicToDelete.topic_name || subTopicToDelete.name,
+                })
               : ''
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
         isLoading={deletingSubTopic}
       />
     </div>

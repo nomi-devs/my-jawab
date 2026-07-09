@@ -1,6 +1,7 @@
 // src/components/dashboard/topics/TopicsPage.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import topicsApi from '../../../api/topicsApi';
 import TopicsHeader from './TopicsHeader';
 import TopicsGrid from './TopicsGrid';
@@ -15,6 +16,7 @@ import TableSkeleton from '../../common/TableSkeleton';
 import { useTopicsList, useTopicActions } from '../../../hooks/useTopics';
 
 const TopicsPage = () => {
+  const { t } = useTranslation('topics');
   const location = useLocation();
   const navigate = useNavigate();
   // Removed manual states: topics, loading, error, etc. managed by hook now
@@ -160,12 +162,12 @@ const TopicsPage = () => {
     async (topicData) => {
       try {
         await createTopic(topicData);
-        setSuccessMessage('Topic created successfully!');
+        setSuccessMessage(t('topicsPage.topicCreated'));
         setShowAddModal(false);
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error creating topic:', err);
-        setLocalError(`Failed to create topic: ${err.response?.data?.message || err.message}`);
+        setLocalError(t('topicsPage.failedToCreate', { message: err.response?.data?.message || err.message }));
         setTimeout(() => setLocalError(null), 5000);
       }
     },
@@ -184,13 +186,13 @@ const TopicsPage = () => {
     async (topicId, updatedData) => {
       try {
         await updateTopic({ id: topicId, data: updatedData });
-        setSuccessMessage('Topic updated successfully!');
+        setSuccessMessage(t('topicsPage.topicUpdated'));
         setShowEditModal(false);
         setSelectedTopicForEdit(null);
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error updating topic:', err);
-        setLocalError(`Failed to update topic: ${err.response?.data?.message || err.message}`);
+        setLocalError(t('topicsPage.failedToUpdate', { message: err.response?.data?.message || err.message }));
         setTimeout(() => setLocalError(null), 5000);
       }
     },
@@ -208,15 +210,13 @@ const TopicsPage = () => {
         const topic = topics.find((t) => t.id === topicId);
         setSuccessMessage(
           isActive
-            ? `Topic "${topic?.topic_name || 'Topic'}" activated!`
-            : `Topic "${topic?.topic_name || 'Topic'}" deactivated!`,
+            ? t('topicsPage.topicActivated', { name: topic?.topic_name || 'Topic' })
+            : t('topicsPage.topicDeactivated', { name: topic?.topic_name || 'Topic' }),
         );
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error toggling topic status:', err);
-        const errorMsg =
-          err.response?.data?.message || 'Failed to update topic status. Please try again.';
-        setLocalError(errorMsg);
+        setLocalError(err.response?.data?.message || t('topicsPage.failedToUpdateStatus'));
         setTimeout(() => setLocalError(null), 5000);
       }
     },
@@ -240,14 +240,13 @@ const TopicsPage = () => {
       // Delete topic permanently from database
       await deleteTopic(topicToDelete.id);
 
-      setSuccessMessage(`Topic "${topicToDelete.topic_name}" deleted successfully!`);
+      setSuccessMessage(t('topicsPage.topicDeleted', { name: topicToDelete.topic_name }));
       setShowDeleteConfirm(false);
       setTopicToDelete(null);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting topic:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to delete topic. Please try again.';
-      setLocalError(errorMsg);
+      setLocalError(err.response?.data?.message || t('topicsPage.failedToDelete'));
       setShowDeleteConfirm(false);
       setTopicToDelete(null);
       setTimeout(() => setLocalError(null), 5000);
@@ -300,7 +299,7 @@ const TopicsPage = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
 
@@ -309,7 +308,7 @@ const TopicsPage = () => {
         isOpen={!!localError}
         onClose={() => setLocalError(null)}
         type="error"
-        title="Error"
+        title={t('common:error')}
         message={localError}
       />
 
@@ -322,14 +321,10 @@ const TopicsPage = () => {
         }}
         onConfirm={confirmDeleteTopic}
         type="danger"
-        title="Delete Topic"
-        message={
-          topicToDelete
-            ? `Are you sure you want to permanently delete "${topicToDelete.topic_name}"? This action cannot be undone. The topic will be removed from the database.`
-            : ''
-        }
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('topicsPage.deleteTitle')}
+        message={topicToDelete ? t('topicsPage.deleteMessage', { name: topicToDelete.topic_name }) : ''}
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
         isLoading={isDeleting}
       />
 
@@ -368,8 +363,8 @@ const TopicsPage = () => {
       {/* Main Topics Container */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         <TopicsHeader
-          title="Parent Topics"
-          countLabel="Total Parent Topics"
+          title={t('topicsPage.parentTopics')}
+          countLabel={t('topicsPage.totalParentTopics')}
           topicCount={totalTopics}
           onAddClick={() => setShowAddModal(true)}
           onSearch={handleSearch}
@@ -396,7 +391,7 @@ const TopicsPage = () => {
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('topicsPage.updating')}</span>
             </div>
           </div>
         </div>
@@ -413,7 +408,7 @@ const TopicsPage = () => {
             <div className="p-12">
               <div className="flex flex-col items-center justify-center">
                 <div className="w-12 h-12 border-4 border-purple-200 dark:border-purple-700 border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Loading topics...</p>
+                <p className="text-gray-600 dark:text-gray-400">{t('topicsPage.loadingTopics')}</p>
               </div>
             </div>
           ) : topics.length === 0 ? (
@@ -422,18 +417,18 @@ const TopicsPage = () => {
                 <span className="text-gray-400 dark:text-gray-500 text-2xl">#</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No topics found
+                {t('topicsPage.noTopicsFound')}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                  ? 'Try changing your search or filters'
-                  : 'Start by adding your first topic'}
+                  ? t('topicsPage.tryChangingFilters')
+                  : t('topicsPage.startAddingFirstTopic')}
               </p>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
-                Add First Topic
+                {t('topicsPage.addFirstTopic')}
               </button>
             </div>
           ) : (
@@ -458,7 +453,7 @@ const TopicsPage = () => {
             onPageChange={handlePageChange}
             totalItems={totalTopics}
             itemsPerPage={topicsPerPage}
-            itemName="topics"
+            itemName={t('topicsPage.itemName')}
           />
         )}
       </div>

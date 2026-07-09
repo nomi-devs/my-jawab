@@ -1,5 +1,6 @@
 // src/components/dashboard/posts/PostDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   FileText,
@@ -34,6 +35,7 @@ const PostDetailsModal = ({
   onEdit,
   onDelete,
 }) => {
+  const { t } = useTranslation('posts');
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(true);
   const [postDetails, setPostDetails] = useState(null);
@@ -74,7 +76,7 @@ const PostDetailsModal = ({
       setPendingIsFeatured(!!postData.is_featured);
     } catch (err) {
       console.error('Error fetching post details:', err);
-      setError('Failed to load post details');
+      setError(t('postDetailsModal.failedToLoadDetails'));
       // Use provided postData as fallback
       if (postData) {
         const normalizedStatus = normalizePostStatus(postData.post_status || 'draft');
@@ -165,7 +167,7 @@ const PostDetailsModal = ({
       }
     } catch (err) {
       console.error('Error saving post changes:', err);
-      setError('Failed to save changes');
+      setError(t('postDetailsModal.failedToSaveChanges'));
     } finally {
       setUpdatingStatus(false);
     }
@@ -178,7 +180,7 @@ const PostDetailsModal = ({
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return t('postDetailsModal.notAvailable');
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       month: 'long',
@@ -190,7 +192,7 @@ const PostDetailsModal = ({
   };
 
   const formatTimeAgo = (timestamp) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return t('postDetailsModal.notAvailable');
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
@@ -198,9 +200,9 @@ const PostDetailsModal = ({
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
+    if (minutes < 60) return t('postDetailsModal.time.minutesAgo', { count: minutes });
+    if (hours < 24) return t('postDetailsModal.time.hoursAgo', { count: hours });
+    if (days < 7) return t('postDetailsModal.time.daysAgo', { count: days });
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -219,25 +221,30 @@ const PostDetailsModal = ({
     : [];
 
   const tabs = [
-    { id: 'details', label: 'Details', icon: FileText },
-    { id: 'comments', label: 'Comments', icon: MessageCircle, count: postComments.length },
-    { id: 'actions', label: 'Actions', icon: Edit },
+    { id: 'details', label: t('postDetailsModal.tabs.details'), icon: FileText },
+    {
+      id: 'comments',
+      label: t('postDetailsModal.tabs.comments'),
+      icon: MessageCircle,
+      count: postComments.length,
+    },
+    { id: 'actions', label: t('postDetailsModal.tabs.actions'), icon: Edit },
   ];
 
   const getStatusBadge = (status) => {
     const statusConfig = {
       published: {
-        label: 'Published',
+        label: t('postDetailsModal.status.published'),
         className: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30',
         dot: 'bg-green-500 dark:bg-green-400',
       },
       draft: {
-        label: 'Draft',
+        label: t('postDetailsModal.status.draft'),
         className: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30',
         dot: 'bg-yellow-500 dark:bg-yellow-400',
       },
       archived: {
-        label: 'Archived',
+        label: t('postDetailsModal.status.archived'),
         className: 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700',
         dot: 'bg-gray-500 dark:bg-gray-400',
       },
@@ -249,7 +256,7 @@ const PostDetailsModal = ({
       <span
         className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${config.className}`}
       >
-        <span className={`w-1 h-1 rounded-full mr-1 ${config.dot}`}></span>
+        <span className={`w-1 h-1 rounded-full me-1 ${config.dot}`}></span>
         {config.label}
       </span>
     );
@@ -260,7 +267,7 @@ const PostDetailsModal = ({
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col overflow-hidden animate-slideInFromTop">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {post && (
               <>
                 <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
@@ -268,14 +275,16 @@ const PostDetailsModal = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
-                    {loading ? 'Loading...' : post.post_title || post.title || 'Post Details'}
+                    {loading
+                      ? t('common:loading')
+                      : post.post_title || post.title || t('postDetailsModal.defaultTitle')}
                   </h2>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     {getStatusBadge(postStatus || 'draft')}
                     {!!post.is_featured && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30">
-                        <Star size={10} className="mr-0.5" />
-                        Featured
+                        <Star size={10} className="me-0.5" />
+                        {t('postDetailsModal.featuredBadge')}
                       </span>
                     )}
                   </div>
@@ -285,7 +294,7 @@ const PostDetailsModal = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ml-3"
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ms-3"
           >
             <X size={18} />
           </button>
@@ -308,12 +317,12 @@ const PostDetailsModal = ({
                 <Icon size={14} />
                 {tab.label}
                 {tab.count !== undefined && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-[10px]">
+                  <span className="ms-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-[10px]">
                     {tab.count}
                   </span>
                 )}
                 {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 dark:bg-purple-400"></div>
+                  <div className="absolute bottom-0 start-0 end-0 h-0.5 bg-purple-600 dark:bg-purple-400"></div>
                 )}
               </button>
             );
@@ -344,7 +353,7 @@ const PostDetailsModal = ({
                           <FileText size={16} className="text-purple-600 dark:text-purple-400" />
                         </div>
                         <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
-                          Post Content
+                          {t('postDetailsModal.postContentHeading')}
                         </h3>
                       </div>
 
@@ -356,7 +365,9 @@ const PostDetailsModal = ({
 
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                         <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                          {post.post_content || post.content || 'No content available'}
+                          {post.post_content ||
+                            post.content ||
+                            t('postDetailsModal.noContentAvailable')}
                         </p>
                       </div>
                     </div>
@@ -366,21 +377,21 @@ const PostDetailsModal = ({
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 px-1">
                           <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
-                            Attached Media
+                            {t('postDetailsModal.attachedMediaHeading')}
                           </h3>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
                           {post.post_image && (
                             <div className="group relative rounded-xl overflow-hidden border border-purple-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm transition-hover">
-                              <div className="absolute top-3 left-3 z-10">
+                              <div className="absolute top-3 start-3 z-10">
                                 <span className="px-2 py-1 bg-blue-600/90 text-white text-[10px] font-bold rounded-md flex items-center gap-1 shadow-lg">
-                                  <ImageIcon size={10} /> IMAGE
+                                  <ImageIcon size={10} /> {t('postDetailsModal.imageBadge')}
                                 </span>
                               </div>
                               <img
                                 src={post.post_image}
-                                alt="Post visual"
+                                alt={t('postDetailsModal.postVisualAlt')}
                                 className="w-full h-auto max-h-[500px] object-contain mx-auto"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -388,7 +399,9 @@ const PostDetailsModal = ({
                                 }}
                               />
                               <div className="hidden items-center justify-center p-12 text-gray-400 bg-gray-50 dark:bg-gray-900/50">
-                                <span className="text-xs">Failed to load media asset</span>
+                                <span className="text-xs">
+                                  {t('postDetailsModal.failedToLoadMedia')}
+                                </span>
                               </div>
                             </div>
                           )}
@@ -397,7 +410,7 @@ const PostDetailsModal = ({
                             <div className="rounded-xl overflow-hidden border border-purple-100 dark:border-gray-700 bg-black shadow-sm">
                               <div className="px-4 py-2 bg-gray-900 flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-red-500 flex items-center gap-1">
-                                  <Video size={12} /> VIDEO CONTENT
+                                  <Video size={12} /> {t('postDetailsModal.videoBadge')}
                                 </span>
                               </div>
                               <video
@@ -413,7 +426,7 @@ const PostDetailsModal = ({
                               <div className="flex items-center gap-2 mb-3">
                                 <Music size={14} className="text-green-600" />
                                 <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                                  Audio Preview
+                                  {t('postDetailsModal.audioPreviewLabel')}
                                 </span>
                               </div>
                               <audio
@@ -441,25 +454,34 @@ const PostDetailsModal = ({
                               post.author?.avatar ||
                               `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user?.username || 'user'}`
                             }
-                            alt="Author"
+                            alt={t('postDetailsModal.authorAlt')}
                             className="w-16 h-16 rounded-2xl border-4 border-white dark:border-gray-800 shadow-md object-cover"
                           />
                         </div>
                         <h4 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
-                          {post.user?.username || post.author?.name || 'Anonymous User'}
+                          {post.user?.username ||
+                            post.author?.name ||
+                            t('postDetailsModal.anonymousUser')}
                         </h4>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                          @{post.user?.username || post.author?.username || 'user'}
+                          @
+                          {post.user?.username ||
+                            post.author?.username ||
+                            t('postDetailsModal.userFallback')}
                         </p>
                         <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                           <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-gray-500 dark:text-gray-400">Post ID</span>
+                            <span className="text-gray-500 dark:text-gray-400">
+                              {t('postDetailsModal.postIdLabel')}
+                            </span>
                             <span className="font-mono text-gray-700 dark:text-gray-300">
                               #{post.id}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-[11px] mt-2">
-                            <span className="text-gray-500 dark:text-gray-400">Created At</span>
+                            <span className="text-gray-500 dark:text-gray-400">
+                              {t('postDetailsModal.createdAtLabel')}
+                            </span>
                             <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
                               <Calendar size={10} />
                               <span>{formatDate(post.created_at || post.timestamp)}</span>
@@ -472,7 +494,7 @@ const PostDetailsModal = ({
                     {/* Stats Dashboard */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 p-5 shadow-sm">
                       <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
-                        Statistics
+                        {t('postDetailsModal.statisticsHeading')}
                       </h4>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -480,7 +502,9 @@ const PostDetailsModal = ({
                             <div className="p-1.5 bg-red-50 dark:bg-red-900/20 rounded-lg">
                               <Heart size={14} className="text-red-500 fill-red-500" />
                             </div>
-                            <span className="text-xs text-gray-600 dark:text-gray-300">Likes</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-300">
+                              {t('postDetailsModal.likesLabel')}
+                            </span>
                           </div>
                           <span className="text-sm font-bold text-gray-900 dark:text-white">
                             {(post.like_count || post.stats?.likes || 0).toLocaleString()}
@@ -493,7 +517,7 @@ const PostDetailsModal = ({
                               <ThumbsDown size={14} className="text-amber-600 fill-amber-600" />
                             </div>
                             <span className="text-xs text-gray-600 dark:text-gray-300">
-                              Dislikes
+                              {t('postDetailsModal.dislikesLabel')}
                             </span>
                           </div>
                           <span className="text-sm font-bold text-gray-900 dark:text-white">
@@ -507,7 +531,7 @@ const PostDetailsModal = ({
                               <MessageCircle size={14} className="text-blue-500" />
                             </div>
                             <span className="text-xs text-gray-600 dark:text-gray-300">
-                              Comments
+                              {t('postDetailsModal.commentsLabel')}
                             </span>
                           </div>
                           <span className="text-sm font-bold text-gray-900 dark:text-white">
@@ -521,7 +545,7 @@ const PostDetailsModal = ({
                               <Eye size={14} className="text-green-500" />
                             </div>
                             <span className="text-xs text-gray-600 dark:text-gray-300">
-                              Total Views
+                              {t('postDetailsModal.totalViewsLabel')}
                             </span>
                           </div>
                           <span className="text-sm font-bold text-gray-900 dark:text-white">
@@ -537,7 +561,7 @@ const PostDetailsModal = ({
                                 className="text-indigo-600 dark:text-indigo-400"
                               />
                               <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
-                                Engagement
+                                {t('postDetailsModal.engagementLabel')}
                               </span>
                             </div>
                             <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
@@ -555,7 +579,7 @@ const PostDetailsModal = ({
                     {tags.length > 0 && (
                       <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 p-5 shadow-sm">
                         <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
-                          Post Tags
+                          {t('postDetailsModal.postTagsHeading')}
                         </h4>
                         <div className="flex flex-wrap gap-2">
                           {tags.map((tag, index) => (
@@ -563,7 +587,7 @@ const PostDetailsModal = ({
                               key={index}
                               className="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-[10px] font-bold border border-purple-100/50 dark:border-purple-800/50"
                             >
-                              <Tag size={10} className="mr-1.5" />
+                              <Tag size={10} className="me-1.5" />
                               {tag.toUpperCase()}
                             </span>
                           ))}
@@ -590,7 +614,9 @@ const PostDetailsModal = ({
                         size={48}
                         className="mx-auto text-gray-300 dark:text-gray-600 mb-4"
                       />
-                      <p className="text-gray-500 dark:text-gray-400">No comments yet</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {t('postDetailsModal.noCommentsYet')}
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-5">
@@ -612,15 +638,17 @@ const PostDetailsModal = ({
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">
-                                  {comment.user?.username || comment.user?.name || 'Anonymous'}
+                                  {comment.user?.username ||
+                                    comment.user?.name ||
+                                    t('postDetailsModal.anonymousCommentAuthor')}
                                 </span>
                                 {comment.is_approved ? (
                                   <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs rounded-full">
-                                    Approved
+                                    {t('postDetailsModal.approvedBadge')}
                                   </span>
                                 ) : (
                                   <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 text-xs rounded-full">
-                                    Pending
+                                    {t('postDetailsModal.pendingBadge')}
                                   </span>
                                 )}
                               </div>
@@ -650,12 +678,12 @@ const PostDetailsModal = ({
                 <div className="px-6 py-5 space-y-6">
                   <div>
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
-                      Status Management
+                      {t('postDetailsModal.statusManagementHeading')}
                     </h3>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
-                      Current status:{' '}
+                      {t('postDetailsModal.currentStatusLabel')}{' '}
                       <span className="font-semibold text-gray-700 dark:text-gray-200 capitalize">
-                        {postStatus}
+                        {t(`postDetailsModal.status.${postStatus}`, { defaultValue: postStatus })}
                       </span>
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -669,7 +697,7 @@ const PostDetailsModal = ({
                         } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <CheckCircle size={16} />
-                        <span>Publish</span>
+                        <span>{t('postDetailsModal.publishButton')}</span>
                       </button>
 
                       <button
@@ -682,7 +710,7 @@ const PostDetailsModal = ({
                         } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <FileText size={16} />
-                        <span>Draft</span>
+                        <span>{t('postDetailsModal.draftButton')}</span>
                       </button>
 
                       <button
@@ -695,14 +723,14 @@ const PostDetailsModal = ({
                         } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <XCircle size={16} />
-                        <span>Archive</span>
+                        <span>{t('postDetailsModal.archiveButton')}</span>
                       </button>
                     </div>
                   </div>
 
                   <div>
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
-                      Featured Status
+                      {t('postDetailsModal.featuredStatusHeading')}
                     </h3>
                     <button
                       onClick={() => setPendingIsFeatured(!pendingIsFeatured)}
@@ -714,7 +742,11 @@ const PostDetailsModal = ({
                       } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Star size={16} className={pendingIsFeatured ? 'fill-purple-500' : ''} />
-                      <span>{pendingIsFeatured ? 'Remove Featured' : 'Mark as Featured'}</span>
+                      <span>
+                        {pendingIsFeatured
+                          ? t('postDetailsModal.removeFeaturedButton')
+                          : t('postDetailsModal.markAsFeaturedButton')}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -735,7 +767,7 @@ const PostDetailsModal = ({
                 className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-xs font-medium"
               >
                 <Trash2 size={16} />
-                <span>Delete</span>
+                <span>{t('postDetailsModal.deleteButton')}</span>
               </button>
             )}
             {onEdit && (
@@ -747,7 +779,7 @@ const PostDetailsModal = ({
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-xs font-medium"
               >
                 <Edit size={16} />
-                <span>Edit</span>
+                <span>{t('postDetailsModal.editButton')}</span>
               </button>
             )}
           </div>
@@ -757,7 +789,7 @@ const PostDetailsModal = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               onClick={handleSaveChanges}
@@ -769,12 +801,12 @@ const PostDetailsModal = ({
               {updatingStatus ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  <span>Saving...</span>
+                  <span>{t('postDetailsModal.savingButton')}</span>
                 </>
               ) : (
                 <>
                   <CheckCircle size={16} />
-                  <span>Save Changes</span>
+                  <span>{t('postDetailsModal.saveChangesButton')}</span>
                 </>
               )}
             </button>

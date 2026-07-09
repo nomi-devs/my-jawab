@@ -1,8 +1,10 @@
 // src/components/dashboard/subscriptions/SubscriptionRow.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, Edit, Trash2, Package } from 'lucide-react';
 
 const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
+  const { t } = useTranslation('subscriptions');
   const formatPrice = (price, currencyCode = 'USD') => {
     try {
       return new Intl.NumberFormat('en-US', {
@@ -37,7 +39,7 @@ const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
   return (
     <tr className="hover:bg-purple-50/50 dark:hover:bg-gray-700/30 transition-colors animate-fadeIn">
       <td className="px-4 py-3 align-top">
-        <div className="flex items-start space-x-2">
+        <div className="flex items-start gap-2">
           <div className="flex-shrink-0">
             <Package className="w-7 h-7 text-purple-600 dark:text-purple-400" />
           </div>
@@ -87,7 +89,7 @@ const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
               : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
           }`}
         >
-          {subscription.is_active ? 'Active' : 'Inactive'}
+          {subscription.is_active ? t('common:active') : t('common:inactive')}
         </span>
       </td>
       <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
@@ -97,28 +99,28 @@ const SubscriptionRow = ({ subscription, onEdit, onDelete, onViewDetails }) => {
               day: 'numeric',
               year: 'numeric',
             })
-          : 'N/A'}
+          : t('subscriptionRow.notAvailable')}
       </td>
-      <td className="px-4 py-2 whitespace-nowrap text-right text-xs font-medium">
-        <div className="flex items-center justify-end space-x-2">
+      <td className="px-4 py-2 whitespace-nowrap text-end text-xs font-medium">
+        <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => onViewDetails && onViewDetails(subscription)}
             className="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded transition-colors"
-            title="View Details"
+            title={t('subscriptionRow.viewDetails')}
           >
             <Eye size={14} />
           </button>
           <button
             onClick={() => onEdit && onEdit(subscription)}
             className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
-            title="Edit"
+            title={t('common:edit')}
           >
             <Edit size={14} />
           </button>
           <button
             onClick={() => onDelete && onDelete(subscription)}
             className="p-1 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-            title="Delete"
+            title={t('common:delete')}
           >
             <Trash2 size={14} />
           </button>

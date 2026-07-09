@@ -90,7 +90,7 @@ export class SmsService {
       } else {
         this.logger.log(`SMS sent to ${phoneNumber} via ${safeUrl}`);
       }
-    } catch (error) {
+    } catch (error:any) {
       status = 'failed';
       providerResponse = error.message;
       this.logger.error(`Failed to reach SMS gateway (${safeUrl}):`, error);

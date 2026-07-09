@@ -1,5 +1,6 @@
 // src/components/common/AlertModal.jsx
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
 const AlertModal = ({
@@ -11,6 +12,8 @@ const AlertModal = ({
   duration = 3000,
   showCloseButton = true,
 }) => {
+  const { t } = useTranslation('common');
+
   useEffect(() => {
     if (isOpen && duration > 0 && onClose) {
       const timer = setTimeout(() => {
@@ -57,11 +60,11 @@ const AlertModal = ({
   const style = typeStyles[type] || typeStyles.success;
   const defaultTitle =
     {
-      success: 'Success',
-      error: 'Error',
-      warning: 'Warning',
-      info: 'Information',
-    }[type] || 'Alert';
+      success: t('success'),
+      error: t('error'),
+      warning: t('warning'),
+      info: t('alertModal.informationTitle'),
+    }[type] || t('alertModal.defaultTitle');
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
@@ -70,7 +73,7 @@ const AlertModal = ({
       >
         {/* Modal Header */}
         <div className="px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div
               className={`p-1.5 rounded-lg ${
                 type === 'error'
@@ -98,14 +101,16 @@ const AlertModal = ({
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
                 {title || defaultTitle}
               </h3>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">System Notification</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                {t('alertModal.systemNotification')}
+              </p>
             </div>
           </div>
           {showCloseButton && (
             <button
               onClick={onClose}
               className="p-1.5 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              aria-label="Close"
+              aria-label={t('close')}
             >
               <X size={16} className="text-gray-500 dark:text-gray-400" />
             </button>
@@ -136,7 +141,7 @@ const AlertModal = ({
                     : 'bg-green-600 text-white hover:bg-green-700'
             }`}
           >
-            Dismiss
+            {t('alertModal.dismiss')}
           </button>
         </div>
       </div>

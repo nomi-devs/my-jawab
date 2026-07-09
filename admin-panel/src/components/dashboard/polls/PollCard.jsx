@@ -1,5 +1,6 @@
 // src/components/dashboard/polls/PollCard.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart3,
   Users,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
+  const { t } = useTranslation('polls');
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -27,23 +29,23 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
     if (isExpired || status === 'ended') {
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-          <XCircle size={12} className="mr-1" />
-          Ended
+          <XCircle size={12} className="me-1" />
+          {t('pollCard.ended')}
         </span>
       );
     }
     if (status === 'published') {
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-          <CheckCircle size={12} className="mr-1" />
-          Published
+          <CheckCircle size={12} className="me-1" />
+          {t('pollCard.published')}
         </span>
       );
     }
     if (status === 'draft') {
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
-          Draft
+          {t('pollCard.draft')}
         </span>
       );
     }
@@ -64,7 +66,7 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1 line-clamp-2 transition-colors">
-              {poll.poll_title || poll.title || 'Untitled Poll'}
+              {poll.poll_title || poll.title || t('pollCard.untitledPoll')}
             </h3>
             {poll.poll_description && (
               <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 transition-colors">
@@ -80,8 +82,8 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
             }`}
           >
-            <TrendingUp size={12} className="mr-1" />
-            {poll.is_featured ? 'Featured' : 'Not Featured'}
+            <TrendingUp size={12} className="me-1" />
+            {poll.is_featured ? t('pollCard.featured') : t('pollCard.notFeatured')}
           </span>
         </div>
         <div className="flex items-center justify-between">
@@ -106,7 +108,7 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
                     <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
                       {option.option_text}
                     </span>
-                    <span className="text-gray-500 dark:text-gray-400 ml-2">{percentage}%</span>
+                    <span className="text-gray-500 dark:text-gray-400 ms-2">{percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                     <div
@@ -119,13 +121,13 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
             })}
             {poll.options.length > 3 && (
               <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                +{poll.options.length - 3} more options
+                {t('pollCard.moreOptions', { count: poll.options.length - 3 })}
               </p>
             )}
           </div>
         ) : (
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
-            No options available
+            {t('pollCard.noOptions')}
           </p>
         )}
 
@@ -147,7 +149,7 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
               <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">
                 {getTotalVotes()}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Votes</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('pollCard.votes')}</p>
             </div>
           )}
           {poll.view_count > 0 && (
@@ -158,11 +160,11 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
               <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">
                 {poll.view_count}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Views</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('pollCard.views')}</p>
             </div>
           )}
-          <div className="flex items-center justify-center text-left">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 mr-2">
+          <div className="flex items-center justify-center text-start">
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 me-2">
               <Clock size={13} className="text-amber-500 dark:text-amber-400" />
             </div>
             {(() => {
@@ -171,7 +173,7 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
               return dateObj ? (
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300 font-semibold">
-                    Expires
+                    {t('pollCard.expires')}
                   </span>
                   <span
                     className="text-[11px] font-semibold text-gray-900 dark:text-gray-100"
@@ -199,7 +201,9 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
                   </span>
                 </div>
               ) : (
-                <span className="text-xs text-gray-400 dark:text-gray-500">(no date)</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {t('pollCard.noDate')}
+                </span>
               );
             })()}
           </div>
@@ -211,7 +215,7 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
         <button
           onClick={() => onViewDetails && onViewDetails(poll)}
           className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          title="View Details"
+          title={t('pollCard.viewDetails')}
         >
           <Eye size={16} />
         </button>
@@ -219,14 +223,14 @@ const PollCard = React.memo(({ poll, onEdit, onDelete, onViewDetails }) => {
         <button
           onClick={() => onEdit && onEdit(poll)}
           className="p-1.5 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/10 rounded-lg transition-colors"
-          title="Edit Poll"
+          title={t('pollCard.editPoll')}
         >
           <Edit size={16} />
         </button>
         <button
           onClick={() => onDelete && onDelete(poll)}
           className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-          title="Delete Poll"
+          title={t('pollCard.deletePoll')}
         >
           <Trash2 size={16} />
         </button>

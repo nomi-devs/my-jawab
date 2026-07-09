@@ -1,6 +1,7 @@
 // src/components/dashboard/users/UserDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   User,
@@ -29,6 +30,7 @@ import paymentsApi from '../../../api/paymentsApi';
 import AlertModal from '../../common/AlertModal';
 
 const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete }) => {
+  const { t } = useTranslation('users');
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
       }
     } catch (err) {
       console.error('Error fetching user details:', err);
-      setError('Failed to load user details');
+      setError(t('userDetailsModal.failedToLoadDetails'));
       // Use provided userData as fallback
       if (userData) {
         setUserDetails({
@@ -164,13 +166,28 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
   };
 
   const tabs = [
-    { id: 'details', label: 'Details', icon: User },
-    { id: 'posts', label: 'Posts', icon: FileText, count: userPosts.length },
-    { id: 'communities', label: 'Communities', icon: Users, count: userCommunities.length },
-    { id: 'subscriptions', label: 'Subscriptions', icon: Package, count: userSubscriptions.length },
-    { id: 'payments', label: 'Payments', icon: CreditCard, count: userPayments.length },
-    { id: 'stats', label: 'Statistics', icon: Heart },
-    { id: 'actions', label: 'Actions', icon: Shield },
+    { id: 'details', label: t('userDetailsModal.tabDetails'), icon: User },
+    { id: 'posts', label: t('userDetailsModal.tabPosts'), icon: FileText, count: userPosts.length },
+    {
+      id: 'communities',
+      label: t('userDetailsModal.tabCommunities'),
+      icon: Users,
+      count: userCommunities.length,
+    },
+    {
+      id: 'subscriptions',
+      label: t('userDetailsModal.tabSubscriptions'),
+      icon: Package,
+      count: userSubscriptions.length,
+    },
+    {
+      id: 'payments',
+      label: t('userDetailsModal.tabPayments'),
+      icon: CreditCard,
+      count: userPayments.length,
+    },
+    { id: 'stats', label: t('userDetailsModal.tabStatistics'), icon: Heart },
+    { id: 'actions', label: t('userDetailsModal.tabActions'), icon: Shield },
   ];
 
   const hasChanges = () => {
@@ -206,7 +223,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
       queryClient.invalidateQueries({ queryKey: ['users'] });
 
       // Optional: Add success notification here
-      setSuccessMessage('User status updated successfully');
+      setSuccessMessage(t('userDetailsModal.statusUpdateSuccess'));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error('Error updating user status:', err);
@@ -214,13 +231,13 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
       const errorMessage = err.response?.data?.message;
 
       if (status === 404) {
-        setActionError('User not found. It may have been deleted.');
+        setActionError(t('userDetailsModal.userNotFound'));
       } else if (status === 403) {
-        setActionError('You do not have permission to update this user.');
+        setActionError(t('userDetailsModal.noPermission'));
       } else if (errorMessage) {
         setActionError(errorMessage);
       } else {
-        setActionError('Failed to update user status. Please try again.');
+        setActionError(t('userDetailsModal.updateFailed'));
       }
     } finally {
       setUpdatingStatus(false);
@@ -232,7 +249,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col overflow-hidden animate-slideInFromTop">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
             {user && (
               <img
                 src={
@@ -246,10 +263,12 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
             )}
             <div>
               <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                {loading ? 'Loading...' : profile?.full_name || user?.username || 'User Details'}
+                {loading
+                  ? t('common:loading')
+                  : profile?.full_name || user?.username || t('userDetailsModal.defaultTitle')}
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                @{user?.username || 'username'}
+                @{user?.username || t('userDetailsModal.usernameFallback')}
               </p>
             </div>
           </div>
@@ -315,13 +334,15 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                   <div className="bg-purple-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-1.5">
                       <User size={14} className="text-purple-600 dark:text-purple-400" />
-                      Basic Information
+                      {t('userDetailsModal.basicInformation')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-start gap-2">
                         <Mail className="text-gray-400 dark:text-gray-500 mt-0.5" size={14} />
                         <div>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Email</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                            {t('common:email')}
+                          </p>
                           <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                             {user.email}
                           </p>
@@ -330,7 +351,9 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                       <div className="flex items-start gap-2">
                         <Shield className="text-gray-400 dark:text-gray-500 mt-0.5" size={14} />
                         <div>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Role</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                            {t('userDetailsModal.role')}
+                          </p>
                           <p className="text-xs font-medium text-gray-800 dark:text-gray-200 capitalize">
                             {user.role?.replace('_', ' ') || 'user'}
                           </p>
@@ -339,7 +362,9 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                       <div className="flex items-start gap-2">
                         <Calendar className="text-gray-400 dark:text-gray-500 mt-0.5" size={14} />
                         <div>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Joined</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                            {t('userDetailsModal.joined')}
+                          </p>
                           <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                             {user.created_at
                               ? new Date(user.created_at).toLocaleDateString('en-US', {
@@ -347,7 +372,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                                   day: 'numeric',
                                   year: 'numeric',
                                 })
-                              : 'N/A'}
+                              : t('userDetailsModal.na')}
                           </p>
                         </div>
                       </div>
@@ -361,10 +386,12 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                            Verification
+                            {t('userDetailsModal.verification')}
                           </p>
                           <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
-                            {user.is_verified ? 'Verified' : 'Not Verified'}
+                            {user.is_verified
+                              ? t('userDetailsModal.verified')
+                              : t('userDetailsModal.notVerified')}
                           </p>
                         </div>
                       </div>
@@ -375,16 +402,20 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           />
                         </div>
                         <div>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Status</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                            {t('common:status')}
+                          </p>
                           <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
-                            {user.is_active ? 'Active' : 'Inactive'}
+                            {user.is_active ? t('common:active') : t('common:inactive')}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-start gap-2">
                         <LinkIcon className="text-gray-400 dark:text-gray-500 mt-0.5" size={14} />
                         <div>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Auth Type</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                            {t('userDetailsModal.authType')}
+                          </p>
                           <p className="text-xs font-medium text-gray-800 dark:text-gray-200 capitalize">
                             {user.auth_type || 'email'}
                           </p>
@@ -397,7 +428,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                   <div className="bg-purple-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-1.5">
                       <User size={14} className="text-purple-600 dark:text-purple-400" />
-                      Profile Information
+                      {t('userDetailsModal.profileInformation')}
                     </h3>
                     {profile && typeof profile === 'object' && Object.keys(profile).length > 0 ? (
                       <div className="space-y-4">
@@ -407,7 +438,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                             {profile.profile_picture && (
                               <div>
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">
-                                  Profile Picture
+                                  {t('userDetailsModal.profilePicture')}
                                 </p>
                                 <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-purple-200 dark:border-gray-600">
                                   <img
@@ -424,7 +455,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                             {profile.profile_background && (
                               <div>
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">
-                                  Profile Background
+                                  {t('userDetailsModal.profileBackground')}
                                 </p>
                                 <div className="relative w-full h-24 rounded-lg overflow-hidden border border-purple-200 dark:border-gray-600">
                                   <img
@@ -443,7 +474,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {profile.full_name && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                Full Name
+                                {t('userDetailsModal.fullName')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 {profile.full_name}
@@ -453,7 +484,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {profile.tagline && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                Tagline
+                                {t('userDetailsModal.tagline')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 {profile.tagline}
@@ -463,7 +494,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {profile.profile_gender && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                Gender
+                                {t('userDetailsModal.gender')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200 capitalize">
                                 {profile.profile_gender}
@@ -473,7 +504,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {profile.profile_birthday && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                Birthday
+                                {t('userDetailsModal.birthday')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 {new Date(profile.profile_birthday).toLocaleDateString('en-US', {
@@ -492,7 +523,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                               />
                               <div className="flex-1">
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                  Location
+                                  {t('userDetailsModal.location')}
                                 </p>
                                 <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                   {profile.profile_location}
@@ -508,7 +539,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                               />
                               <div className="flex-1">
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                  Website
+                                  {t('userDetailsModal.website')}
                                 </p>
                                 <a
                                   href={profile.profile_website}
@@ -526,7 +557,9 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                         {/* Bio - Full width */}
                         {profile.profile_bio && (
                           <div>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Bio</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
+                              {t('userDetailsModal.bio')}
+                            </p>
                             <p className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
                               {profile.profile_bio}
                             </p>
@@ -539,7 +572,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                             {profile.created_at && (
                               <div>
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                  Profile Created
+                                  {t('userDetailsModal.profileCreated')}
                                 </p>
                                 <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                   {new Date(profile.created_at).toLocaleDateString('en-US', {
@@ -555,7 +588,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                             {profile.updated_at && (
                               <div>
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                  Last Updated
+                                  {t('userDetailsModal.lastUpdated')}
                                 </p>
                                 <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                   {new Date(profile.updated_at).toLocaleDateString('en-US', {
@@ -575,10 +608,10 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                       <div className="text-center py-6">
                         <User className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          No profile information available
+                          {t('userDetailsModal.noProfileInfo')}
                         </p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                          This user hasn't set up their profile yet.
+                          {t('userDetailsModal.noProfileInfoSub')}
                         </p>
                       </div>
                     )}
@@ -596,7 +629,9 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                   ) : userPosts.length === 0 ? (
                     <div className="text-center py-12">
                       <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No posts found</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {t('userDetailsModal.noPostsFound')}
+                      </p>
                     </div>
                   ) : (
                     userPosts.map((post) => (
@@ -625,7 +660,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4 mb-1">
                               <h4 className="font-semibold text-gray-800 dark:text-gray-100 text-sm line-clamp-1">
-                                {post.post_title || 'Untitled Post'}
+                                {post.post_title || t('userDetailsModal.untitledPost')}
                               </h4>
                               <span
                                 className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium ${
@@ -663,10 +698,10 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                               {post.view_count}
                             </span>
                           )}
-                          <span className="ml-auto">
+                          <span className="ms-auto">
                             {post.created_at
                               ? new Date(post.created_at).toLocaleDateString()
-                              : 'N/A'}
+                              : t('userDetailsModal.na')}
                           </span>
                         </div>
                       </div>
@@ -685,7 +720,9 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                   ) : userCommunities.length === 0 ? (
                     <div className="text-center py-12">
                       <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No communities found</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {t('userDetailsModal.noCommunitiesFound')}
+                      </p>
                     </div>
                   ) : (
                     userCommunities.map((community) => (
@@ -714,7 +751,9 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
                               <h4 className="font-semibold text-gray-800 dark:text-gray-100 truncate">
-                                {community.community_name || community.name || 'Unnamed Community'}
+                                {community.community_name ||
+                                  community.name ||
+                                  t('userDetailsModal.unnamedCommunity')}
                               </h4>
                               <span
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
@@ -723,11 +762,11 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                                     : 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
                                 }`}
                               >
-                                {community.is_active ? 'Active' : 'Inactive'}
+                                {community.is_active ? t('common:active') : t('common:inactive')}
                               </span>
                             </div>
                             <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5 capitalize">
-                              {community.role || 'Member'}
+                              {community.role || t('userDetailsModal.member')}
                             </p>
                           </div>
                         </div>
@@ -740,12 +779,14 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {community.members_count > 0 && (
                             <span className="flex items-center gap-1">
                               <Users size={14} />
-                              {community.members_count} members
+                              {t('userDetailsModal.membersCount', {
+                                count: community.members_count,
+                              })}
                             </span>
                           )}
                           {community.is_private && (
                             <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
-                              Private
+                              {t('userDetailsModal.private')}
                             </span>
                           )}
                         </div>
@@ -765,7 +806,9 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                   ) : userSubscriptions.length === 0 ? (
                     <div className="text-center py-12">
                       <Package className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No subscriptions found</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {t('userDetailsModal.noSubscriptionsFound')}
+                      </p>
                     </div>
                   ) : (
                     userSubscriptions.map((subscription) => (
@@ -776,10 +819,12 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <h4 className="font-semibold text-gray-800 dark:text-gray-100">
-                              {subscription.subscription?.subscription_name || 'Unknown Plan'}
+                              {subscription.subscription?.subscription_name ||
+                                t('userDetailsModal.unknownPlan')}
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                              {subscription.subscription?.subscription_type || 'N/A'}
+                              {subscription.subscription?.subscription_type ||
+                                t('userDetailsModal.na')}
                             </p>
                           </div>
                           <span
@@ -791,14 +836,14 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                                   : 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
                             }`}
                           >
-                            {subscription.subscription_status || 'N/A'}
+                            {subscription.subscription_status || t('userDetailsModal.na')}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           {subscription.subscription_start_date && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-                                Start Date
+                                {t('userDetailsModal.startDate')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 {new Date(
@@ -810,7 +855,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {subscription.subscription_end_date && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-                                End Date
+                                {t('userDetailsModal.endDate')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 {new Date(subscription.subscription_end_date).toLocaleDateString()}
@@ -820,7 +865,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {subscription.subscription?.subscription_price && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-                                Price
+                                {t('userDetailsModal.price')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 ${subscription.subscription.subscription_price}
@@ -830,7 +875,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {subscription.subscription_renewal_type && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-                                Renewal
+                                {t('userDetailsModal.renewal')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200 capitalize">
                                 {subscription.subscription_renewal_type}
@@ -854,7 +899,9 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                   ) : userPayments.length === 0 ? (
                     <div className="text-center py-12">
                       <CreditCard className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No payments found</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {t('userDetailsModal.noPaymentsFound')}
+                      </p>
                     </div>
                   ) : (
                     userPayments.map((payment) => (
@@ -865,11 +912,12 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <h4 className="font-semibold text-gray-800 dark:text-gray-100">
-                              {payment.payment_transaction_id || `Payment #${payment.id}`}
+                              {payment.payment_transaction_id ||
+                                t('userDetailsModal.paymentHash', { id: payment.id })}
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                              {payment.payment_method?.replace('_', ' ') || 'N/A'} •{' '}
-                              {payment.payment_gateway || 'N/A'}
+                              {payment.payment_method?.replace('_', ' ') || t('userDetailsModal.na')}{' '}
+                              • {payment.payment_gateway || t('userDetailsModal.na')}
                             </p>
                           </div>
                           <span
@@ -881,13 +929,13 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                                   : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                             }`}
                           >
-                            {payment.payment_status || 'N/A'}
+                            {payment.payment_status || t('userDetailsModal.na')}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-                              Amount
+                              {t('userDetailsModal.amount')}
                             </p>
                             <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                               {new Intl.NumberFormat('en-US', {
@@ -899,7 +947,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {payment.created_at && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-                                Date
+                                {t('common:date')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 {new Date(payment.created_at).toLocaleDateString()}
@@ -909,7 +957,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {payment.user_subscription?.subscription?.subscription_name && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-                                Subscription
+                                {t('userDetailsModal.subscription')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 {payment.user_subscription.subscription.subscription_name}
@@ -919,7 +967,7 @@ const UserDetailsModal = ({ isOpen, onClose, userId, userData, onEdit, onDelete 
                           {payment.payment_currency && (
                             <div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-                                Currency
+                                {t('userDetailsModal.currency')}
                               </p>
                               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                                 {payment.payment_currency}

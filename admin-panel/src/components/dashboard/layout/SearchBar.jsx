@@ -1,6 +1,7 @@
 // src/components/dashboard/layout/SearchBar.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Search,
   X,
@@ -45,6 +46,7 @@ const saveRecentSearches = (searches) => {
 };
 
 const SearchBar = React.memo(() => {
+  const { t } = useTranslation('layout');
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -128,7 +130,7 @@ const SearchBar = React.memo(() => {
       setSearchResults(transformedResults);
     } catch (err) {
       console.error('Search error:', err);
-      setError(err.response?.data?.message || 'Failed to perform search');
+      setError(err.response?.data?.message || t('search.searchFailed'));
       setSearchResults({
         users: [],
         posts: [],
@@ -138,7 +140,7 @@ const SearchBar = React.memo(() => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Debounced search
   useEffect(() => {
@@ -270,7 +272,7 @@ const SearchBar = React.memo(() => {
         >
           <Search
             size={18}
-            className={`mr-2 ${isFocused ? 'text-purple-500 dark:text-purple-400' : 'text-purple-400 dark:text-gray-400'}`}
+            className={`me-2 ${isFocused ? 'text-purple-500 dark:text-purple-400' : 'text-purple-400 dark:text-gray-400'}`}
           />
           <input
             type="text"
@@ -278,14 +280,14 @@ const SearchBar = React.memo(() => {
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-            placeholder="Search users, posts, communities, topics..."
+            placeholder={t('search.placeholder')}
             className="bg-transparent border-none outline-none text-sm w-64 placeholder-purple-300 dark:placeholder-gray-500 text-gray-700 dark:text-gray-200"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={handleClearSearch}
-              className="ml-2 p-1 hover:bg-purple-50 dark:hover:bg-gray-700 rounded transition-colors"
+              className="ms-2 p-1 hover:bg-purple-50 dark:hover:bg-gray-700 rounded transition-colors"
             >
               <X size={16} className="text-gray-400 dark:text-gray-500" />
             </button>
@@ -296,7 +298,7 @@ const SearchBar = React.memo(() => {
       {/* Search Results Dropdown */}
       {(isFocused || searchQuery) && (
         <div
-          className="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-purple-100 dark:border-gray-700 z-50 animate-in slide-in-from-top-5 duration-200 transition-colors overflow-hidden flex flex-col"
+          className="absolute top-full end-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-purple-100 dark:border-gray-700 z-50 animate-in slide-in-from-top-5 duration-200 transition-colors overflow-hidden flex flex-col"
           style={{
             maxHeight: 'calc(100vh - 120px)',
             maxWidth: 'calc(100vw - 32px)',
@@ -326,7 +328,7 @@ const SearchBar = React.memo(() => {
                   {searchResults.users.length > 0 && (
                     <div className="mb-4">
                       <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">
-                        Users
+                        {t('search.users')}
                       </h4>
                       <div className="space-y-1">
                         {searchResults.users.map((user) => (
@@ -336,7 +338,7 @@ const SearchBar = React.memo(() => {
                             className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                           >
                             {user.avatar ? (
-                              <div className="w-9 h-9 rounded-lg overflow-hidden mr-2.5 flex-shrink-0 border border-purple-200 dark:border-gray-600">
+                              <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 flex-shrink-0 border border-purple-200 dark:border-gray-600">
                                 <img
                                   src={user.avatar}
                                   alt={user.name}
@@ -349,7 +351,7 @@ const SearchBar = React.memo(() => {
                                 />
                               </div>
                             ) : (
-                              <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition-colors">
+                              <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition-colors">
                                 {getResultIcon(user.type)}
                               </div>
                             )}
@@ -371,7 +373,7 @@ const SearchBar = React.memo(() => {
                   {searchResults.posts && searchResults.posts.length > 0 && (
                     <div className="mb-4">
                       <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">
-                        Posts
+                        {t('search.posts')}
                       </h4>
                       <div className="space-y-1">
                         {searchResults.posts.map((post) => {
@@ -396,7 +398,7 @@ const SearchBar = React.memo(() => {
                               className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                             >
                               {hasImage ? (
-                                <div className="w-9 h-9 rounded-lg overflow-hidden mr-2.5 flex-shrink-0 border border-orange-200 dark:border-gray-600 relative">
+                                <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 flex-shrink-0 border border-orange-200 dark:border-gray-600 relative">
                                   <img
                                     src={
                                       (post.thumbnail && post.thumbnail.trim()) ||
@@ -417,15 +419,15 @@ const SearchBar = React.memo(() => {
                                   )}
                                 </div>
                               ) : hasVideo ? (
-                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors relative">
+                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors relative">
                                   <Video size={16} className="text-orange-500" />
                                 </div>
                               ) : hasAudio ? (
-                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors relative">
+                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors relative">
                                   <Music size={16} className="text-orange-500" />
                                 </div>
                               ) : (
-                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors">
+                                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/60 transition-colors">
                                   {getResultIcon(post.type)}
                                 </div>
                               )}
@@ -435,7 +437,7 @@ const SearchBar = React.memo(() => {
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">
                                   {post.author ? `${post.author.name} • ` : ''}
-                                  {post.views} views • {post.likes} likes
+                                  {post.views} {t('search.views')} • {post.likes} {t('search.likes')}
                                 </div>
                               </div>
                             </button>
@@ -449,7 +451,7 @@ const SearchBar = React.memo(() => {
                   {searchResults.communities.length > 0 && (
                     <div className="mb-4">
                       <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">
-                        Communities
+                        {t('search.communities')}
                       </h4>
                       <div className="space-y-1">
                         {searchResults.communities.map((community) => {
@@ -463,7 +465,7 @@ const SearchBar = React.memo(() => {
                               className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                             >
                               {hasImage ? (
-                                <div className="w-9 h-9 rounded-lg overflow-hidden mr-2.5 flex-shrink-0 border border-blue-200 dark:border-gray-600">
+                                <div className="w-9 h-9 rounded-lg overflow-hidden me-2.5 flex-shrink-0 border border-blue-200 dark:border-gray-600">
                                   <img
                                     src={community.image}
                                     alt={community.name}
@@ -476,7 +478,7 @@ const SearchBar = React.memo(() => {
                                   />
                                 </div>
                               ) : (
-                                <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors">
+                                <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors">
                                   {getResultIcon(community.type)}
                                 </div>
                               )}
@@ -485,7 +487,7 @@ const SearchBar = React.memo(() => {
                                   {community.name}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">
-                                  {community.members} members
+                                  {community.members} {t('search.members')}
                                 </div>
                               </div>
                             </button>
@@ -499,7 +501,7 @@ const SearchBar = React.memo(() => {
                   {searchResults.topics.length > 0 && (
                     <div className="mb-4">
                       <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1 tracking-wider transition-colors">
-                        Topics
+                        {t('search.topics')}
                       </h4>
                       <div className="space-y-1">
                         {searchResults.topics.map((topic) => (
@@ -508,7 +510,7 @@ const SearchBar = React.memo(() => {
                             onClick={() => handleResultClick(topic)}
                             className="w-full flex items-center p-2.5 hover:bg-purple-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-150 text-left group active:scale-[0.98]"
                           >
-                            <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center mr-2.5 flex-shrink-0 group-hover:bg-green-200 dark:group-hover:bg-green-900/60 transition-colors">
+                            <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center me-2.5 flex-shrink-0 group-hover:bg-green-200 dark:group-hover:bg-green-900/60 transition-colors">
                               {getResultIcon(topic.type)}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -516,7 +518,7 @@ const SearchBar = React.memo(() => {
                                 {topic.name}
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors truncate">
-                                {topic.posts} posts
+                                {topic.posts} {t('search.postsCount')}
                               </div>
                             </div>
                           </button>
@@ -533,7 +535,7 @@ const SearchBar = React.memo(() => {
                       <div className="py-10 text-center">
                         <Search className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2.5" />
                         <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
-                          No results found for
+                          {t('search.noResultsFor')}
                         </p>
                         <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold mt-1 transition-colors">
                           "{searchQuery}"
@@ -547,7 +549,7 @@ const SearchBar = React.memo(() => {
               <div>
                 <div className="flex items-center justify-between mb-2.5 px-1">
                   <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider transition-colors">
-                    Recent Searches
+                    {t('search.recentSearches')}
                   </h4>
                   <button
                     onClick={() => {
@@ -556,7 +558,7 @@ const SearchBar = React.memo(() => {
                     }}
                     className="text-[10px] text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors font-medium"
                   >
-                    Clear all
+                    {t('search.clearAll')}
                   </button>
                 </div>
                 <div className="space-y-1 mb-4">
@@ -568,7 +570,7 @@ const SearchBar = React.memo(() => {
                     >
                       <Clock
                         size={14}
-                        className="text-gray-400 dark:text-gray-500 mr-2.5 flex-shrink-0"
+                        className="text-gray-400 dark:text-gray-500 me-2.5 flex-shrink-0"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300 transition-colors truncate">
                         {term}
@@ -578,7 +580,7 @@ const SearchBar = React.memo(() => {
                 </div>
                 <div className="pt-4 border-t border-purple-100 dark:border-gray-700">
                   <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2 px-1 font-medium transition-colors">
-                    Try searching for:
+                    {t('search.tryLabel')}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {['users', 'communities', 'analytics', 'reports'].map((term) => (

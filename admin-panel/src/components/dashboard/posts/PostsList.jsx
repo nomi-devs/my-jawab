@@ -1,6 +1,7 @@
 // src/components/dashboard/posts/PostsList.jsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FileText } from 'lucide-react';
 import PostsHeader from './PostsHeader';
 import PostRow from './PostRow';
@@ -16,6 +17,7 @@ import TableSkeleton from '../../common/TableSkeleton';
 import { usePostsList, usePostActions } from '../../../hooks/usePosts';
 
 const PostsList = () => {
+  const { t } = useTranslation('posts');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -158,7 +160,7 @@ const PostsList = () => {
     async (postId, statusData) => {
       try {
         await updatePostStatus({ id: postId, data: statusData });
-        setSuccessMessage('Post status updated successfully!');
+        setSuccessMessage(t('postsList.postStatusUpdated'));
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error updating post status:', err);
@@ -181,7 +183,7 @@ const PostsList = () => {
     async (formData) => {
       try {
         await createPost(formData);
-        setSuccessMessage('Post created successfully!');
+        setSuccessMessage(t('postsList.postCreated'));
         setTimeout(() => setSuccessMessage(''), 3000);
         setShowAddModal(false);
       } catch (err) {
@@ -230,7 +232,7 @@ const PostsList = () => {
             await updatePost({ id: postId, data: postData });
           }
         }
-        setSuccessMessage('Post updated successfully!');
+        setSuccessMessage(t('postsList.postUpdated'));
         setTimeout(() => setSuccessMessage(''), 3000);
         setShowEditModal(false);
       } catch (err) {
@@ -253,7 +255,7 @@ const PostsList = () => {
     if (!postToDelete) return;
     try {
       await deletePost(postToDelete.id);
-      setSuccessMessage('Post deleted successfully!');
+      setSuccessMessage(t('postsList.postDeleted'));
       setShowDeleteConfirm(false);
       setPostToDelete(null);
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -296,7 +298,7 @@ const PostsList = () => {
   if (isError) {
     return (
       <ErrorMessage
-        message={queryError?.message || 'Failed to load posts'}
+        message={queryError?.message || t('postsList.failedToLoad')}
         onRetry={() => refetch()}
       />
     );
@@ -310,7 +312,7 @@ const PostsList = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
 
@@ -322,14 +324,14 @@ const PostsList = () => {
         }}
         onConfirm={confirmDeletePost}
         type="danger"
-        title="Delete Post"
+        title={t('postsList.deletePostTitle')}
         message={
           postToDelete
-            ? `Are you sure you want to delete this post by ${postToDelete.author.name}? This action cannot be undone.`
+            ? t('postsList.deletePostConfirm', { name: postToDelete.author.name })
             : ''
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
         isLoading={isDeleting}
       />
 
@@ -340,9 +342,11 @@ const PostsList = () => {
           setAnalyticsPost(null);
         }}
         type="info"
-        title="Analytics"
+        title={t('postsList.analyticsTitle')}
         message={
-          analyticsPost ? `Analytics for post by ${analyticsPost.author.name} would open here` : ''
+          analyticsPost
+            ? t('postsList.analyticsMessage', { name: analyticsPost.author.name })
+            : ''
         }
         duration={0}
       />
@@ -401,9 +405,11 @@ const PostsList = () => {
           className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {t('postsList.updatingText')}
+              </span>
             </div>
           </div>
         </div>
@@ -422,31 +428,31 @@ const PostsList = () => {
                 <FileText className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No posts found
+                {t('postsList.noPostsFound')}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all' || featuredFilter !== 'all'
-                  ? 'Try changing your search or filters'
-                  : 'Start by adding your first post'}
+                  ? t('postsList.tryChangingFilters')
+                  : t('postsList.startAddingFirstPost')}
               </p>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
-                Add First Post
+                {t('postsList.addFirstPostButton')}
               </button>
             </div>
           ) : viewMode === 'list' ? (
-            <table className="w-full text-left border-collapse transition-opacity duration-300">
+            <table className="w-full text-start border-collapse transition-opacity duration-300">
               <thead className="bg-purple-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium transition-colors">
                 <tr>
-                  <th className="p-4 w-16">#</th>
-                  <th className="p-4">Post & Author</th>
-                  <th className="p-4">Content</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Stats</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4 w-16">{t('postsList.tableHeaders.serial')}</th>
+                  <th className="p-4">{t('postsList.tableHeaders.postAuthor')}</th>
+                  <th className="p-4">{t('postsList.tableHeaders.content')}</th>
+                  <th className="p-4">{t('common:status')}</th>
+                  <th className="p-4">{t('postsList.tableHeaders.stats')}</th>
+                  <th className="p-4">{t('common:date')}</th>
+                  <th className="p-4 text-end">{t('common:actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-100 dark:divide-gray-700 text-sm">

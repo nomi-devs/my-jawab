@@ -1,6 +1,7 @@
 // src/components/dashboard/banners/BannerForm.jsx
 // Shared form fields used by both Add and Edit modals.
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Image as ImageIcon,
   Link as LinkIcon,
@@ -24,6 +25,7 @@ const BannerForm = ({
   formId = 'banner-form',
   onSubmit,
 }) => {
+  const { t } = useTranslation('banners');
   const [topics, setTopics] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
@@ -138,7 +140,7 @@ const BannerForm = ({
       <div>
         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
           <ImageIcon size={12} className="text-purple-500" />
-          Banner Image <span className="text-red-500">*</span>
+          {t('bannerForm.bannerImage')} <span className="text-red-500">*</span>
         </label>
         {imagePreview && (
           <div className="mb-2">
@@ -150,8 +152,10 @@ const BannerForm = ({
           </div>
         )}
         <label className="inline-flex items-center px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
-          <ImageIcon size={14} className="mr-1" />
-          {existingImageUrl || formData.banner_image ? 'Replace Image' : 'Upload Image'}
+          <ImageIcon size={14} className="me-1" />
+          {existingImageUrl || formData.banner_image
+            ? t('bannerForm.replaceImage')
+            : t('bannerForm.uploadImage')}
           <input
             type="file"
             accept="image/*"
@@ -161,7 +165,7 @@ const BannerForm = ({
           />
         </label>
         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-          Recommended: 1200×400px. Max 10MB.
+          {t('bannerForm.imageHint')}
         </p>
       </div>
 
@@ -169,14 +173,14 @@ const BannerForm = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Title
+            {t('common:title')}
           </label>
           <input
             type="text"
             name="banner_title"
             value={formData.banner_title}
             onChange={handleChange}
-            placeholder="Upgrade to Premium"
+            placeholder={t('bannerForm.titlePlaceholder')}
             maxLength={255}
             className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
             disabled={isSubmitting}
@@ -185,7 +189,7 @@ const BannerForm = ({
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
             <Layers size={12} className="text-purple-500" />
-            Type
+            {t('common:type')}
           </label>
           <select
             name="banner_type"
@@ -194,9 +198,9 @@ const BannerForm = ({
             className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
             disabled={isSubmitting}
           >
-            <option value="promotion">Promotion</option>
-            <option value="ad">Ad</option>
-            <option value="announcement">Announcement</option>
+            <option value="promotion">{t('bannerForm.typePromotion')}</option>
+            <option value="ad">{t('bannerForm.typeAd')}</option>
+            <option value="announcement">{t('bannerForm.typeAnnouncement')}</option>
           </select>
         </div>
       </div>
@@ -204,14 +208,14 @@ const BannerForm = ({
       {/* ── Description ───────────────────────────────── */}
       <div>
         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Description
+          {t('common:description')}
         </label>
         <textarea
           name="banner_description"
           value={formData.banner_description}
           onChange={handleChange}
           rows="2"
-          placeholder="Short text shown under the banner title..."
+          placeholder={t('bannerForm.descriptionPlaceholder')}
           className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm resize-none"
           disabled={isSubmitting}
         />
@@ -222,14 +226,14 @@ const BannerForm = ({
         <div className="md:col-span-2">
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
             <LinkIcon size={12} className="text-purple-500" />
-            Link / Deep-link URL
+            {t('bannerForm.linkLabel')}
           </label>
           <input
             type="text"
             name="banner_link"
             value={formData.banner_link}
             onChange={handleChange}
-            placeholder="https://... or /posts/abc"
+            placeholder={t('bannerForm.linkPlaceholder')}
             maxLength={500}
             className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
             disabled={isSubmitting}
@@ -237,7 +241,7 @@ const BannerForm = ({
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Display Order
+            {t('bannerForm.displayOrder')}
           </label>
           <input
             type="number"
@@ -255,12 +259,12 @@ const BannerForm = ({
       <div className="pt-3 border-t border-purple-100 dark:border-gray-700">
         <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
           <Calendar size={14} className="text-purple-500" />
-          Scheduling
+          {t('bannerForm.scheduling')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Valid From
+              {t('bannerForm.validFrom')}
             </label>
             <input
               type="datetime-local"
@@ -273,7 +277,7 @@ const BannerForm = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Valid Until
+              {t('bannerForm.validUntil')}
             </label>
             <input
               type="datetime-local"
@@ -286,7 +290,7 @@ const BannerForm = ({
           </div>
         </div>
         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-          Leave empty for no start/end date.
+          {t('bannerForm.schedulingHint')}
         </p>
       </div>
 
@@ -294,42 +298,42 @@ const BannerForm = ({
       <div className="pt-3 border-t border-purple-100 dark:border-gray-700">
         <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
           <Globe size={14} className="text-green-500" />
-          Target (show banner to these users)
+          {t('bannerForm.targetTitle')}
         </h3>
         <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 flex items-start gap-1.5">
           <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
-          <span>Leave empty to show banner to everyone.</span>
+          <span>{t('bannerForm.targetHint')}</span>
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Countries - still CSV (no backend endpoint for ISO list) */}
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
               <Globe size={11} className="text-purple-500" />
-              Countries
+              {t('bannerForm.countries')}
             </label>
             <input
               type="text"
               name="target_countries"
               value={formData.target_countries}
               onChange={handleChange}
-              placeholder="US, UK, PK"
+              placeholder={t('bannerForm.countriesPlaceholderTarget')}
               className="w-full px-3 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-xs"
               disabled={isSubmitting}
             />
-            <p className="text-[10px] text-gray-500 mt-1">Comma-separated ISO codes</p>
+            <p className="text-[10px] text-gray-500 mt-1">{t('bannerForm.countriesHint')}</p>
           </div>
 
           {/* Topics as multi-select */}
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
               <Hash size={11} className="text-purple-500" />
-              Topics
+              {t('bannerForm.topics')}
             </label>
             <MultiSelectField
               options={topics}
               value={targetTopicArr}
               onChange={handleMultiChange('target_topic_ids')}
-              placeholder="All topics"
+              placeholder={t('bannerForm.topicsPlaceholderAll')}
               loading={loadingTopics}
               disabled={isSubmitting}
             />
@@ -339,13 +343,13 @@ const BannerForm = ({
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
               <CreditCard size={11} className="text-purple-500" />
-              Subscriptions
+              {t('bannerForm.subscriptions')}
             </label>
             <MultiSelectField
               options={subscriptions}
               value={targetSubArr}
               onChange={handleMultiChange('target_subscription_ids')}
-              placeholder="All subscribers"
+              placeholder={t('bannerForm.subscriptionsPlaceholderAll')}
               loading={loadingSubs}
               disabled={isSubmitting}
             />
@@ -357,46 +361,46 @@ const BannerForm = ({
       <div className="pt-3 border-t border-purple-100 dark:border-gray-700">
         <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
           <Globe size={14} className="text-red-500" />
-          Exclude (hide banner from these users)
+          {t('bannerForm.excludeTitle')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Countries
+              {t('bannerForm.countries')}
             </label>
             <input
               type="text"
               name="excluded_countries"
               value={formData.excluded_countries}
               onChange={handleChange}
-              placeholder="CN, RU"
+              placeholder={t('bannerForm.countriesPlaceholderExclude')}
               className="w-full px-3 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-xs"
               disabled={isSubmitting}
             />
-            <p className="text-[10px] text-gray-500 mt-1">Comma-separated ISO codes</p>
+            <p className="text-[10px] text-gray-500 mt-1">{t('bannerForm.countriesHint')}</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Topics
+              {t('bannerForm.topics')}
             </label>
             <MultiSelectField
               options={topics}
               value={excludedTopicArr}
               onChange={handleMultiChange('excluded_topic_ids')}
-              placeholder="No exclusions"
+              placeholder={t('bannerForm.topicsPlaceholderNone')}
               loading={loadingTopics}
               disabled={isSubmitting}
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Subscriptions
+              {t('bannerForm.subscriptions')}
             </label>
             <MultiSelectField
               options={subscriptions}
               value={excludedSubArr}
               onChange={handleMultiChange('excluded_subscription_ids')}
-              placeholder="No exclusions"
+              placeholder={t('bannerForm.subscriptionsPlaceholderNone')}
               loading={loadingSubs}
               disabled={isSubmitting}
             />
@@ -409,7 +413,7 @@ const BannerForm = ({
         <div className="flex items-center gap-3">
           <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
             <ToggleLeft size={12} className="text-purple-500" />
-            Status:
+            {t('bannerForm.statusLabel')}
           </label>
           <button
             type="button"
@@ -429,9 +433,9 @@ const BannerForm = ({
             }`}
           >
             <span
-              className={`w-1 h-1 rounded-full mr-1.5 ${formData.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
+              className={`w-1 h-1 rounded-full me-1.5 ${formData.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
             />
-            {formData.is_active ? 'Active' : 'Inactive'}
+            {formData.is_active ? t('common:active') : t('common:inactive')}
           </span>
         </div>
       </div>

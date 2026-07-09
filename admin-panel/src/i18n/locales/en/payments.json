@@ -1,0 +1,101 @@
+{
+  "notAvailable": "N/A",
+  "viewDetails": "View Details",
+  "status": {
+    "pending": "Pending",
+    "completed": "Completed",
+    "failed": "Failed",
+    "all": "All Status"
+  },
+  "methods": {
+    "creditCard": "Credit Card",
+    "debitCard": "Debit Card",
+    "paypal": "PayPal",
+    "bankTransfer": "Bank Transfer",
+    "cash": "Cash",
+    "all": "All Methods"
+  },
+  "addModal": {
+    "title": "Add Payment",
+    "userSubscription": "User Subscription *",
+    "selectSubscription": "Select subscription...",
+    "userOptionPrefix": "User",
+    "amount": "Amount *",
+    "statusLabel": "Status *",
+    "paymentMethod": "Payment Method *",
+    "currency": "Currency *",
+    "selectCurrency": "Select currency...",
+    "paymentGateway": "Payment Gateway *",
+    "transactionId": "Transaction ID *",
+    "creating": "Creating...",
+    "createPayment": "Create Payment",
+    "createFailed": "Failed to create payment. Please try again."
+  },
+  "paymentCard": {
+    "amount": "Amount",
+    "method": "Method",
+    "userId": "User ID",
+    "plan": "Plan"
+  },
+  "detailsModal": {
+    "titlePrefix": "Payment",
+    "paymentInformation": "Payment Information",
+    "amount": "Amount",
+    "status": "Status",
+    "paymentMethod": "Payment Method",
+    "gateway": "Gateway",
+    "transactionId": "Transaction ID",
+    "currency": "Currency",
+    "subscription": "Subscription",
+    "subscriptionPlan": "Subscription Plan",
+    "subscriptionStatus": "Subscription Status",
+    "timestamps": "Timestamps",
+    "created": "Created",
+    "lastUpdated": "Last Updated"
+  },
+  "header": {
+    "allPayments": "All Payments",
+    "totalPayments": "Total Payments: {{count}}",
+    "listView": "List View",
+    "gridView": "Grid View",
+    "refreshPayments": "Refresh payments",
+    "addPayment": "Add Payment",
+    "searchPlaceholder": "Search payments...",
+    "sortDate": "Sort: Date",
+    "sortAmount": "Sort: Amount",
+    "sortStatus": "Sort: Status",
+    "sortNewestTitle": "Sort Newest first (↓)",
+    "sortOldestTitle": "Sort Oldest first (↑)",
+    "sortDesc": "Desc",
+    "sortAsc": "Asc",
+    "clear": "Clear",
+    "clearAllFilters": "Clear all filters",
+    "noFiltersToClear": "No filters to clear",
+    "searchLabel": "Search:",
+    "statusLabel": "Status:",
+    "methodLabel": "Method:",
+    "sortLabel": "Sort:",
+    "removeSearch": "Remove search",
+    "removeStatusFilter": "Remove status filter",
+    "removeMethodFilter": "Remove method filter"
+  },
+  "list": {
+    "loading": "Loading payments...",
+    "noPaymentsFound": "No payments found",
+    "createFirstPayment": "Create your first payment to get started",
+    "columns": {
+      "transaction": "Transaction",
+      "userSubscription": "User & Subscription",
+      "amountMethod": "Amount & Method"
+    }
+  },
+  "page": {
+    "successCreated": "Payment created successfully!",
+    "noPaymentsFound": "No payments found",
+    "tryChangingFilters": "Try changing your search or filters",
+    "startAdding": "Start by adding your first payment",
+    "addFirstPayment": "Add First Payment",
+    "loading": "Loading payments...",
+    "updating": "Updating..."
+  }
+}

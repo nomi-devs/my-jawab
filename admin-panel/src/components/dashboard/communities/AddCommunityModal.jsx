@@ -1,10 +1,12 @@
 // src/components/dashboard/communities/AddCommunityModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Globe, Save, Hash, Tag } from 'lucide-react';
 import topicsApi from '../../../api/topicsApi';
 import TopicsPickerModal from '../../common/TopicsPickerModal';
 
 const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
+  const { t } = useTranslation('communities');
   const [formData, setFormData] = useState({
     community_name: '',
     community_slug: '',
@@ -137,16 +139,16 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Fixed Modal Header */}
         <div className="flex-shrink-0 px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <Globe className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Add New Community
+                {t('addModal.title')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                Create a new community
+                {t('addModal.subtitle')}
               </p>
             </div>
           </div>
@@ -170,9 +172,9 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
               {/* Community Name - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Globe size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Community Name *</span>
+                    <span>{t('addModal.communityName')}</span>
                   </div>
                 </label>
                 <input
@@ -182,14 +184,14 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                  placeholder="Enter community name"
+                  placeholder={t('addModal.communityNamePlaceholder')}
                   disabled={isSubmitting}
                 />
                 {/* Auto-generated Slug Display */}
                 {formData.community_slug && (
                   <div className="mt-1.5 flex items-center gap-2">
                     <Hash size={12} className="text-gray-400 dark:text-gray-500" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Slug:</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{t('addModal.slug')}</span>
                     <code className="text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded border border-purple-200 dark:border-purple-700 font-mono">
                       {formData.community_slug}
                     </code>
@@ -200,7 +202,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
               {/* Description - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Description
+                  {t('common:description')}
                 </label>
                 <textarea
                   name="community_description"
@@ -208,7 +210,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                   onChange={handleInputChange}
                   rows="3"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all resize-none"
-                  placeholder="Describe this community..."
+                  placeholder={t('addModal.descriptionPlaceholder')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -216,14 +218,14 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
               {/* Topics - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Tag size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Topics</span>
+                    <span>{t('addModal.topics')}</span>
                   </div>
                 </label>
                 <div className="flex items-center justify-between gap-3 mb-1.5">
                   <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Optional: choose one or more topics to help users discover this community.
+                    {t('addModal.topicsHint')}
                   </p>
                   <button
                     type="button"
@@ -232,7 +234,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                     disabled={isSubmitting || loadingTopics}
                   >
                     <Tag size={12} />
-                    <span>{formData.topic_ids?.length ? 'Edit topics' : 'Select topics'}</span>
+                    <span>{formData.topic_ids?.length ? t('addModal.editTopics') : t('addModal.selectTopics')}</span>
                   </button>
                 </div>
                 {formData.topic_ids && formData.topic_ids.length > 0 && (
@@ -258,7 +260,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                           key={topicId}
                           className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full"
                         >
-                          {topicName || `Topic ${topicId}`}
+                          {topicName || t('addModal.topicFallback', { id: topicId })}
                           <button
                             type="button"
                             onClick={() => {
@@ -282,18 +284,18 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
               {/* Community Image - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Community Image
+                  {t('addModal.communityImage')}
                 </label>
                 <input
                   type="file"
                   name="community_image"
                   onChange={handleFileChange}
                   accept="image/*"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:me-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Maximum file size: 10MB
+                  {t('addModal.maxFileSize')}
                 </p>
               </div>
 
@@ -302,10 +304,10 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-colors">
                   <div>
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
-                      Active
+                      {t('common:active')}
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                      Community will be visible to users
+                      {t('addModal.activeHint')}
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -317,7 +319,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
                       className="sr-only peer"
                       disabled={isSubmitting}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                   </label>
                 </div>
               </div>
@@ -341,7 +343,7 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
             className="px-6 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             type="submit"
@@ -352,12 +354,12 @@ const AddCommunityModal = React.memo(({ isOpen, onClose, onAddCommunity }) => {
             {isSubmitting ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Creating...</span>
+                <span>{t('addModal.creating')}</span>
               </>
             ) : (
               <>
                 <Save size={14} />
-                <span>Create Community</span>
+                <span>{t('addModal.createCommunity')}</span>
               </>
             )}
           </button>

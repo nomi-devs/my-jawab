@@ -15,7 +15,7 @@ npm run start:dev             # http://localhost:3001/api, docs at /api/docs
 
 ## Database & Relations
 
-Full schema: `prisma/schema.prisma` (33 models, PostgreSQL). Every table has `id`, `created_at`/`updated_at`, and plain-`Int` audit columns `created_by`/`updated_by` (not real FKs). No cascade deletes are declared anywhere.
+Full schema: `prisma/schema.prisma` (35 models, PostgreSQL). Every table has `id`, `created_at`/`updated_at`, and plain-`Int` audit columns `created_by`/`updated_by` (not real FKs). No cascade deletes are declared anywhere.
 
 ```mermaid
 erDiagram
@@ -195,6 +195,20 @@ erDiagram
         string recipient_email
         EmailStatus status
     }
+    Sms {
+        int id PK
+        string phone_number
+        SmsType sms_type
+        string message
+        SmsStatus status
+    }
+    PointsTransaction {
+        int id PK
+        int user_id FK
+        int points
+        PointsReason reason
+        int related_id "not a real FK, polymorphic"
+    }
     Notification {
         int id PK
         int user_id
@@ -224,6 +238,7 @@ erDiagram
     User ||--o{ UserPoll : writes
     User ||--o{ PollComment : writes
     User ||--o{ Payment : pays
+    User ||--o{ PointsTransaction : earns
 
     Topic ||--o{ UserPost : categorizes
     Topic ||--o{ CommunityTopic : "tagged in"
@@ -253,19 +268,23 @@ erDiagram
     Notification ||--o{ Job : processes
 ```
 
-Standalone, no relations: `Banner`, `AppSetting`, `Media`, `PrivacyPolicy`, `Support`, `Template`.
+Standalone, no relations: `Banner`, `AppSetting`, `Media`, `PrivacyPolicy`, `Support`, `Template`, `Sms`.
 
-Soft delete (`is_deleted`/`deleted_at`) exists **only** on `User`; everything else is hard-delete.
+Soft delete (`is_deleted`/`deleted_at`) exists **only** on `User`; everything else uses an `is_active` flag instead (or is hard-deleted, e.g. `deletePost`/`deletePoll`/`deleteComment`-without-replies).
+
+**Points award total** (`UserProfile.total_points`) is denormalized and kept in sync by `PointsService.award()` alongside each `PointsTransaction` insert — see [`../PROJECT_REQUIREMENTS.md`](../PROJECT_REQUIREMENTS.md#56-monetization-subscription-payment-currency-points-entitlements).
+
+**Known schema debt** (see the requirements doc §4.2/§8 for the full list): `community_ids`/`post_tags` on `UserPost`/`UserPoll` and all `Banner` targeting fields are comma-separated strings, not real join tables — `CommunityTopic` is the one relation here that *is* a proper join table. `Template`/`Job` models exist but have no live code path writing to them (dead schema, kept for now — see requirements doc §5.7/§8.4 before building against them).
 
 Browse it live: `npx prisma studio`.
 
 ## API
 
-Base URL `http://localhost:3001/api`. Two audiences behind the same JWT (`Authorization: Bearer <token>`):
-- `ma/*` end-user self-service (profile, follow, topics)
-- `admin/*` admin/sub_admin only (users, content moderation, subscriptions, dashboard stats, export)
+Base URL `http://localhost:3001/api`. Two audiences behind the same JWT (`Authorization: Bearer <token>`), gated per-controller (not globally):
+- `ma/*` — the mobile/consumer app's entire surface: auth, profile, follow, topic subscriptions, **and all content creation/browsing** (posts, comments, polls, communities, feed, search, banners-for-you, points, entitlements).
+- `admin/*` — `admin`/`sub_admin` only (enforced by `RolesGuard`, plus an admin-only login path in `AdminService.login`): user/content moderation, dashboard analytics, subscription/payment/currency management, CSV-style export (JSON payload — no server-side CSV library; the frontend renders the file).
 
-Full endpoint-by-endpoint reference is generated live at **`/api/docs`** (Swagger) not duplicated here.
+Full endpoint-by-endpoint reference is generated live at **`/api/docs`** (Swagger) — not duplicated here. Business rules, state machines, and known gaps per module are documented in [`../PROJECT_REQUIREMENTS.md`](../PROJECT_REQUIREMENTS.md#5-backend-functional-requirements).
 
 A runnable Postman collection covering every `ma/*` and `admin/*` endpoint (with auto-captured tokens/IDs) lives in [`postman/`](../postman/) at the repo root (gitignored local only, not committed).
 
@@ -273,11 +292,14 @@ A runnable Postman collection covering every `ma/*` and `admin/*` endpoint (with
 
 | Module | Description |
 |---|---|
-| `admin` | Fat module dashboard stats, cross-module moderation |
-| `auth` | JWT, OAuth (Google/Apple), email verification |
-| `user`, `post`, `comment`, `poll`, `community`, `general` (topics) | Core content |
-| `subscription`, `currency`, `entitlements` | Monetization |
-| `notification`, `email`, `templates`, `job` | Async/comms (BullMQ-backed) |
-| `media` | Uploads, image optimization, local/S3 storage |
-| `banner`, `app-settings`, `privacy-policy`, `support`, `search` | Static/admin content |
-| `shared` | `@Global()` `MediaClientService`, `RedisService` |
+| `admin` | Fat module — dashboard stats/user-growth, user & content moderation, global search, export. Delegates to domain services (subscription, general, community) where they exist |
+| `auth` | JWT (30d access / 90d refresh, stored on `User` row), Google/Apple OAuth (manual verification, not Passport strategies), email/SMS verification, forgot/reset password |
+| `user` | Self-service profile (avatar/background upload), follow/unfollow, topic subscriptions |
+| `post`, `comment`, `poll`, `community`, `general` (topics) | Core content, all `ma/*`. `general` is the only module with true global-RBAC-gated writes (`RolesGuard`); the rest use inline ownership/membership checks |
+| `feed`, `search` | Aggregation/read layer — feed composition + Redis caching + banner injection; unified cross-entity search |
+| `subscription`, `currency`, `entitlements` | Monetization — plan catalog + user subscriptions + self-reported payments (no real payment-gateway integration), feature-gating (`FeatureGuard`) + daily quotas (`QuotaService`), both Redis-backed |
+| `points` | Gamification — fixed-amount awards on question/poll/answer creation only, denormalized lifetime total + append-only ledger |
+| `notification`, `email`, `sms`, `templates`, `job` | Async/comms. Email is BullMQ-backed but queueing is **disabled by default** (sends inline); push notifications and the generic `Job` ledger are schema-only, not implemented; `templates` has a live file-based Handlebars path and a separate DB-backed `Template`/`PdfService` path that is dead code |
+| `media` | Uploads, Sharp image optimization (WebP/AVIF), ffmpeg video thumbnails, local disk or S3 storage (`cloudinary` is declared but unimplemented) |
+| `banner`, `app-settings`, `privacy-policy`, `support` | Static/admin content — `privacy-policy`/`support` are singleton records (create blocked once one exists), `app-settings` is a generic key/value store (its GET routes are currently unauthenticated) |
+| `shared` | `@Global()` — exports `MediaClientService` (thin wrapper so other modules don't need to import `MediaModule` directly) and `RedisService` |

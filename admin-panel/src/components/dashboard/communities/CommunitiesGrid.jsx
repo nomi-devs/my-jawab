@@ -1,5 +1,6 @@
 // src/components/dashboard/communities/CommunitiesGrid.jsx
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import CommunityRow from './CommunityRow';
 import { Globe, Settings, Eye, Users, TrendingUp, Lock, Unlock, Edit, Trash2 } from 'lucide-react';
 
@@ -16,6 +17,7 @@ const CommunityCard = React.memo(
     getMemberCountDisplay,
     getActivityLevel,
   }) => {
+    const { t } = useTranslation('communities');
     const [headerImageError, setHeaderImageError] = useState(false);
     const [thumbnailImageError, setThumbnailImageError] = useState(false);
 
@@ -43,7 +45,7 @@ const CommunityCard = React.memo(
               onError={() => setHeaderImageError(true)}
             />
           ) : null}
-          <div className="absolute -bottom-8 left-6">
+          <div className="absolute -bottom-8 start-6">
             <div className="w-16 h-16 rounded-xl bg-white p-1 border border-purple-100 shadow-sm">
               {community.community_image && !thumbnailImageError ? (
                 <img
@@ -61,7 +63,7 @@ const CommunityCard = React.memo(
               )}
             </div>
           </div>
-          <div className="absolute top-3 right-3">{getStatusBadge(community.is_active)}</div>
+          <div className="absolute top-3 end-3">{getStatusBadge(community.is_active)}</div>
         </div>
 
         {/* Content */}
@@ -91,7 +93,7 @@ const CommunityCard = React.memo(
               ))}
               {community.topics.length > 3 && (
                 <span className="px-2 py-0.5 text-xs text-gray-400 dark:text-gray-500">
-                  +{community.topics.length - 3} more
+                  {t('grid.moreTopics', { count: community.topics.length - 3 })}
                 </span>
               )}
             </div>
@@ -101,11 +103,11 @@ const CommunityCard = React.memo(
           <div className="flex justify-between mt-4 text-sm">
             <button
               onClick={() => onViewMembers && onViewMembers(community)}
-              className="group/stats flex flex-col text-left items-start transition-colors"
+              className="group/stats flex flex-col text-start items-start transition-colors"
             >
               <span className="text-purple-600 dark:text-purple-400 text-[10px] uppercase font-bold flex items-center transition-colors mb-1">
-                <Users size={12} className="mr-1" />
-                Members
+                <Users size={12} className="me-1" />
+                {t('grid.members')}
               </span>
               {community.members_count > 0 && (
                 <span className="font-bold text-purple-700 dark:text-purple-300 text-sm border-b border-purple-200 dark:border-purple-800 hover:border-purple-600 transition-all">
@@ -114,14 +116,14 @@ const CommunityCard = React.memo(
               )}
               {(!community.members_count || community.members_count === 0) && (
                 <span className="font-semibold text-gray-400 dark:text-gray-500 mt-1 transition-colors text-xs">
-                  No members
+                  {t('grid.noMembers')}
                 </span>
               )}
             </button>
-            <div className="flex flex-col text-right">
+            <div className="flex flex-col text-end">
               <span className="text-gray-400 dark:text-gray-500 text-xs uppercase font-medium flex items-center justify-end transition-colors">
-                <TrendingUp size={12} className="mr-1" />
-                Activity
+                <TrendingUp size={12} className="me-1" />
+                {t('grid.activity')}
               </span>
               <span
                 className={`font-semibold mt-1 transition-colors ${
@@ -141,12 +143,12 @@ const CommunityCard = React.memo(
           {community.owner && (
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 transition-colors">
               <div className="flex items-center">
-                <div className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-xs font-medium text-purple-600 dark:text-purple-400 mr-2 transition-colors">
+                <div className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-xs font-medium text-purple-600 dark:text-purple-400 me-2 transition-colors">
                   {community.owner.name?.charAt(0) || 'A'}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400 transition-colors">
-                  <span className="font-medium">Owner: </span>
-                  {community.owner.name || 'Admin'}
+                  <span className="font-medium">{t('grid.ownerLabel')}</span>
+                  {community.owner.name || t('grid.adminFallback')}
                 </div>
               </div>
             </div>
@@ -161,7 +163,7 @@ const CommunityCard = React.memo(
             {onToggleStatus && (
               <label
                 className="relative inline-flex items-center cursor-pointer"
-                title={community.is_active ? 'Deactivate community' : 'Activate community'}
+                title={community.is_active ? t('grid.deactivateTooltip') : t('grid.activateTooltip')}
               >
                 <input
                   type="checkbox"
@@ -172,27 +174,27 @@ const CommunityCard = React.memo(
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-8 h-4 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                <div className="w-8 h-4 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
             )}
             <button
               onClick={() => onViewCommunity && onViewCommunity(community)}
               className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="View Details"
+              title={t('grid.viewDetails')}
             >
               <Eye size={16} />
             </button>
             <button
               onClick={() => onEditCommunity && onEditCommunity(community)}
               className="p-1.5 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
-              title="Edit Community"
+              title={t('grid.editCommunity')}
             >
               <Edit size={16} />
             </button>
             <button
               onClick={() => onDeleteCommunity && onDeleteCommunity(community.id)}
               className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-              title="Delete Community"
+              title={t('grid.deleteCommunity')}
             >
               <Trash2 size={16} />
             </button>
@@ -218,19 +220,21 @@ const CommunitiesGrid = React.memo(
     currentPage = 1,
     itemsPerPage = 10,
   }) => {
+    const { t } = useTranslation('communities');
+
     const getStatusBadge = (isActive) => {
       if (isActive) {
         return (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-            Active
+            <div className="w-2 h-2 bg-green-500 rounded-full me-1"></div>
+            {t('common:active')}
           </span>
         );
       }
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-          <div className="w-2 h-2 bg-gray-500 rounded-full mr-1"></div>
-          Inactive
+          <div className="w-2 h-2 bg-gray-500 rounded-full me-1"></div>
+          {t('common:inactive')}
         </span>
       );
     };
@@ -245,9 +249,9 @@ const CommunitiesGrid = React.memo(
     };
 
     const getActivityLevel = (postsPerDay) => {
-      if (postsPerDay >= 2) return 'High';
-      if (postsPerDay >= 0.5) return 'Medium';
-      return 'Low';
+      if (postsPerDay >= 2) return t('grid.high');
+      if (postsPerDay >= 0.5) return t('grid.medium');
+      return t('grid.low');
     };
 
     if (communities.length === 0) {
@@ -257,9 +261,9 @@ const CommunitiesGrid = React.memo(
             <Users className="w-8 h-8 text-gray-400 dark:text-gray-500" />
           </div>
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            No communities found
+            {t('grid.noCommunitiesFound')}
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">Try changing your search or filters</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('grid.tryChangingFilters')}</p>
         </div>
       );
     }
@@ -267,16 +271,16 @@ const CommunitiesGrid = React.memo(
     if (viewMode === 'list') {
       return (
         <>
-          <table className="w-full text-left border-collapse transition-opacity duration-300">
+          <table className="w-full text-start border-collapse transition-opacity duration-300">
             <thead className="bg-purple-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium transition-colors">
               <tr>
                 <th className="p-4 w-16">#</th>
-                <th className="p-4">Community</th>
-                <th className="p-4">Description</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Members</th>
-                <th className="p-4">Activity</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="p-4">{t('grid.columns.community')}</th>
+                <th className="p-4">{t('common:description')}</th>
+                <th className="p-4">{t('common:status')}</th>
+                <th className="p-4">{t('grid.columns.members')}</th>
+                <th className="p-4">{t('grid.columns.activity')}</th>
+                <th className="p-4 text-end">{t('common:actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-purple-100 dark:divide-gray-700 text-sm">

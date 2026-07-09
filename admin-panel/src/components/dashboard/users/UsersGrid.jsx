@@ -1,5 +1,6 @@
 // src/components/dashboard/users/UsersGrid.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Eye,
   Shield,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
+  const { t } = useTranslation('users');
   if (users.length === 0) {
     return (
       <div className="p-12 text-center">
@@ -20,9 +22,9 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
           <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
         </div>
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          No users found
+          {t('usersGrid.noUsersFound')}
         </h3>
-        <p className="text-gray-500 dark:text-gray-400">Try changing your search or filters</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('usersGrid.tryChangingFilters')}</p>
       </div>
     );
   }
@@ -39,7 +41,7 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
         >
           {/* User Header */}
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3">
               <img
                 src={user.img}
                 alt={user.name}
@@ -60,7 +62,7 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
             <button
               onClick={() => onViewDetails && onViewDetails(user)}
               className="p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
-              title="View Details"
+              title={t('usersGrid.viewDetails')}
             >
               <Eye size={16} />
             </button>
@@ -86,7 +88,9 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
               }`}
             >
               <Shield size={12} />
-              <span className="capitalize">{user.role?.replace('_', ' ') || 'User'}</span>
+              <span className="capitalize">
+                {user.role?.replace('_', ' ') || t('usersGrid.roleFallback')}
+              </span>
             </span>
           </div>
 
@@ -100,7 +104,7 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
               }`}
             >
               <span
-                className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                className={`w-1.5 h-1.5 rounded-full me-1.5 ${
                   user.status === 'Active'
                     ? 'bg-green-500 dark:bg-green-400'
                     : 'bg-red-500 dark:bg-red-400'
@@ -117,7 +121,7 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
                 }`}
               >
                 {user.is_verified ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                {user.is_verified ? 'Verified' : 'Unverified'}
+                {user.is_verified ? t('usersGrid.verified') : t('usersGrid.unverified')}
               </span>
             )}
           </div>
@@ -125,7 +129,9 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
           {/* Joined Date */}
           <div className="flex items-center gap-2 mb-4 text-xs text-gray-500 dark:text-gray-400">
             <Calendar size={14} />
-            <span>Joined {user.joined}</span>
+            <span>
+              {t('usersGrid.joinedPrefix')} {user.joined}
+            </span>
           </div>
 
           {/* Actions */}
@@ -133,18 +139,18 @@ const UsersGrid = React.memo(({ users, onEdit, onDelete, onViewDetails }) => {
             <button
               onClick={() => onEdit && onEdit(user)}
               className="flex-1 px-3 py-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-              title="Edit User"
+              title={t('usersGrid.editUser')}
             >
               <Edit size={14} />
-              <span>Edit</span>
+              <span>{t('common:edit')}</span>
             </button>
             <button
               onClick={() => onDelete && onDelete(user.id)}
               className="flex-1 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-              title="Delete User"
+              title={t('usersGrid.deleteUser')}
             >
               <Trash2 size={14} />
-              <span>Delete</span>
+              <span>{t('common:delete')}</span>
             </button>
           </div>
         </div>

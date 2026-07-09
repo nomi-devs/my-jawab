@@ -12,8 +12,8 @@ const SuccessNotification = React.memo(({ message, duration = 3000, onClose }) =
   }, [duration, onClose]);
 
   return (
-    <div className="fixed top-6 right-6 z-[9999] animate-in slide-in-from-right duration-300">
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg flex items-center space-x-3">
+    <div className="fixed top-6 end-6 z-[9999] animate-in slide-in-from-right duration-300">
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg flex items-center gap-3">
         <CheckCircle className="text-green-600" size={20} />
         <span className="text-green-800 font-medium">{message}</span>
       </div>

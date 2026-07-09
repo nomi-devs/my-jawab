@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Tag, Search, Check } from 'lucide-react';
 import topicsApi from '../../api/topicsApi';
 
@@ -14,6 +15,7 @@ import topicsApi from '../../api/topicsApi';
  */
 const TopicsPickerModal = React.memo(
   ({ isOpen, onClose, initialSelectedIds = [], onSave, multiple = true }) => {
+    const { t } = useTranslation('common');
     const [topics, setTopics] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -50,7 +52,7 @@ const TopicsPickerModal = React.memo(
         }
       } catch (err) {
         console.error('Error fetching topics for picker:', err);
-        setError('Failed to load topics. Please try again.');
+        setError(t('topicsPicker.loadFailed'));
         setTopics([]);
       } finally {
         setLoading(false);
@@ -113,18 +115,18 @@ const TopicsPickerModal = React.memo(
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col border border-purple-100 dark:border-gray-700 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3 border-b border-purple-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div className="flex items-center space-x-2.5">
+            <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                 <Tag className="text-purple-600 dark:text-purple-400" size={18} />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
-                  {multiple ? 'Select Topics' : 'Select Topic'}
+                  {multiple ? t('topicsPicker.selectTopics') : t('topicsPicker.selectTopic')}
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {multiple
-                    ? 'Choose one or more topics to categorize this.'
-                    : 'Choose a topic to categorize this.'}
+                    ? t('topicsPicker.chooseMultipleSubtitle')
+                    : t('topicsPicker.chooseSingleSubtitle')}
                 </p>
               </div>
             </div>
@@ -143,14 +145,14 @@ const TopicsPickerModal = React.memo(
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400"
               />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search topics..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
+                placeholder={t('topicsPicker.searchPlaceholder')}
+                className="w-full ps-8 pe-3 py-1.5 text-xs rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                 disabled={loading}
               />
             </div>
@@ -163,9 +165,9 @@ const TopicsPickerModal = React.memo(
           >
             {loading && (
               <div className="flex items-center justify-center py-8">
-                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <div className="w-5 h-5 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin" />
-                  <span>Loading topics...</span>
+                  <span>{t('topicsPicker.loadingTopics')}</span>
                 </div>
               </div>
             )}
@@ -178,7 +180,7 @@ const TopicsPickerModal = React.memo(
                   onClick={fetchTopics}
                   className="px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700"
                 >
-                  Retry
+                  {t('retry')}
                 </button>
               </div>
             )}
@@ -187,7 +189,7 @@ const TopicsPickerModal = React.memo(
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <span className="text-2xl mb-2 text-gray-300 dark:text-gray-600">#</span>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No topics found. Try a different search.
+                  {t('topicsPicker.noTopicsFound')}
                 </p>
               </div>
             )}
@@ -219,7 +221,7 @@ const TopicsPickerModal = React.memo(
                               {parent.name}
                             </div>
                             <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                              {childCount} Topics
+                              {t('topicsPicker.topicsCount', { count: childCount })}
                             </div>
                           </div>
                         </div>
@@ -241,7 +243,7 @@ const TopicsPickerModal = React.memo(
                                 }`}
                               >
                                 <span>{child.name}</span>
-                                {isSelected && <Check size={10} className="ml-1" />}
+                                {isSelected && <Check size={10} className="ms-1" />}
                               </button>
                             );
                           })}
@@ -262,7 +264,7 @@ const TopicsPickerModal = React.memo(
               className="flex-1 py-1.5 rounded-lg border border-purple-200 dark:border-gray-600 text-purple-600 dark:text-purple-400 text-xs font-medium hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors"
               disabled={loading}
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="button"
@@ -270,7 +272,7 @@ const TopicsPickerModal = React.memo(
               className="flex-1 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
               disabled={loading}
             >
-              Confirm Selection {selectedIds.length > 0 && `(${selectedIds.length})`}
+              {t('topicsPicker.confirmSelection')} {selectedIds.length > 0 && `(${selectedIds.length})`}
             </button>
           </div>
         </div>

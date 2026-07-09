@@ -10,6 +10,7 @@
 //   disabled: boolean
 //
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Sparkles,
   Infinity as InfinityIcon,
@@ -28,73 +29,65 @@ import {
 } from 'lucide-react';
 
 // ─── Feature definitions ───────────────────────────────
-// Each feature has: key, label, description, type, icon, (for numeric) unit
+// Each feature has: key, i18nKey, type, icon, (for numeric) i18nKey for unit
 const BOOLEAN_FEATURES = [
   {
     key: 'can_create_polls',
-    label: 'Create polls',
+    i18nKey: 'canCreatePolls',
     icon: FileText,
-    description: 'Allow creating polls',
   },
   {
     key: 'can_create_communities',
-    label: 'Create communities',
+    i18nKey: 'canCreateCommunities',
     icon: Users,
-    description: 'Allow creating new communities',
   },
   {
     key: 'video_uploads',
-    label: 'Video uploads',
+    i18nKey: 'videoUploads',
     icon: Video,
-    description: 'Allow attaching videos to posts',
   },
   {
     key: 'verified_badge',
-    label: 'Verified badge',
+    i18nKey: 'verifiedBadge',
     icon: BadgeCheck,
-    description: 'Show verified badge on profile',
   },
   {
     key: 'priority_support',
-    label: 'Priority support',
+    i18nKey: 'prioritySupport',
     icon: Headphones,
-    description: 'Access to priority support channel',
   },
   {
     key: 'early_access',
-    label: 'Early access',
+    i18nKey: 'earlyAccess',
     icon: Rocket,
-    description: 'Access to beta features',
   },
   {
     key: 'ads_enabled',
-    label: 'Show ads / banners',
+    i18nKey: 'adsEnabled',
     icon: EyeOff,
-    description: 'If true, users on this plan see ad banners in feed',
     inverse: true,
   },
 ];
 
 const NUMERIC_FEATURES = [
-  { key: 'daily_post_limit', label: 'Daily post limit', icon: FileText, unit: 'posts/day' },
+  { key: 'daily_post_limit', i18nKey: 'dailyPostLimit', icon: FileText },
   {
     key: 'daily_comment_limit',
-    label: 'Daily comment limit',
+    i18nKey: 'dailyCommentLimit',
     icon: MessageSquare,
-    unit: 'comments/day',
   },
   {
     key: 'max_communities_joined',
-    label: 'Max communities joined',
+    i18nKey: 'maxCommunitiesJoined',
     icon: Users,
-    unit: 'communities',
   },
-  { key: 'max_topic_subscriptions', label: 'Max topic subscriptions', icon: Hash, unit: 'topics' },
-  { key: 'max_video_size_mb', label: 'Max video size', icon: Video, unit: 'MB' },
-  { key: 'max_bio_length', label: 'Max bio length', icon: User, unit: 'chars' },
+  { key: 'max_topic_subscriptions', i18nKey: 'maxTopicSubscriptions', icon: Hash },
+  { key: 'max_video_size_mb', i18nKey: 'maxVideoSize', icon: Video },
+  { key: 'max_bio_length', i18nKey: 'maxBioLength', icon: User },
 ];
 
 const FeaturesEditor = ({ value, onChange, disabled = false }) => {
+  const { t } = useTranslation('subscriptions');
   const features = value || {};
 
   const set = (key, newVal) => {
@@ -110,7 +103,7 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
         <div className="flex items-center gap-1.5 mb-3">
           <Sparkles size={14} className="text-purple-500" />
           <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-            Entitlements
+            {t('featuresEditor.entitlementsTitle')}
           </h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -126,14 +119,14 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
                   <Icon size={14} className="text-purple-500 mt-0.5 flex-shrink-0" />
                   <div className="min-w-0">
                     <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
-                      {f.label}
+                      {t(`featuresEditor.features.${f.i18nKey}.label`)}
                     </div>
                     <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                      {f.description}
+                      {t(`featuresEditor.features.${f.i18nKey}.description`)}
                     </div>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-2 flex-shrink-0">
+                <label className="relative inline-flex items-center cursor-pointer ms-2 flex-shrink-0">
                   <input
                     type="checkbox"
                     checked={isOn}
@@ -154,10 +147,10 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
         <div className="flex items-center gap-1.5 mb-3">
           <InfinityIcon size={14} className="text-purple-500" />
           <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-            Quotas & Limits
+            {t('featuresEditor.quotasTitle')}
           </h4>
-          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal normal-case ml-1">
-            (use -1 for unlimited, 0 to disable)
+          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal normal-case ms-1">
+            {t('featuresEditor.quotasHint')}
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -173,7 +166,7 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
                 <div className="flex items-center gap-1.5 mb-2">
                   <Icon size={14} className="text-purple-500" />
                   <label className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                    {f.label}
+                    {t(`featuresEditor.quotas.${f.i18nKey}.label`)}
                   </label>
                 </div>
                 <div className="flex items-center gap-2">
@@ -187,7 +180,7 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
                         set(f.key, parseInt(v, 10));
                       }}
                       disabled={disabled || isUnlimited}
-                      className={`w-full pl-3 pr-16 py-1.5 text-xs border rounded-lg transition-all ${
+                      className={`w-full ps-3 pe-16 py-1.5 text-xs border rounded-lg transition-all ${
                         isUnlimited
                           ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-medium cursor-not-allowed'
                           : 'bg-white dark:bg-gray-700 border-purple-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent'
@@ -195,13 +188,13 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
                       placeholder="0"
                     />
                     {isUnlimited ? (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] text-purple-700 dark:text-purple-300 font-bold pointer-events-none">
+                      <span className="absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] text-purple-700 dark:text-purple-300 font-bold pointer-events-none">
                         <InfinityIcon size={10} />
-                        UNLIMITED
+                        {t('featuresEditor.unlimited')}
                       </span>
                     ) : (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none">
-                        {f.unit}
+                      <span className="absolute end-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none">
+                        {t(`featuresEditor.quotas.${f.i18nKey}.unit`)}
                       </span>
                     )}
                   </div>
@@ -214,7 +207,7 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
                         ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
                         : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-purple-200 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-gray-600'
                     }`}
-                    title="Toggle unlimited (-1)"
+                    title={t('featuresEditor.toggleUnlimitedTitle')}
                   >
                     {isUnlimited ? (
                       <X size={10} className="inline" />
@@ -234,16 +227,15 @@ const FeaturesEditor = ({ value, onChange, disabled = false }) => {
         <div className="flex items-center gap-2 text-[11px] text-purple-700 dark:text-purple-300">
           <Check size={12} />
           <span className="font-medium">
-            {Object.keys(features).length} feature{Object.keys(features).length !== 1 && 's'}{' '}
-            configured
+            {t('featuresEditor.featuresConfigured', { count: Object.keys(features).length })}
           </span>
           <span className="text-gray-500 dark:text-gray-400">·</span>
           <span className="text-gray-500 dark:text-gray-400">
-            Saved as JSON in the{' '}
+            {t('featuresEditor.savedPrefix')}{' '}
             <code className="text-purple-600 dark:text-purple-400 bg-white/50 dark:bg-gray-800/50 px-1 rounded">
               features
             </code>{' '}
-            column
+            {t('featuresEditor.savedSuffix')}
           </span>
         </div>
       </div>

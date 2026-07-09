@@ -1,0 +1,17 @@
+{
+  "pageTitle": "Notifications",
+  "pageSubtitle": "View and manage all your subscription and payment notifications.",
+  "markAllAsRead": "Mark all as read",
+  "loadingNotifications": "Loading notifications...",
+  "tryAgain": "Try again",
+  "noNotifications": "No notifications",
+  "allCaughtUp": "You're all caught up!",
+  "totalNotifications": "{{count}} total notifications",
+  "unreadCount": "{{count}} unread",
+  "justNow": "Just now",
+  "minutesAgo": "{{count}} minutes ago",
+  "hoursAgo": "{{count}} hours ago",
+  "daysAgo": "{{count}} days ago",
+  "defaultNotificationTitle": "Notification",
+  "loadFailed": "Failed to load notifications"
+}

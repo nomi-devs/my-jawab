@@ -1,9 +1,11 @@
 // src/components/dashboard/subscriptions/SubscriptionDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Package, DollarSign, Calendar, CheckCircle, XCircle, Users } from 'lucide-react';
 import subscriptionsApi from '../../../api/subscriptionsApi';
 
 const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptionData }) => {
+  const { t } = useTranslation('subscriptions');
   const [subscription, setSubscription] = useState(subscriptionData);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
@@ -72,10 +74,12 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[90%] h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {loading ? 'Loading...' : sub?.subscription_name || 'Subscription Details'}
+              {loading
+                ? t('common:loading')
+                : sub?.subscription_name || t('subscriptionDetailsModal.defaultTitle')}
             </h2>
           </div>
           <button
@@ -96,7 +100,7 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            Details
+            {t('subscriptionDetailsModal.tabs.details')}
           </button>
           <button
             onClick={() => setActiveTab('users')}
@@ -106,7 +110,7 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            Users ({userSubscriptions.length})
+            {t('subscriptionDetailsModal.tabs.users', { count: userSubscriptions.length })}
           </button>
         </div>
 
@@ -121,25 +125,29 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
               {/* Basic Info */}
               <div className="bg-purple-50 dark:bg-gray-700/30 rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                  Basic Information
+                  {t('subscriptionDetailsModal.basicInformation')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] text-gray-500 dark:text-gray-400">
-                      Subscription Name
+                      {t('subscriptionDetailsModal.subscriptionName')}
                     </label>
                     <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {sub?.subscription_name}
                     </p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400">Type</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {t('common:type')}
+                    </label>
                     <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5 capitalize">
                       {sub?.subscription_type}
                     </p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400">Price</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {t('subscriptionDetailsModal.price')}
+                    </label>
                     <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {formatPrice(
                         sub?.subscription_price,
@@ -148,13 +156,17 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
                     </p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400">Duration</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {t('subscriptionDetailsModal.duration')}
+                    </label>
                     <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {formatDuration(sub?.subscription_duration, sub?.subscription_duration_type)}
                     </p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400">Status</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {t('common:status')}
+                    </label>
                     <p className="text-xs font-medium mt-0.5">
                       <span
                         className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
@@ -163,12 +175,14 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
                             : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                         }`}
                       >
-                        {sub?.is_active ? 'Active' : 'Inactive'}
+                        {sub?.is_active ? t('common:active') : t('common:inactive')}
                       </span>
                     </p>
                   </div>
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400">Created</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {t('common:created')}
+                    </label>
                     <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {sub?.created_at
                         ? new Date(sub?.created_at).toLocaleDateString('en-US', {
@@ -176,14 +190,14 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
                             day: 'numeric',
                             year: 'numeric',
                           })
-                        : 'N/A'}
+                        : t('subscriptionDetailsModal.notAvailable')}
                     </p>
                   </div>
                 </div>
                 {sub?.subscription_description && (
                   <div className="mt-3">
                     <label className="text-[10px] text-gray-500 dark:text-gray-400">
-                      Description
+                      {t('common:description')}
                     </label>
                     <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">
                       {sub?.subscription_description}
@@ -201,7 +215,7 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
               ) : userSubscriptions.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    No users subscribed to this plan
+                    {t('subscriptionDetailsModal.noUsersSubscribed')}
                   </p>
                 </div>
               ) : (
@@ -210,12 +224,19 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                          Subscription Active
+                          {t('subscriptionDetailsModal.subscriptionActive')}
                         </p>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-                          Status: {userSub.subscription_status} •
+                          {t('subscriptionDetailsModal.statusLabel', {
+                            status: userSub.subscription_status,
+                          })}{' '}
+                          •
                           {userSub.subscription_start_date &&
-                            ` Started: ${new Date(userSub.subscription_start_date).toLocaleDateString()}`}
+                            ` ${t('subscriptionDetailsModal.startedLabel', {
+                              date: new Date(
+                                userSub.subscription_start_date,
+                              ).toLocaleDateString(),
+                            })}`}
                         </p>
                       </div>
                       <span
@@ -225,7 +246,7 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
                             : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                         }`}
                       >
-                        {userSub.is_active ? 'Active' : 'Inactive'}
+                        {userSub.is_active ? t('common:active') : t('common:inactive')}
                       </span>
                     </div>
                   </div>
@@ -241,7 +262,7 @@ const SubscriptionDetailsModal = ({ isOpen, onClose, subscriptionId, subscriptio
             onClick={onClose}
             className="px-6 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
-            Close
+            {t('common:close')}
           </button>
         </div>
       </div>

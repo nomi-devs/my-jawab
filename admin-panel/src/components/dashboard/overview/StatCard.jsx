@@ -26,9 +26,9 @@ const StatCard = ({ title, count, icon: Icon, trend, description }) => {
             {trendValue !== null &&
               trendValue !== 0 &&
               (isPositiveTrend && trendValue > 0 ? (
-                <TrendingUp size={12} className="mr-1" />
+                <TrendingUp size={12} className="me-1" />
               ) : (
-                <TrendingDown size={12} className="mr-1" />
+                <TrendingDown size={12} className="me-1" />
               ))}
             {trend}
           </span>

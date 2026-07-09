@@ -1,8 +1,10 @@
 // src/components/dashboard/posts/PostActions.jsx
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MoreHorizontal, Edit, Trash2, BarChart } from 'lucide-react';
 
 const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateStatus }) => {
+  const { t } = useTranslation('posts');
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState('bottom');
   const dropdownRef = useRef(null);
@@ -58,7 +60,7 @@ const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateS
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-        aria-label="Post actions"
+        aria-label={t('postActions.ariaLabel')}
       >
         <MoreHorizontal size={18} />
       </button>
@@ -66,7 +68,7 @@ const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateS
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute right-0 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-purple-100 dark:border-gray-700 z-[9999] animate-in fade-in duration-150 transition-colors ${
+          className={`absolute end-0 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-purple-100 dark:border-gray-700 z-[9999] animate-in fade-in duration-150 transition-colors ${
             dropdownPosition === 'top'
               ? 'bottom-full mb-1 slide-in-from-bottom-2'
               : 'top-full mt-1 slide-in-from-top-2'
@@ -78,8 +80,8 @@ const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateS
               onClick={() => handleAction('edit')}
               className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
             >
-              <Edit size={16} className="mr-3" />
-              Edit Post
+              <Edit size={16} className="me-3" />
+              {t('postActions.editPost')}
             </button>
 
             {/* Analytics */}
@@ -87,8 +89,8 @@ const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateS
               onClick={() => handleAction('analytics')}
               className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
             >
-              <BarChart size={16} className="mr-3" />
-              View Analytics
+              <BarChart size={16} className="me-3" />
+              {t('postActions.viewAnalytics')}
             </button>
 
             <div className="border-t border-purple-100 dark:border-gray-700 my-1"></div>
@@ -104,7 +106,7 @@ const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateS
                     }}
                     className="w-full flex items-center px-4 py-2.5 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                   >
-                    Publish
+                    {t('postActions.publish')}
                   </button>
                 )}
                 {post.post_status !== 'draft' && (
@@ -115,7 +117,7 @@ const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateS
                     }}
                     className="w-full flex items-center px-4 py-2.5 text-sm text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
                   >
-                    Mark as Draft
+                    {t('postActions.markAsDraft')}
                   </button>
                 )}
                 <button
@@ -125,7 +127,9 @@ const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateS
                   }}
                   className="w-full flex items-center px-4 py-2.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
                 >
-                  {post.is_featured ? 'Remove Featured' : 'Mark as Featured'}
+                  {post.is_featured
+                    ? t('postActions.removeFeatured')
+                    : t('postActions.markAsFeatured')}
                 </button>
                 <div className="border-t border-purple-100 dark:border-gray-700 my-1"></div>
               </>
@@ -136,8 +140,8 @@ const PostActions = React.memo(({ post, onEdit, onDelete, onAnalytics, onUpdateS
               onClick={() => handleAction('delete')}
               className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
-              <Trash2 size={16} className="mr-3" />
-              Delete Post
+              <Trash2 size={16} className="me-3" />
+              {t('postActions.deletePost')}
             </button>
           </div>
         </div>

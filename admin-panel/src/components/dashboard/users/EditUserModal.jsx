@@ -1,5 +1,6 @@
 // src/components/dashboard/users/EditUserModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   User,
@@ -17,6 +18,7 @@ import {
 import userApi from '../../../api/userApi';
 
 const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
+  const { t } = useTranslation('users');
   // Helper function to get today's date in YYYY-MM-DD format (max date for birthday)
   const getMaxDate = () => {
     const today = new Date();
@@ -100,7 +102,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
           setFileErrors({});
         } catch (err) {
           console.error('Error fetching user data for edit:', err);
-          setFetchError('Failed to fetch the latest user information');
+          setFetchError(t('editUserModal.fetchError'));
 
           // Fallback to provided prop data if API fails
           const profile = user.raw?.profile || {};
@@ -151,12 +153,12 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
     const errors = {};
 
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      errors[fieldName] = 'Only image files are allowed (JPEG, PNG, GIF, WebP)';
+      errors[fieldName] = t('editUserModal.fileTypeError');
       return errors;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      errors[fieldName] = 'File size must be less than 10MB';
+      errors[fieldName] = t('editUserModal.fileSizeError');
       return errors;
     }
 
@@ -337,7 +339,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Fixed Modal Header */}
         <div className="flex-shrink-0 px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-100 dark:border-gray-700">
               <img
                 src={user.img}
@@ -347,10 +349,10 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Edit User
+                {t('editUserModal.title')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                Update user information and profile
+                {t('editUserModal.subtitle')}
               </p>
             </div>
           </div>
@@ -374,7 +376,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
               <div className="flex flex-col items-center">
                 <Loader2 className="w-8 h-8 text-purple-600 animate-spin mb-2" />
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Fetching latest user data...
+                  {t('editUserModal.fetchingLatest')}
                 </p>
               </div>
             </div>
@@ -390,9 +392,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                   setFetchError(null);
                   // Trigger re-fetch logic handled by useEffect
                 }}
-                className="ml-auto text-[10px] underline hover:no-underline"
+                className="ms-auto text-[10px] underline hover:no-underline"
               >
-                Dismiss
+                {t('editUserModal.dismiss')}
               </button>
             </div>
           )}
@@ -404,15 +406,15 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
             {/* User Account Section */}
             <div className="mb-6">
               <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
-                Account Information
+                {t('editUserModal.accountInformation')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Email */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <Mail size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Email Address</span>
+                      <span>{t('editUserModal.emailLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -421,7 +423,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     value={formData.email}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                    placeholder="john@example.com"
+                    placeholder={t('editUserModal.emailPlaceholder')}
                     disabled={isSubmitting || initialLoading}
                   />
                 </div>
@@ -429,9 +431,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 {/* Username - Read only */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <User size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Username</span>
+                      <span>{t('editUserModal.usernameLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -439,18 +441,18 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     name="handle"
                     value={formData.handle}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700/50 cursor-not-allowed"
-                    placeholder="@username"
+                    placeholder={t('editUserModal.usernamePlaceholder')}
                     disabled={true}
-                    title="Username cannot be changed through admin API"
+                    title={t('editUserModal.usernameTitle')}
                   />
                 </div>
 
                 {/* Role */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <Shield size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Role</span>
+                      <span>{t('editUserModal.roleLabel')}</span>
                     </div>
                   </label>
                   <select
@@ -460,9 +462,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                     disabled={isSubmitting || initialLoading}
                   >
-                    <option value="user">User</option>
-                    <option value="pro_user">Pro User</option>
-                    <option value="admin">Admin</option>
+                    <option value="user">{t('editUserModal.roleUser')}</option>
+                    <option value="pro_user">{t('editUserModal.roleProUser')}</option>
+                    <option value="admin">{t('editUserModal.roleAdmin')}</option>
                   </select>
                 </div>
 
@@ -471,11 +473,15 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                   {/* Status */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                      Status
+                      {t('editUserModal.statusLabel')}
                     </label>
                     <label
                       className="relative inline-flex items-center cursor-pointer"
-                      title={formData.status === 'Active' ? 'Deactivate user' : 'Activate user'}
+                      title={
+                        formData.status === 'Active'
+                          ? t('editUserModal.statusDeactivateTitle')
+                          : t('editUserModal.statusActivateTitle')
+                      }
                     >
                       <input
                         type="checkbox"
@@ -496,11 +502,15 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                   {/* Verified Account */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                      Verified
+                      {t('editUserModal.verifiedLabel')}
                     </label>
                     <label
                       className="relative inline-flex items-center cursor-pointer"
-                      title={formData.is_verified ? 'Unverify user' : 'Verify user'}
+                      title={
+                        formData.is_verified
+                          ? t('editUserModal.verifiedUnverifyTitle')
+                          : t('editUserModal.verifiedVerifyTitle')
+                      }
                     >
                       <input
                         type="checkbox"
@@ -524,15 +534,15 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
             {/* Profile Section */}
             <div className="mb-6 pt-4 border-t border-purple-100 dark:border-gray-700">
               <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
-                Profile Information
+                {t('editUserModal.profileInformation')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full Name */}
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <User size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Full Name</span>
+                      <span>{t('editUserModal.fullNameLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -541,7 +551,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     value={formData.full_name}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                    placeholder="John Doe"
+                    placeholder={t('editUserModal.fullNamePlaceholder')}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -549,9 +559,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 {/* Profile Picture File Upload */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <Image size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Profile Picture</span>
+                      <span>{t('editUserModal.profilePictureLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -559,7 +569,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     name="profile_picture"
                     accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                     onChange={handleProfilePictureChange}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:me-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400"
                     disabled={isSubmitting}
                   />
                   {fileErrors.profile_picture && (
@@ -571,7 +581,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     <div className="mt-2">
                       <img
                         src={profilePicturePreview || formData.profile_picture}
-                        alt="Profile preview"
+                        alt={t('editUserModal.profilePicturePreviewAlt')}
                         className="w-20 h-20 rounded-full object-cover border-2 border-purple-200 dark:border-gray-600"
                       />
                     </div>
@@ -581,9 +591,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 {/* Profile Background File Upload */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <Image size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Profile Background</span>
+                      <span>{t('editUserModal.profileBackgroundLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -591,7 +601,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     name="profile_background"
                     accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                     onChange={handleProfileBackgroundChange}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:me-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400"
                     disabled={isSubmitting}
                   />
                   {fileErrors.profile_background && (
@@ -603,7 +613,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     <div className="mt-2">
                       <img
                         src={profileBackgroundPreview || formData.profile_background}
-                        alt="Background preview"
+                        alt={t('editUserModal.profileBackgroundPreviewAlt')}
                         className="w-full h-24 rounded-lg object-cover border-2 border-purple-200 dark:border-gray-600"
                       />
                     </div>
@@ -613,9 +623,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 {/* Tagline */}
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <Briefcase size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Tagline</span>
+                      <span>{t('editUserModal.taglineLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -624,7 +634,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     value={formData.tagline}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                    placeholder="Your tagline here"
+                    placeholder={t('editUserModal.taglinePlaceholder')}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -632,9 +642,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 {/* Profile Bio */}
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <User size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Bio</span>
+                      <span>{t('editUserModal.bioLabel')}</span>
                     </div>
                   </label>
                   <textarea
@@ -643,7 +653,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     onChange={handleTextareaChange}
                     rows={3}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all resize-none"
-                    placeholder="Tell us about yourself..."
+                    placeholder={t('editUserModal.bioPlaceholder')}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -651,7 +661,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 {/* Gender */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    Gender
+                    {t('editUserModal.genderLabel')}
                   </label>
                   <select
                     name="profile_gender"
@@ -660,19 +670,19 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                     disabled={isSubmitting}
                   >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="">{t('editUserModal.genderSelect')}</option>
+                    <option value="male">{t('editUserModal.genderMale')}</option>
+                    <option value="female">{t('editUserModal.genderFemale')}</option>
+                    <option value="other">{t('editUserModal.genderOther')}</option>
                   </select>
                 </div>
 
                 {/* Birthday */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <Calendar size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Birthday</span>
+                      <span>{t('editUserModal.birthdayLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -689,9 +699,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 {/* Website */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <Globe size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Website</span>
+                      <span>{t('editUserModal.websiteLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -700,7 +710,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     value={formData.profile_website}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                    placeholder="https://example.com"
+                    placeholder={t('editUserModal.websitePlaceholder')}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -708,9 +718,9 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 {/* Location */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <MapPin size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Location</span>
+                      <span>{t('editUserModal.locationLabel')}</span>
                     </div>
                   </label>
                   <input
@@ -719,7 +729,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                     value={formData.profile_location}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                    placeholder="City, Country"
+                    placeholder={t('editUserModal.locationPlaceholder')}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -731,7 +741,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                    User ID
+                    {t('editUserModal.userIdLabel')}
                   </label>
                   <div className="px-3 py-2 text-sm rounded-lg bg-purple-50 dark:bg-purple-900/20 text-gray-600 dark:text-gray-300">
                     #{user.id}
@@ -739,7 +749,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                    Joined Date
+                    {t('editUserModal.joinedDateLabel')}
                   </label>
                   <div className="px-3 py-2 text-sm rounded-lg bg-purple-50 dark:bg-purple-900/20 text-gray-600 dark:text-gray-300">
                     {user.joined}
@@ -758,7 +768,7 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
             className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             type="submit"
@@ -769,12 +779,12 @@ const EditUserModal = React.memo(({ isOpen, onClose, user, onSave }) => {
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Saving...</span>
+                <span>{t('editUserModal.saving')}</span>
               </>
             ) : (
               <>
                 <Save size={16} />
-                <span>Save Changes</span>
+                <span>{t('editUserModal.saveChanges')}</span>
               </>
             )}
           </button>

@@ -1,5 +1,6 @@
 // src/components/dashboard/banners/AddBannerModal.jsx
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Image as ImageIcon, Plus } from 'lucide-react';
 import BannerForm from './BannerForm';
 
@@ -22,6 +23,7 @@ const DEFAULT_FORM = {
 };
 
 const AddBannerModal = ({ isOpen, onClose, onAdd }) => {
+  const { t } = useTranslation('banners');
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +38,7 @@ const AddBannerModal = ({ isOpen, onClose, onAdd }) => {
     setError('');
 
     if (!formData.banner_image || !(formData.banner_image instanceof File)) {
-      setError('Banner image is required');
+      setError(t('addBannerModal.imageRequired'));
       return;
     }
 
@@ -66,7 +68,7 @@ const AddBannerModal = ({ isOpen, onClose, onAdd }) => {
       resetForm();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to create banner');
+      setError(err.response?.data?.message || err.message || t('addBannerModal.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -91,9 +93,11 @@ const AddBannerModal = ({ isOpen, onClose, onAdd }) => {
               <ImageIcon className="text-purple-600 dark:text-purple-400" size={20} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Add Banner</h2>
+              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">
+                {t('addBannerModal.title')}
+              </h2>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Create a promotional banner for the feed.
+                {t('addBannerModal.subtitle')}
               </p>
             </div>
           </div>
@@ -130,7 +134,7 @@ const AddBannerModal = ({ isOpen, onClose, onAdd }) => {
             disabled={isSubmitting}
             className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium"
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             type="submit"
@@ -141,12 +145,12 @@ const AddBannerModal = ({ isOpen, onClose, onAdd }) => {
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Adding...</span>
+                <span>{t('addBannerModal.adding')}</span>
               </>
             ) : (
               <>
                 <Plus size={16} />
-                <span>Add Banner</span>
+                <span>{t('addBannerModal.addButton')}</span>
               </>
             )}
           </button>

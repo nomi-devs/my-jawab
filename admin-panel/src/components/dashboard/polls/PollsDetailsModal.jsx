@@ -1,5 +1,6 @@
 // src/components/dashboard/polls/PollsDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   BarChart3,
@@ -34,6 +35,7 @@ const PollsDetailsModal = ({
   const [pendingStatus, setPendingStatus] = useState(null);
   const [pendingIsFeatured, setPendingIsFeatured] = useState(null);
   const [error, setError] = useState(null);
+  const { t } = useTranslation('polls');
 
   useEffect(() => {
     if (isOpen && pollId) {
@@ -63,7 +65,7 @@ const PollsDetailsModal = ({
       setPendingIsFeatured(!!pollData.is_featured);
     } catch (err) {
       console.error('Error fetching poll details:', err);
-      setError('Failed to load poll details');
+      setError(t('pollsDetailsModal.loadFailedError'));
       // Use provided pollData as fallback
       if (pollData) {
         const fallbackStatus = normalizePollStatus(
@@ -128,7 +130,7 @@ const PollsDetailsModal = ({
       await fetchPollDetails();
     } catch (err) {
       console.error('Error saving poll changes:', err);
-      setError('Failed to save changes');
+      setError(t('pollsDetailsModal.saveFailedError'));
     } finally {
       setUpdatingStatus(false);
     }
@@ -168,8 +170,8 @@ const PollsDetailsModal = ({
   const pendingUiStatus = isExpired && pendingStatus !== 'ended' ? 'ended' : pendingStatus;
 
   const tabs = [
-    { id: 'details', label: 'Details', icon: BarChart3 },
-    { id: 'actions', label: 'Actions', icon: Settings },
+    { id: 'details', label: t('pollsDetailsModal.tabDetails'), icon: BarChart3 },
+    { id: 'actions', label: t('pollsDetailsModal.tabActions'), icon: Settings },
   ];
 
   const getStatusBadge = () => {
@@ -178,24 +180,24 @@ const PollsDetailsModal = ({
     if (uiStatus === 'ended') {
       return (
         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-          <span className="w-2 h-2 rounded-full mr-2 bg-gray-500 dark:bg-gray-400"></span>
-          Ended
+          <span className="w-2 h-2 rounded-full me-2 bg-gray-500 dark:bg-gray-400"></span>
+          {t('pollsDetailsModal.ended')}
         </span>
       );
     }
     if (uiStatus === 'published') {
       return (
         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30">
-          <span className="w-2 h-2 rounded-full mr-2 bg-green-500 dark:bg-green-400"></span>
-          Published
+          <span className="w-2 h-2 rounded-full me-2 bg-green-500 dark:bg-green-400"></span>
+          {t('pollsDetailsModal.published')}
         </span>
       );
     }
     if (uiStatus === 'draft') {
       return (
         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30">
-          <span className="w-2 h-2 rounded-full mr-2 bg-yellow-500 dark:bg-yellow-400"></span>
-          Draft
+          <span className="w-2 h-2 rounded-full me-2 bg-yellow-500 dark:bg-yellow-400"></span>
+          {t('pollsDetailsModal.draft')}
         </span>
       );
     }
@@ -213,7 +215,7 @@ const PollsDetailsModal = ({
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col overflow-hidden animate-slideInFromTop">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-purple-100 dark:border-gray-700">
-          <div className="flex items-center space-x-4 flex-1 min-w-0">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
             {poll && (
               <>
                 <div className="w-12 h-12 rounded-lg bg-purple-500 flex items-center justify-center text-white flex-shrink-0">
@@ -222,15 +224,17 @@ const PollsDetailsModal = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 truncate">
-                      {loading ? 'Loading...' : poll.poll_title || poll.title || 'Poll Details'}
+                      {loading
+                        ? t('common:loading')
+                        : poll.poll_title || poll.title || t('pollsDetailsModal.pollDetailsFallback')}
                     </h2>
                   </div>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {getStatusBadge()}
                     {!!poll.is_featured && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30">
-                        <Star size={10} className="mr-0.5" />
-                        Featured
+                        <Star size={10} className="me-0.5" />
+                        {t('pollsDetailsModal.featured')}
                       </span>
                     )}
                   </div>
@@ -240,7 +244,7 @@ const PollsDetailsModal = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ml-4"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ms-4"
           >
             <X size={24} />
           </button>
@@ -263,7 +267,7 @@ const PollsDetailsModal = ({
                 <Icon size={18} />
                 {tab.label}
                 {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 dark:bg-purple-400"></div>
+                  <div className="absolute bottom-0 start-0 end-0 h-0.5 bg-purple-600 dark:bg-purple-400"></div>
                 )}
               </button>
             );
@@ -289,7 +293,7 @@ const PollsDetailsModal = ({
                   {poll.poll_description && (
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Description
+                        {t('common:description')}
                       </h3>
                       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                         <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -303,7 +307,7 @@ const PollsDetailsModal = ({
                   {poll.options && Array.isArray(poll.options) && poll.options.length > 0 && (
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Options & Results
+                        {t('pollsDetailsModal.optionsResults')}
                       </h3>
                       <div className="space-y-3">
                         {poll.options.map((option, index) => {
@@ -323,12 +327,15 @@ const PollsDetailsModal = ({
                                 </span>
                                 {option.vote_count > 0 && (
                                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                                    {option.vote_count} votes ({percentage}%)
+                                    {t('pollsDetailsModal.votesCount', {
+                                      count: option.vote_count,
+                                      percentage,
+                                    })}
                                   </span>
                                 )}
                                 {(!option.vote_count || option.vote_count === 0) && (
                                   <span className="text-sm text-gray-400 dark:text-gray-500">
-                                    No votes
+                                    {t('pollsDetailsModal.noVotes')}
                                   </span>
                                 )}
                               </div>
@@ -352,7 +359,7 @@ const PollsDetailsModal = ({
                         <div className="flex items-center gap-1.5 mb-1">
                           <Users size={14} className="text-purple-500" />
                           <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                            Total Votes
+                            {t('pollsDetailsModal.totalVotes')}
                           </span>
                         </div>
                         <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
@@ -365,7 +372,7 @@ const PollsDetailsModal = ({
                         <div className="flex items-center gap-1.5 mb-1">
                           <BarChart3 size={14} className="text-blue-500" />
                           <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                            Views
+                            {t('pollsDetailsModal.views')}
                           </span>
                         </div>
                         <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
@@ -378,7 +385,7 @@ const PollsDetailsModal = ({
                         <div className="flex items-center gap-1.5 mb-1">
                           <BarChart3 size={14} className="text-green-500" />
                           <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                            Options
+                            {t('pollsDetailsModal.options')}
                           </span>
                         </div>
                         <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
@@ -390,7 +397,7 @@ const PollsDetailsModal = ({
                       <div className="flex items-center gap-1.5 mb-1">
                         <Calendar size={14} className="text-amber-500" />
                         <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                          Expires
+                          {t('pollsDetailsModal.expires')}
                         </span>
                       </div>
                       <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
@@ -403,7 +410,7 @@ const PollsDetailsModal = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Created
+                        {t('common:created')}
                       </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Calendar size={14} />
@@ -413,7 +420,7 @@ const PollsDetailsModal = ({
                     {poll.user && (
                       <div>
                         <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                          Author
+                          {t('pollsDetailsModal.author')}
                         </h3>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center border-2 border-purple-200 dark:border-purple-700">
@@ -423,7 +430,7 @@ const PollsDetailsModal = ({
                           </div>
                           <div>
                             <p className="font-semibold text-gray-800 dark:text-gray-200">
-                              {poll.user?.name || poll.user?.username || 'Unknown'}
+                              {poll.user?.name || poll.user?.username || t('pollsDetailsModal.unknownUser')}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                               @{poll.user?.username || 'user'}
@@ -441,16 +448,18 @@ const PollsDetailsModal = ({
                 <div className="px-6 py-5 space-y-4">
                   <div>
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
-                      Status Management
+                      {t('pollsDetailsModal.statusManagement')}
                     </h3>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
-                      Current status:{' '}
+                      {t('pollsDetailsModal.currentStatus')}{' '}
                       <span className="font-semibold text-gray-700 dark:text-gray-200 capitalize">
-                        {uiStatus === 'ended' ? 'Ended' : currentStatus}
+                        {uiStatus === 'ended'
+                          ? t('pollsDetailsModal.ended')
+                          : t(`pollsDetailsModal.${currentStatus}`, { defaultValue: currentStatus })}
                       </span>
                       {pendingStatus !== currentStatus && (
-                        <span className="ml-2 text-purple-600 font-medium">
-                          (Pending save: {pendingStatus})
+                        <span className="ms-2 text-purple-600 font-medium">
+                          {t('pollsDetailsModal.pendingSave', { status: pendingStatus })}
                         </span>
                       )}
                     </p>
@@ -473,7 +482,7 @@ const PollsDetailsModal = ({
                         } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <CheckCircle size={16} />
-                        <span>Publish</span>
+                        <span>{t('pollsDetailsModal.publish')}</span>
                       </button>
 
                       <button
@@ -492,7 +501,7 @@ const PollsDetailsModal = ({
                         } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <BarChart3 size={16} />
-                        <span>Draft</span>
+                        <span>{t('pollsDetailsModal.draftAction')}</span>
                       </button>
 
                       <button
@@ -505,14 +514,14 @@ const PollsDetailsModal = ({
                         } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <XCircle size={16} />
-                        <span>End</span>
+                        <span>{t('pollsDetailsModal.end')}</span>
                       </button>
                     </div>
                   </div>
 
                   <div>
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
-                      Featured Status
+                      {t('pollsDetailsModal.featuredStatus')}
                     </h3>
                     <button
                       onClick={() => setPendingIsFeatured(!pendingIsFeatured)}
@@ -524,7 +533,11 @@ const PollsDetailsModal = ({
                       } ${updatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Star size={16} className={pendingIsFeatured ? 'fill-purple-500' : ''} />
-                      <span>{pendingIsFeatured ? 'Remove Featured' : 'Mark as Featured'}</span>
+                      <span>
+                        {pendingIsFeatured
+                          ? t('pollsDetailsModal.removeFeatured')
+                          : t('pollsDetailsModal.markAsFeatured')}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -544,7 +557,7 @@ const PollsDetailsModal = ({
               className="px-4 py-2 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors text-xs font-bold flex items-center gap-2"
             >
               <Trash2 size={14} />
-              <span>Delete Poll</span>
+              <span>{t('pollsDetailsModal.deletePoll')}</span>
             </button>
             <button
               onClick={() => {
@@ -553,7 +566,7 @@ const PollsDetailsModal = ({
               className="px-4 py-2 border border-purple-300 dark:border-purple-600 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-all text-xs font-bold flex items-center gap-2 shadow-sm"
             >
               <Edit size={14} />
-              <span>Edit Poll</span>
+              <span>{t('pollsDetailsModal.editPoll')}</span>
             </button>
           </div>
 
@@ -562,7 +575,7 @@ const PollsDetailsModal = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             {hasChanges() && (
               <button
@@ -573,12 +586,12 @@ const PollsDetailsModal = ({
                 {updatingStatus ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    <span>Saving...</span>
+                    <span>{t('pollsDetailsModal.saving')}</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle size={14} />
-                    <span>Save Changes</span>
+                    <span>{t('pollsDetailsModal.saveChanges')}</span>
                   </>
                 )}
               </button>

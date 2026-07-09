@@ -1,5 +1,6 @@
 // src/components/common/Alert.jsx
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 
 const Alert = React.memo(
@@ -10,6 +11,8 @@ const Alert = React.memo(
     onClose,
     position = 'top-right', // top-right, top-left, bottom-right, bottom-left
   }) => {
+    const { t } = useTranslation('common');
+
     useEffect(() => {
       if (duration > 0 && onClose) {
         const timer = setTimeout(() => {
@@ -23,10 +26,10 @@ const Alert = React.memo(
     if (!message) return null;
 
     const positionClasses = {
-      'top-right': 'top-4 right-4 md:top-6 md:right-6',
-      'top-left': 'top-4 left-4 md:top-6 md:left-6',
-      'bottom-right': 'bottom-4 right-4 md:bottom-6 md:right-6',
-      'bottom-left': 'bottom-4 left-4 md:bottom-6 md:left-6',
+      'top-right': 'top-4 end-4 md:top-6 md:end-6',
+      'top-left': 'top-4 start-4 md:top-6 md:start-6',
+      'bottom-right': 'bottom-4 end-4 md:bottom-6 md:end-6',
+      'bottom-left': 'bottom-4 start-4 md:bottom-6 md:start-6',
     };
 
     const typeStyles = {
@@ -63,7 +66,7 @@ const Alert = React.memo(
         className={`fixed ${positionClasses[position]} z-[9999] animate-in slide-in-from-right duration-300 max-w-sm w-full`}
       >
         <div
-          className={`${style.bg} ${style.border} border rounded-lg p-3 md:p-4 shadow-lg flex items-start space-x-3 transition-colors`}
+          className={`${style.bg} ${style.border} border rounded-lg p-3 md:p-4 shadow-lg flex items-start gap-3 transition-colors`}
         >
           <div className="flex-shrink-0 mt-0.5">{style.icon}</div>
           <div className="flex-1 min-w-0">
@@ -77,7 +80,7 @@ const Alert = React.memo(
             <button
               onClick={onClose}
               className={`flex-shrink-0 ${style.text} hover:opacity-70 transition-opacity p-1`}
-              aria-label="Close"
+              aria-label={t('close')}
             >
               <X size={16} />
             </button>

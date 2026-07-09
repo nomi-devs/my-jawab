@@ -1,9 +1,12 @@
 // src/components/common/PaginationFooter.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PaginationFooter = React.memo(
   ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage, itemName = 'items' }) => {
+    const { t } = useTranslation('common');
+
     // Calculate page range
     const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
     const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -48,13 +51,9 @@ const PaginationFooter = React.memo(
       return (
         <div className="p-4 border-t border-purple-100 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
           <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
-            {totalItems > 0 ? (
-              <>
-                Showing {startItem}-{endItem} of {totalItems} {itemName}
-              </>
-            ) : (
-              `No ${itemName} found`
-            )}
+            {totalItems > 0
+              ? t('pagination.showingRange', { start: startItem, end: endItem, total: totalItems, itemName })
+              : t('pagination.noItemsFound', { itemName })}
           </div>
         </div>
       );
@@ -63,25 +62,20 @@ const PaginationFooter = React.memo(
     return (
       <div className="p-4 border-t border-purple-100 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
         <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
-          {totalItems > 0 ? (
-            <>
-              Showing {startItem}-{endItem} of {totalItems} {itemName} • Page {currentPage} of{' '}
-              {totalPages}
-            </>
-          ) : (
-            `No ${itemName} found`
-          )}
+          {totalItems > 0
+            ? `${t('pagination.showingRange', { start: startItem, end: endItem, total: totalItems, itemName })} • ${t('pagination.pageOf', { current: currentPage, total: totalPages })}`
+            : t('pagination.noItemsFound', { itemName })}
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 disabled:hover:bg-transparent"
+            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 disabled:hover:bg-transparent"
           >
-            <ChevronLeft size={16} />
-            <span>Previous</span>
+            <ChevronLeft size={16} className="rtl:rotate-180" />
+            <span>{t('previous')}</span>
           </button>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center gap-1">
             {pageNumbers[0] > 1 && (
               <>
                 <button
@@ -125,10 +119,10 @@ const PaginationFooter = React.memo(
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 disabled:hover:bg-transparent"
+            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 disabled:hover:bg-transparent"
           >
-            <span>Next</span>
-            <ChevronRight size={16} />
+            <span>{t('next')}</span>
+            <ChevronRight size={16} className="rtl:rotate-180" />
           </button>
         </div>
       </div>

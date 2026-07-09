@@ -1,8 +1,10 @@
 // src/components/dashboard/overview/TopTopics.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
 
 const TopTopics = () => {
+  const { t } = useTranslation('overview');
   const topics = [
     { name: '#Technology', count: '450k', percentage: 75 },
     { name: '#Design', count: '320k', percentage: 67 },
@@ -14,7 +16,7 @@ const TopTopics = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top Topics</CardTitle>
+        <CardTitle>{t('topTopics.title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {topics.map((topic, i) => (

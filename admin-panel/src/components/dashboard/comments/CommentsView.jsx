@@ -1,5 +1,6 @@
 // src/components/dashboard/comments/CommentsView.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCommentsList, useCommentActions } from '../../../hooks/useComments';
 import CommentsHeader from './CommentsHeader';
 import CommentRow from './CommentRow';
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 const CommentsView = () => {
+  const { t } = useTranslation('comments');
   const [successMessage, setSuccessMessage] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
@@ -74,7 +76,7 @@ const CommentsView = () => {
 
   // Use effective loading state for UI (shimmer only on initial load)
   const loading = isInitialLoading;
-  const error = isError ? queryError?.message || 'Failed to load comments' : null;
+  const error = isError ? queryError?.message || t('commentsView.loadError') : null;
 
   // Filter handlers
   const handleSearch = useCallback((term) => {
@@ -112,18 +114,18 @@ const CommentsView = () => {
 
     try {
       await deleteComment(commentToDelete.id);
-      setSuccessMessage('Comment deleted successfully!');
+      setSuccessMessage(t('commentsView.deleteSuccess'));
       setShowDeleteConfirm(false);
       setCommentToDelete(null);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting comment:', err);
       // setError('Failed to delete comment. Please try again.');
-      alert(`Failed to delete comment: ${err.message}`);
+      alert(t('commentsView.deleteFailed', { message: err.message }));
       setShowDeleteConfirm(false);
       setCommentToDelete(null);
     }
-  }, [commentToDelete, deleteComment]);
+  }, [commentToDelete, deleteComment, t]);
 
   // Handle view comment details
   const handleViewDetails = useCallback((comment) => {
@@ -137,14 +139,14 @@ const CommentsView = () => {
       try {
         // Use updateComment API to approve comment
         await updateComment({ id: commentId, data: { is_approved: true } });
-        setSuccessMessage('Comment approved successfully!');
+        setSuccessMessage(t('commentsView.approveSuccess'));
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error approving comment:', err);
-        alert(`Failed to approve comment: ${err.message}`);
+        alert(t('commentsView.approveFailed', { message: err.message }));
       }
     },
-    [updateComment],
+    [updateComment, t],
   );
 
   // Handle unapprove comment
@@ -153,14 +155,14 @@ const CommentsView = () => {
       try {
         // Use updateComment API to unapprove comment
         await updateComment({ id: commentId, data: { is_approved: false } });
-        setSuccessMessage('Comment unapproved successfully!');
+        setSuccessMessage(t('commentsView.unapproveSuccess'));
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error unapproving comment:', err);
-        alert(`Failed to unapprove comment: ${err.message}`);
+        alert(t('commentsView.unapproveFailed', { message: err.message }));
       }
     },
-    [updateComment],
+    [updateComment, t],
   );
 
   // Format time ago
@@ -173,11 +175,11 @@ const CommentsView = () => {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffMins < 60) {
-      return `${diffMins}m ago`;
+      return t('commentsView.minutesAgo', { count: diffMins });
     } else if (diffHours < 24) {
-      return `${diffHours}h ago`;
+      return t('commentsView.hoursAgo', { count: diffHours });
     } else {
-      return `${diffDays}d ago`;
+      return t('commentsView.daysAgo', { count: diffDays });
     }
   };
 
@@ -191,22 +193,22 @@ const CommentsView = () => {
     if (comment.is_reported) {
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <AlertCircle size={10} className="mr-1" />
-          Reported
+          <AlertCircle size={10} className="me-1" />
+          {t('commentsView.status.reported')}
         </span>
       );
     } else if (!comment.is_approved) {
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-          <Clock size={10} className="mr-1" />
-          Pending
+          <Clock size={10} className="me-1" />
+          {t('commentsView.status.pending')}
         </span>
       );
     } else {
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle size={10} className="mr-1" />
-          Approved
+          <CheckCircle size={10} className="me-1" />
+          {t('commentsView.status.approved')}
         </span>
       );
     }
@@ -246,7 +248,7 @@ const CommentsView = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
 
@@ -255,7 +257,7 @@ const CommentsView = () => {
         isOpen={!!error}
         onClose={() => setError(null)}
         type="error"
-        title="Error"
+        title={t('common:error')}
         message={error}
       />
 
@@ -268,14 +270,10 @@ const CommentsView = () => {
         }}
         onConfirm={confirmDeleteComment}
         type="danger"
-        title="Delete Comment"
-        message={
-          commentToDelete
-            ? 'Are you sure you want to delete this comment? This action cannot be undone.'
-            : ''
-        }
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('commentsView.deleteCommentTitle')}
+        message={commentToDelete ? t('commentsView.deleteConfirmMessage') : ''}
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
       />
 
       {/* Comment Details Modal */}
@@ -318,9 +316,9 @@ const CommentsView = () => {
         }`}
       >
         <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('commentsView.updating')}</span>
           </div>
         </div>
       </div>
@@ -337,7 +335,7 @@ const CommentsView = () => {
           <div className="p-12">
             <div className="flex flex-col items-center justify-center">
               <div className="w-12 h-12 border-4 border-purple-200 dark:border-purple-700 border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Loading comments...</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('commentsView.loadingComments')}</p>
             </div>
           </div>
         ) : comments.length === 0 ? (
@@ -346,25 +344,25 @@ const CommentsView = () => {
               <MessageSquare className="text-gray-400 dark:text-gray-500" size={24} />
             </div>
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              No comments found
+              {t('commentsView.noCommentsFound')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
               {searchTerm || statusFilter !== 'all'
-                ? 'Try changing your search or filters'
-                : 'No comments have been posted yet'}
+                ? t('commentsView.tryChangingFilters')
+                : t('commentsView.noCommentsYet')}
             </p>
           </div>
         ) : viewMode === 'list' ? (
           <>
-            <table className="w-full text-left border-collapse transition-opacity duration-300">
+            <table className="w-full text-start border-collapse transition-opacity duration-300">
               <thead className="bg-purple-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium transition-colors">
                 <tr>
-                  <th className="p-4">User</th>
-                  <th className="p-4">Content</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Post & Stats</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4">{t('commentsView.tableHeaders.user')}</th>
+                  <th className="p-4">{t('commentsView.tableHeaders.content')}</th>
+                  <th className="p-4">{t('common:status')}</th>
+                  <th className="p-4">{t('commentsView.tableHeaders.postStats')}</th>
+                  <th className="p-4">{t('common:date')}</th>
+                  <th className="p-4 text-end">{t('common:actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-100 dark:divide-gray-700 text-sm">
@@ -394,7 +392,7 @@ const CommentsView = () => {
               >
                 <div className="flex items-start gap-3 mb-3">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-colors flex-shrink-0 ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold transition-colors shrink-0 ${
                       comment.user.role === 'admin'
                         ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
                         : comment.user.role === 'moderator'
@@ -421,11 +419,11 @@ const CommentsView = () => {
                     <Clock size={12} />
                     {formatTimeAgo(comment.created_at)}
                   </span>
-                  <span className="flex items-center gap-1" title="Likes">
+                  <span className="flex items-center gap-1" title={t('commentRow.likes')}>
                     <ThumbsUp size={12} />
                     {comment.likes_count || comment.like_count || 0}
                   </span>
-                  <span className="flex items-center gap-1 text-red-500 w-12" title="Unlikes">
+                  <span className="flex items-center gap-1 text-red-500 w-12" title={t('commentRow.unlikes')}>
                     <ThumbsDown size={12} />
                     {comment.dislike_count || 0}
                   </span>
@@ -434,7 +432,7 @@ const CommentsView = () => {
                   <button
                     onClick={() => handleViewDetails(comment)}
                     className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    title="View Details"
+                    title={t('commentsView.viewDetails')}
                   >
                     <Eye size={16} />
                   </button>
@@ -442,7 +440,7 @@ const CommentsView = () => {
                     <button
                       onClick={() => handleApproveComment(comment.id)}
                       className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
-                      title="Approve Comment"
+                      title={t('commentsView.approveComment')}
                     >
                       <CheckCircle size={16} />
                     </button>
@@ -451,7 +449,7 @@ const CommentsView = () => {
                     <button
                       onClick={() => handleUnapproveComment(comment.id)}
                       className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
-                      title="Unapprove Comment"
+                      title={t('commentsView.unapproveComment')}
                     >
                       <AlertCircle size={16} />
                     </button>
@@ -459,7 +457,7 @@ const CommentsView = () => {
                   <button
                     onClick={() => handleDeleteComment(comment.id, comment.content)}
                     className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete Comment"
+                    title={t('commentsView.deleteComment')}
                   >
                     <Trash2 size={16} />
                   </button>

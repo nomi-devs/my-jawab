@@ -1,5 +1,6 @@
 // src/components/dashboard/posts/PostRow.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle, Heart, ThumbsDown, Edit, Trash2, Eye } from 'lucide-react';
 import { normalizeMediaUrl } from '../../../utils/mediaUtils';
 
@@ -14,8 +15,10 @@ const PostRow = React.memo(
     index = 0,
     serialNumber = 0,
   }) => {
+    const { t } = useTranslation('posts');
+
     const formatDate = (timestamp) => {
-      if (!timestamp) return 'N/A';
+      if (!timestamp) return t('postRow.notAvailable');
       const date = new Date(timestamp);
       return date.toLocaleDateString('en-US', {
         month: 'short',
@@ -27,17 +30,17 @@ const PostRow = React.memo(
     const getStatusBadge = (status) => {
       const statusConfig = {
         published: {
-          label: 'Published',
+          label: t('postRow.status.published'),
           className: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30',
           dot: 'bg-green-500 dark:bg-green-400',
         },
         draft: {
-          label: 'Draft',
+          label: t('postRow.status.draft'),
           className: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30',
           dot: 'bg-yellow-500 dark:bg-yellow-400',
         },
         archived: {
-          label: 'Archived',
+          label: t('postRow.status.archived'),
           className: 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700',
           dot: 'bg-gray-500 dark:bg-gray-400',
         },
@@ -49,14 +52,14 @@ const PostRow = React.memo(
         <span
           className={`inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-colors ${config.className}`}
         >
-          <span className={`w-1 h-1 rounded-full mr-1 ${config.dot}`}></span>
+          <span className={`w-1 h-1 rounded-full me-1 ${config.dot}`}></span>
           {config.label}
         </span>
       );
     };
 
     const truncateText = (text, maxLength = 80) => {
-      if (!text) return 'No content';
+      if (!text) return t('postRow.noContent');
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
     };
@@ -73,13 +76,13 @@ const PostRow = React.memo(
         </td>
         {/* Author & Title */}
         <td className="p-2 transition-colors">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <img
               src={
                 post.author?.avatar ||
                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'user'}`
               }
-              alt={post.author?.name || 'User'}
+              alt={post.author?.name || t('postRow.userFallback')}
               className="w-7 h-7 rounded-full bg-purple-200 dark:bg-purple-900/30 border border-white dark:border-gray-700 transition-transform duration-200 hover:scale-105 flex-shrink-0"
               loading="lazy"
             />
@@ -88,7 +91,8 @@ const PostRow = React.memo(
                 {post.title || truncateText(post.content, 50)}
               </div>
               <div className="text-gray-500 dark:text-gray-400 text-[10px] transition-colors truncate">
-                {post.author?.name || 'Unknown'} • {post.author?.username || 'user'}
+                {post.author?.name || t('postRow.unknownAuthor')} •{' '}
+                {post.author?.username || t('postRow.userFallback')}
               </div>
             </div>
             {/* Post Thumbnail */}
@@ -117,30 +121,30 @@ const PostRow = React.memo(
         <td className="p-2 transition-colors">
           {getStatusBadge(post.post_status || 'draft')}
           {post.is_featured && (
-            <span className="ml-1.5 inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 transition-colors">
-              Featured
+            <span className="ms-1.5 inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 transition-colors">
+              {t('postRow.featuredBadge')}
             </span>
           )}
         </td>
 
         {/* Stats */}
         <td className="p-2 transition-colors">
-          <div className="flex items-center space-x-3 text-[10px] text-gray-500 dark:text-gray-400">
-            <div className="flex items-center space-x-1" title="Likes">
+          <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-1" title={t('postRow.likesTitle')}>
               <Heart
                 size={10}
                 className={post.stats?.likes > 0 ? 'text-red-500 fill-red-500' : ''}
               />
               <span>{(post.stats?.likes || 0).toLocaleString()}</span>
             </div>
-            <div className="flex items-center space-x-1" title="Dislikes">
+            <div className="flex items-center gap-1" title={t('postRow.dislikesTitle')}>
               <ThumbsDown
                 size={10}
                 className={post.stats?.dislikes > 0 ? 'text-amber-600 fill-amber-600' : ''}
               />
               <span>{(post.stats?.dislikes || 0).toLocaleString()}</span>
             </div>
-            <div className="flex items-center space-x-1" title="Comments">
+            <div className="flex items-center gap-1" title={t('postRow.commentsTitle')}>
               <MessageCircle size={10} />
               <span>{(post.stats?.comments || 0).toLocaleString()}</span>
             </div>
@@ -148,7 +152,7 @@ const PostRow = React.memo(
               {(post.stats?.views || 0) >= 1000
                 ? `${((post.stats?.views || 0) / 1000).toFixed(1)}k`
                 : (post.stats?.views || 0).toLocaleString()}{' '}
-              views
+              {t('postRow.viewsInline')}
             </div>
           </div>
         </td>
@@ -159,26 +163,26 @@ const PostRow = React.memo(
         </td>
 
         {/* Actions */}
-        <td className="p-2 text-right transition-colors">
-          <div className="flex items-center justify-end space-x-1">
+        <td className="p-2 text-end transition-colors">
+          <div className="flex items-center justify-end gap-1">
             <button
               onClick={() => onViewDetails && onViewDetails(post)}
               className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded transition-colors"
-              title="View Details"
+              title={t('postRow.viewDetailsTitle')}
             >
               <Eye size={14} />
             </button>
             <button
               onClick={() => onEdit(post)}
               className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors"
-              title="Edit Post"
+              title={t('postRow.editPostTitle')}
             >
               <Edit size={14} />
             </button>
             <button
               onClick={() => onDelete(post.id)}
               className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-              title="Delete Post"
+              title={t('postRow.deletePostTitle')}
             >
               <Trash2 size={14} />
             </button>

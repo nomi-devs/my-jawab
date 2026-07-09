@@ -1,5 +1,6 @@
 // src/components/dashboard/payments/PaymentsHeader.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CreditCard, Search, X, Filter, Grid, List, Download } from 'lucide-react';
 import RefreshButton from '../../common/RefreshButton';
 import ExportButton from '../../common/ExportButton';
@@ -23,6 +24,19 @@ const PaymentsHeader = React.memo(
     sortOrder = 'DESC',
     onRefresh,
   }) => {
+    const { t } = useTranslation('payments');
+    const statusLabels = {
+      pending: t('status.pending'),
+      completed: t('status.completed'),
+      failed: t('status.failed'),
+    };
+    const methodLabels = {
+      credit_card: t('methods.creditCard'),
+      debit_card: t('methods.debitCard'),
+      paypal: t('methods.paypal'),
+      bank_transfer: t('methods.bankTransfer'),
+      cash: t('methods.cash'),
+    };
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
     const [selectedStatus, setSelectedStatus] = useState(statusFilter);
     const [selectedMethod, setSelectedMethod] = useState(methodFilter);
@@ -148,16 +162,16 @@ const PaymentsHeader = React.memo(
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
           <div>
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
-              All Payments
+              {t('header.allPayments')}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
               {loading ? (
                 <span className="flex items-center">
-                  <span className="w-3 h-3 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin mr-2"></span>
-                  Loading...
+                  <span className="w-3 h-3 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin me-2"></span>
+                  {t('common:loading')}
                 </span>
               ) : (
-                `Total Payments: ${paymentCount}`
+                t('header.totalPayments', { count: paymentCount })
               )}
             </p>
           </div>
@@ -169,7 +183,7 @@ const PaymentsHeader = React.memo(
               <button
                 onClick={() => onViewModeChange && onViewModeChange('list')}
                 className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-gray-600/50'}`}
-                title="List View"
+                title={t('header.listView')}
                 disabled={loading}
               >
                 <List
@@ -184,7 +198,7 @@ const PaymentsHeader = React.memo(
               <button
                 onClick={() => onViewModeChange && onViewModeChange('grid')}
                 className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-gray-600/50'}`}
-                title="Grid View"
+                title={t('header.gridView')}
                 disabled={loading}
               >
                 <Grid
@@ -203,7 +217,7 @@ const PaymentsHeader = React.memo(
               <RefreshButton
                 onClick={onRefresh}
                 loading={loading}
-                title="Refresh payments"
+                title={t('header.refreshPayments')}
                 size={18}
               />
             )}
@@ -222,7 +236,7 @@ const PaymentsHeader = React.memo(
               className="purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CreditCard size={16} />
-              <span>Add Payment</span>
+              <span>{t('header.addPayment')}</span>
             </button>
           </div>
         </div>
@@ -231,19 +245,19 @@ const PaymentsHeader = React.memo(
         <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
           {/* Search Input */}
           <div className="relative flex-1 w-full sm:w-auto sm:min-w-[200px]">
-            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
+            <Search className="absolute start-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search payments..."
+              placeholder={t('header.searchPlaceholder')}
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
               disabled={loading}
-              className="w-full pl-9 pr-8 py-1.5 text-sm border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full ps-9 pe-8 py-1.5 text-sm border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             />
             {localSearchTerm && (
               <button
                 onClick={() => setLocalSearchTerm('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X size={18} />
               </button>
@@ -252,17 +266,17 @@ const PaymentsHeader = React.memo(
 
           {/* Status Filter */}
           <div className="relative flex-shrink-0">
-            <Filter className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 pointer-events-none" />
+            <Filter className="absolute start-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 pointer-events-none" />
             <select
               value={selectedStatus}
               onChange={handleStatusChange}
               disabled={loading}
-              className="appearance-none bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 pl-8 pr-6 py-1.5 outline-none cursor-pointer w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="appearance-none bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 ps-8 pe-6 py-1.5 outline-none cursor-pointer w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
+              <option value="all">{t('status.all')}</option>
+              <option value="pending">{t('status.pending')}</option>
+              <option value="completed">{t('status.completed')}</option>
+              <option value="failed">{t('status.failed')}</option>
             </select>
           </div>
 
@@ -274,12 +288,12 @@ const PaymentsHeader = React.memo(
               disabled={loading}
               className="appearance-none bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 px-3 py-1.5 outline-none cursor-pointer w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <option value="all">All Methods</option>
-              <option value="credit_card">Credit Card</option>
-              <option value="debit_card">Debit Card</option>
-              <option value="paypal">PayPal</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="cash">Cash</option>
+              <option value="all">{t('methods.all')}</option>
+              <option value="credit_card">{t('methods.creditCard')}</option>
+              <option value="debit_card">{t('methods.debitCard')}</option>
+              <option value="paypal">{t('methods.paypal')}</option>
+              <option value="bank_transfer">{t('methods.bankTransfer')}</option>
+              <option value="cash">{t('methods.cash')}</option>
             </select>
           </div>
 
@@ -291,9 +305,9 @@ const PaymentsHeader = React.memo(
               disabled={loading}
               className="appearance-none bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 px-3 py-1.5 outline-none cursor-pointer w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <option value="created_at">Sort: Date</option>
-              <option value="payment_amount">Sort: Amount</option>
-              <option value="payment_status">Sort: Status</option>
+              <option value="created_at">{t('header.sortDate')}</option>
+              <option value="payment_amount">{t('header.sortAmount')}</option>
+              <option value="payment_status">{t('header.sortStatus')}</option>
             </select>
           </div>
 
@@ -306,13 +320,17 @@ const PaymentsHeader = React.memo(
                 ? 'border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-500 dark:bg-purple-900/40 dark:text-purple-200'
                 : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-200'
             }`}
-            title={`Sort ${selectedSortOrder === 'DESC' ? 'Newest first (↓)' : 'Oldest first (↑)'}`}
+            title={
+              selectedSortOrder === 'DESC'
+                ? t('header.sortNewestTitle')
+                : t('header.sortOldestTitle')
+            }
           >
             <span className="text-base leading-none">
               {selectedSortOrder === 'DESC' ? '↓' : '↑'}
             </span>
             <span className="hidden sm:inline">
-              {selectedSortOrder === 'DESC' ? 'Desc' : 'Asc'}
+              {selectedSortOrder === 'DESC' ? t('header.sortDesc') : t('header.sortAsc')}
             </span>
           </button>
 
@@ -325,10 +343,10 @@ const PaymentsHeader = React.memo(
                 ? 'border-red-200 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-300 dark:hover:bg-red-900/30'
                 : 'border-gray-200 text-gray-500 dark:border-gray-600 dark:text-gray-400'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title={hasActiveFilters ? 'Clear all filters' : 'No filters to clear'}
+            title={hasActiveFilters ? t('header.clearAllFilters') : t('header.noFiltersToClear')}
           >
             <X size={14} />
-            <span>Clear</span>
+            <span>{t('header.clear')}</span>
           </button>
         </div>
 
@@ -341,12 +359,12 @@ const PaymentsHeader = React.memo(
           <div className="flex flex-wrap items-center gap-1.5">
             {localSearchTerm && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-md text-xs text-purple-700 dark:text-purple-300 animate-in fade-in slide-in-from-left-2 duration-200">
-                <span className="font-medium">Search:</span>
+                <span className="font-medium">{t('header.searchLabel')}</span>
                 <span className="truncate max-w-[120px]">{localSearchTerm}</span>
                 <button
                   onClick={() => setLocalSearchTerm('')}
-                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ml-0.5 transition-colors"
-                  title="Remove search"
+                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ms-0.5 transition-colors"
+                  title={t('header.removeSearch')}
                 >
                   <X size={12} />
                 </button>
@@ -355,15 +373,15 @@ const PaymentsHeader = React.memo(
 
             {selectedStatus !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-md text-xs text-purple-700 dark:text-purple-300 animate-in fade-in slide-in-from-left-2 duration-200">
-                <span className="font-medium">Status:</span>
-                <span className="capitalize">{selectedStatus}</span>
+                <span className="font-medium">{t('header.statusLabel')}</span>
+                <span className="capitalize">{statusLabels[selectedStatus] || selectedStatus}</span>
                 <button
                   onClick={() => {
                     setSelectedStatus('all');
                     if (onStatusFilter) onStatusFilter('all');
                   }}
-                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ml-0.5 transition-colors"
-                  title="Remove status filter"
+                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ms-0.5 transition-colors"
+                  title={t('header.removeStatusFilter')}
                 >
                   <X size={12} />
                 </button>
@@ -372,15 +390,17 @@ const PaymentsHeader = React.memo(
 
             {selectedMethod !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-md text-xs text-purple-700 dark:text-purple-300 animate-in fade-in slide-in-from-left-2 duration-200">
-                <span className="font-medium">Method:</span>
-                <span className="capitalize">{selectedMethod.replace('_', ' ')}</span>
+                <span className="font-medium">{t('header.methodLabel')}</span>
+                <span className="capitalize">
+                  {methodLabels[selectedMethod] || selectedMethod.replace('_', ' ')}
+                </span>
                 <button
                   onClick={() => {
                     setSelectedMethod('all');
                     if (onMethodFilter) onMethodFilter('all');
                   }}
-                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ml-0.5 transition-colors"
-                  title="Remove method filter"
+                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ms-0.5 transition-colors"
+                  title={t('header.removeMethodFilter')}
                 >
                   <X size={12} />
                 </button>
@@ -389,7 +409,7 @@ const PaymentsHeader = React.memo(
 
             {(selectedSortBy !== 'created_at' || selectedSortOrder !== 'DESC') && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-md text-xs text-purple-700 dark:text-purple-300 animate-in fade-in slide-in-from-left-2 duration-200">
-                <span className="font-medium">Sort:</span>
+                <span className="font-medium">{t('header.sortLabel')}</span>
                 <span className="capitalize">
                   {selectedSortBy.replace('_', ' ')} {selectedSortOrder}
                 </span>

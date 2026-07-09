@@ -1,16 +1,21 @@
 // src/components/dashboard/subscriptions/SubscriptionsList.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import SubscriptionRow from './SubscriptionRow';
 import SubscriptionCard from './SubscriptionCard';
 import { Package } from 'lucide-react';
 
 const SubscriptionsList = React.memo(
   ({ subscriptions, loading, viewMode, onEdit, onDelete, onViewDetails }) => {
+    const { t } = useTranslation('subscriptions');
+
     if (loading && subscriptions.length === 0) {
       return (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading subscriptions...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            {t('subscriptionsList.loadingSubscriptions')}
+          </p>
         </div>
       );
     }
@@ -22,10 +27,10 @@ const SubscriptionsList = React.memo(
             <Package className="text-purple-600 dark:text-purple-400" size={24} />
           </div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 transition-colors">
-            No subscriptions found
+            {t('subscriptionsList.noSubscriptionsFound')}
           </h3>
           <p className="text-gray-500 dark:text-gray-400 transition-colors">
-            Create your first subscription to get started
+            {t('subscriptionsList.createFirstSubscription')}
           </p>
         </div>
       );
@@ -50,15 +55,15 @@ const SubscriptionsList = React.memo(
     return (
       <>
         <div className="overflow-x-auto" style={{ scrollbarGutter: 'stable' }}>
-          <table className="w-full text-left border-collapse transition-opacity duration-300">
+          <table className="w-full text-start border-collapse transition-opacity duration-300">
             <thead className="bg-purple-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium transition-colors">
               <tr>
-                <th className="p-4">Subscription</th>
-                <th className="p-4">Type & Price</th>
-                <th className="p-4">Duration</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Created</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="p-4">{t('subscriptionsList.tableHeaders.subscription')}</th>
+                <th className="p-4">{t('subscriptionsList.tableHeaders.typeAndPrice')}</th>
+                <th className="p-4">{t('subscriptionsList.tableHeaders.duration')}</th>
+                <th className="p-4">{t('common:status')}</th>
+                <th className="p-4">{t('common:created')}</th>
+                <th className="p-4 text-end">{t('common:actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-purple-100 dark:divide-gray-700 text-sm">

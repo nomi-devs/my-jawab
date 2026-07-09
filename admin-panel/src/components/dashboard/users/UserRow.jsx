@@ -1,9 +1,11 @@
 // src/components/dashboard/users/UserRow.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, Shield } from 'lucide-react';
 
 const UserRow = React.memo(
   ({ user, onDelete, onEdit, onViewDetails, index = 0, serialNumber = 0 }) => {
+    const { t } = useTranslation('users');
     const handleDelete = () => {
       onDelete(user.id);
     };
@@ -29,7 +31,7 @@ const UserRow = React.memo(
           {serialNumber}
         </td>
         <td className="p-2 transition-colors">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <img
               src={user.img}
               alt={user.name || user.username}
@@ -53,7 +55,7 @@ const UserRow = React.memo(
         </td>
         <td className="p-2 transition-colors">
           <span
-            className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold inline-flex items-center w-fit space-x-1 ${
+            className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold inline-flex items-center w-fit gap-1 ${
               user.role === 'Pro'
                 ? 'bg-purple-100 text-purple-600'
                 : user.role === 'Admin'
@@ -80,7 +82,7 @@ const UserRow = React.memo(
             }`}
           >
             <span
-              className={`w-1 h-1 rounded-full mr-1 ${
+              className={`w-1 h-1 rounded-full me-1 ${
                 user.status === 'Active'
                   ? 'bg-green-500 dark:bg-green-400'
                   : user.status === 'Suspended'
@@ -96,19 +98,19 @@ const UserRow = React.memo(
         <td className="p-2 text-[10px] text-gray-500 dark:text-gray-400 transition-colors">
           {user.joined}
         </td>
-        <td className="p-2 text-right transition-colors">
-          <div className="flex items-center justify-end space-x-1">
+        <td className="p-2 text-end transition-colors">
+          <div className="flex items-center justify-end gap-1">
             <button
               onClick={handleViewDetails}
               className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded transition-colors"
-              title="View Details"
+              title={t('userRow.viewDetails')}
             >
               <Eye size={14} />
             </button>
             <button
               onClick={handleEdit}
               className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors"
-              title="Edit User"
+              title={t('userRow.editUser')}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -128,7 +130,7 @@ const UserRow = React.memo(
             <button
               onClick={handleDelete}
               className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-              title="Delete User"
+              title={t('userRow.deleteUser')}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

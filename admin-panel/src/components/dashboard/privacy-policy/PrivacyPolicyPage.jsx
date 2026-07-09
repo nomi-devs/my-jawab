@@ -1,5 +1,6 @@
 // src/components/dashboard/privacy-policy/PrivacyPolicyPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, Save, Plus, Eye, EyeOff, FileText, CheckCircle, XCircle } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -47,6 +48,7 @@ const quillFormats = [
 ];
 
 const PrivacyPolicyPage = () => {
+  const { t } = useTranslation('privacyPolicy');
   const [policy, setPolicy] = useState(null);
   const [formData, setFormData] = useState({
     slug: 'privacy-policy',
@@ -81,12 +83,12 @@ const PrivacyPolicyPage = () => {
         setIsNew(true);
       } else {
         console.error('Failed to fetch privacy policy:', error);
-        showAlert('error', 'Error', 'Failed to load privacy policy. Please try again.');
+        showAlert('error', t('common:error'), t('loadFailed'));
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchPolicy();
@@ -117,11 +119,11 @@ const PrivacyPolicyPage = () => {
   const handleSaveClick = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
-      showAlert('error', 'Validation Error', 'Title is required.');
+      showAlert('error', t('validationError'), t('titleRequired'));
       return;
     }
     if (!formData.content.trim() || formData.content === '<p><br></p>') {
-      showAlert('error', 'Validation Error', 'Content is required.');
+      showAlert('error', t('validationError'), t('contentRequired'));
       return;
     }
     setIsSaving(true);
@@ -130,16 +132,16 @@ const PrivacyPolicyPage = () => {
         const res = await privacyPolicyApi.create(formData);
         setPolicy(res.data);
         setIsNew(false);
-        showAlert('success', 'Created', 'Privacy policy created successfully!');
+        showAlert('success', t('common:created'), t('createdSuccess'));
       } else {
         const res = await privacyPolicyApi.update(policy.id, formData);
         setPolicy(res.data);
-        showAlert('success', 'Updated', 'Privacy policy updated successfully!');
+        showAlert('success', t('common:updated'), t('updatedSuccess'));
       }
     } catch (error) {
       console.error('Failed to save privacy policy:', error);
-      const msg = error.response?.data?.message || 'Failed to save privacy policy.';
-      showAlert('error', 'Error', msg);
+      const msg = error.response?.data?.message || t('saveFailed');
+      showAlert('error', t('common:error'), msg);
     } finally {
       setIsSaving(false);
     }
@@ -164,18 +166,16 @@ const PrivacyPolicyPage = () => {
         {/* Header */}
         <div className="p-4 md:p-5 border-b border-purple-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                 <Shield className="text-purple-600 dark:text-purple-400" size={20} />
               </div>
               <div>
                 <h2 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                  Privacy Policy
+                  {t('pageTitle')}
                 </h2>
                 <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 transition-colors">
-                  {isNew
-                    ? 'Create your privacy policy for the platform'
-                    : 'Manage and update your privacy policy content'}
+                  {isNew ? t('subtitleCreate') : t('subtitleManage')}
                 </p>
               </div>
             </div>
@@ -189,7 +189,7 @@ const PrivacyPolicyPage = () => {
               }`}
             >
               {showPreview ? <EyeOff size={14} /> : <Eye size={14} />}
-              {showPreview ? 'Editor' : 'Preview'}
+              {showPreview ? t('editor') : t('preview')}
             </button>
           </div>
         </div>
@@ -199,16 +199,18 @@ const PrivacyPolicyPage = () => {
           <div className="p-4 md:p-6 space-y-4">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2 transition-colors">
               <Eye size={16} className="text-purple-500 dark:text-purple-400" />
-              Content Preview
+              {t('contentPreview')}
             </h3>
             <div className="p-4 md:p-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-purple-200 dark:border-gray-600">
               <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                {formData.title || 'Untitled'}
+                {formData.title || t('untitled')}
               </h4>
               <div
                 className="prose prose-sm prose-purple dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
                 dangerouslySetInnerHTML={{
-                  __html: formData.content || '<p class="italic text-gray-400">No content yet.</p>',
+                  __html:
+                    formData.content ||
+                    `<p class="italic text-gray-400">${t('noContentYet')}</p>`,
                 }}
               />
             </div>
@@ -221,21 +223,21 @@ const PrivacyPolicyPage = () => {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2 transition-colors">
                   <FileText size={16} className="text-purple-500 dark:text-purple-400" />
-                  Policy Details
+                  {t('policyDetails')}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Title */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                      Title *
+                      {t('titleLabel')}
                     </label>
                     <input
                       type="text"
                       name="title"
                       value={formData.title}
                       onChange={handleInputChange}
-                      placeholder="Privacy Policy"
+                      placeholder={t('titlePlaceholder')}
                       required
                       disabled={isSaving}
                       className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
@@ -245,7 +247,7 @@ const PrivacyPolicyPage = () => {
                   {/* Slug */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                      Slug
+                      {t('slugLabel')}
                     </label>
                     <input
                       type="text"
@@ -255,14 +257,14 @@ const PrivacyPolicyPage = () => {
                       className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed transition-colors text-sm"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Auto-generated from title
+                      {t('slugHint')}
                     </p>
                   </div>
 
                   {/* Status */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                      Status
+                      {t('statusLabel')}
                     </label>
                     <div className="flex items-center gap-2">
                       {formData.is_active === 'active' ? (
@@ -272,19 +274,21 @@ const PrivacyPolicyPage = () => {
                             setFormData((prev) => ({ ...prev, is_active: 'inactive' }))
                           }
                         >
-                          <CheckCircle size={14} className="mr-1" />
-                          Active
+                          <CheckCircle size={14} className="me-1" />
+                          {t('common:active')}
                         </span>
                       ) : (
                         <span
                           className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 cursor-pointer"
                           onClick={() => setFormData((prev) => ({ ...prev, is_active: 'active' }))}
                         >
-                          <XCircle size={14} className="mr-1" />
-                          Inactive
+                          <XCircle size={14} className="me-1" />
+                          {t('common:inactive')}
                         </span>
                       )}
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Click to toggle</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('clickToToggle')}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -295,7 +299,7 @@ const PrivacyPolicyPage = () => {
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2 transition-colors">
                     <Shield size={16} className="text-purple-500 dark:text-purple-400" />
-                    Policy Content *
+                    {t('policyContent')}
                   </h3>
 
                   <div className="quill-wrapper rounded-lg overflow-hidden border border-purple-200 dark:border-gray-600">
@@ -305,7 +309,7 @@ const PrivacyPolicyPage = () => {
                       onChange={handleContentChange}
                       modules={quillModules}
                       formats={quillFormats}
-                      placeholder="Write your privacy policy content here..."
+                      placeholder={t('contentPlaceholder')}
                       style={{ minHeight: '400px' }}
                     />
                   </div>
@@ -317,22 +321,22 @@ const PrivacyPolicyPage = () => {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white font-semibold px-6 py-2.5 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
+                  className="purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white font-semibold px-6 py-2.5 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                 >
                   {isSaving ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Saving...</span>
+                      <span>{t('saving')}</span>
                     </>
                   ) : isNew ? (
                     <>
                       <Plus size={16} />
-                      <span>Create Policy</span>
+                      <span>{t('createPolicy')}</span>
                     </>
                   ) : (
                     <>
                       <Save size={16} />
-                      <span>Save Policy</span>
+                      <span>{t('savePolicy')}</span>
                     </>
                   )}
                 </button>

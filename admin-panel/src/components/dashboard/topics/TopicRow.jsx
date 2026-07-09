@@ -1,12 +1,14 @@
 // src/components/dashboard/topics/TopicRow.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Hash, Edit, Trash2, Eye } from 'lucide-react';
 import { normalizeMediaUrl } from '../../../utils/mediaUtils';
 
 const TopicRow = React.memo(
   ({ topic, onEdit, onDelete, onViewDetails, onToggleActive, index = 0, serialNumber = 0 }) => {
+    const { t } = useTranslation('topics');
     const formatDate = (timestamp) => {
-      if (!timestamp) return 'N/A';
+      if (!timestamp) return t('topicRow.notAvailable');
       const date = new Date(timestamp);
       return date.toLocaleDateString('en-US', {
         month: 'short',
@@ -16,7 +18,7 @@ const TopicRow = React.memo(
     };
 
     const truncateText = (text, maxLength = 60) => {
-      if (!text) return 'No description';
+      if (!text) return t('topicRow.noDescription');
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
     };
@@ -33,7 +35,7 @@ const TopicRow = React.memo(
         </td>
         {/* Topic Name & Icon */}
         <td className="p-2 transition-colors">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             {topic.topic_image && (!topic.parent_id || topic.parent_id === 0) ? (
               <img
                 src={normalizeMediaUrl(topic.topic_image)}
@@ -56,7 +58,7 @@ const TopicRow = React.memo(
                 {topic.topic_name || topic.name}
               </div>
               <div className="text-gray-500 dark:text-gray-400 text-[10px] transition-colors truncate">
-                {topic.topic_slug || topic.slug || 'No slug'}
+                {topic.topic_slug || topic.slug || t('topicRow.noSlug')}
               </div>
             </div>
           </div>
@@ -80,16 +82,18 @@ const TopicRow = React.memo(
               }`}
             >
               <span
-                className={`w-1 h-1 rounded-full mr-1 ${
+                className={`w-1 h-1 rounded-full me-1 ${
                   topic.is_active
                     ? 'bg-green-500 dark:text-green-400'
                     : 'bg-gray-500 dark:bg-gray-400'
                 }`}
               ></span>
-              {topic.is_active ? 'Active' : 'Inactive'}
+              {topic.is_active ? t('common:active') : t('common:inactive')}
             </span>
             <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30">
-              {topic.parent_id && topic.parent_id > 0 ? 'Subtopic' : 'Category'}
+              {topic.parent_id && topic.parent_id > 0
+                ? t('topicRow.subtopic')
+                : t('topicRow.category')}
             </span>
           </div>
         </td>
@@ -101,9 +105,11 @@ const TopicRow = React.memo(
               {topic.parent_name}
             </span>
           ) : topic.parent_id && topic.parent_id > 0 ? (
-            <span className="text-gray-400 dark:text-gray-500">Has Parent</span>
+            <span className="text-gray-400 dark:text-gray-500">{t('topicRow.hasParent')}</span>
           ) : (
-            <span className="text-purple-600 dark:text-purple-400 font-medium">Root Category</span>
+            <span className="text-purple-600 dark:text-purple-400 font-medium">
+              {t('topicRow.rootCategory')}
+            </span>
           )}
         </td>
 
@@ -124,10 +130,12 @@ const TopicRow = React.memo(
               </div>
             ) : topic.children_count && topic.children_count > 0 ? (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
-                {topic.children_count} subtopic{topic.children_count !== 1 ? 's' : ''}
+                {t('topicRow.subtopicsCount', { count: topic.children_count })}
               </span>
             ) : (
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">No subtopics</span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                {t('topicRow.noSubtopics')}
+              </span>
             )
           ) : (
             <span className="text-[10px] text-gray-400 dark:text-gray-500">-</span>
@@ -140,13 +148,15 @@ const TopicRow = React.memo(
         </td>
 
         {/* Actions */}
-        <td className="p-2 text-right transition-colors">
-          <div className="flex items-center justify-end space-x-1">
+        <td className="p-2 text-end transition-colors">
+          <div className="flex items-center justify-end gap-1">
             {/* Toggle Active/Inactive Switch */}
             {onToggleActive && (
               <label
-                className="relative inline-flex items-center cursor-pointer mr-1"
-                title={topic.is_active ? 'Deactivate topic' : 'Activate topic'}
+                className="relative inline-flex items-center cursor-pointer me-1"
+                title={
+                  topic.is_active ? t('topicRow.deactivateTopic') : t('topicRow.activateTopic')
+                }
               >
                 <input
                   type="checkbox"
@@ -157,27 +167,27 @@ const TopicRow = React.memo(
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                <div className="w-9 h-5 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 rtl:peer-checked:after:-translate-x-full"></div>
               </label>
             )}
             <button
               onClick={() => onViewDetails && onViewDetails(topic)}
               className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded transition-colors"
-              title="View Details"
+              title={t('topicRow.viewDetails')}
             >
               <Eye size={14} />
             </button>
             <button
               onClick={() => onEdit && onEdit(topic)}
               className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors"
-              title="Edit Topic"
+              title={t('topicRow.editTopic')}
             >
               <Edit size={14} />
             </button>
             <button
               onClick={() => onDelete && onDelete(topic.id)}
               className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-              title="Delete Topic"
+              title={t('topicRow.deleteTopic')}
             >
               <Trash2 size={14} />
             </button>

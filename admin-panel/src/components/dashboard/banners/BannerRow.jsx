@@ -1,5 +1,6 @@
 // src/components/dashboard/banners/BannerRow.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Edit, Trash2, Eye, Image as ImageIcon, ExternalLink } from 'lucide-react';
 
 const typeColors = {
@@ -23,6 +24,7 @@ const formatDate = (date) => {
 
 const BannerRow = React.memo(
   ({ banner, serialNumber, onEdit, onDelete, onViewDetails, onToggleActive }) => {
+    const { t } = useTranslation('banners');
     const isActive = banner.is_active === true || banner.is_active === 1;
     const typeClass = typeColors[banner.banner_type] || typeColors.promotion;
 
@@ -60,7 +62,9 @@ const BannerRow = React.memo(
             )}
             <div className="min-w-0">
               <div className="font-semibold text-xs text-gray-800 dark:text-gray-100 truncate max-w-[220px]">
-                {banner.banner_title || <span className="italic text-gray-400">Untitled</span>}
+                {banner.banner_title || (
+                  <span className="italic text-gray-400">{t('bannerRow.untitled')}</span>
+                )}
               </div>
               {banner.banner_description && (
                 <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate max-w-[220px]">
@@ -76,7 +80,9 @@ const BannerRow = React.memo(
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${typeClass}`}
           >
-            {banner.banner_type || 'promotion'}
+            {t(`bannerTypes.${banner.banner_type || 'promotion'}`, {
+              defaultValue: banner.banner_type || t('bannerTypes.promotion'),
+            })}
           </span>
         </td>
 
@@ -102,11 +108,11 @@ const BannerRow = React.memo(
         <td className="p-3">
           {hasTargeting ? (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-              Targeted
+              {t('bannerRow.targeted')}
             </span>
           ) : (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-              Everyone
+              {t('bannerRow.everyone')}
             </span>
           )}
         </td>
@@ -128,25 +134,25 @@ const BannerRow = React.memo(
             }`}
           >
             <span
-              className={`w-1 h-1 rounded-full mr-1.5 ${isActive ? 'bg-green-500' : 'bg-gray-400'}`}
+              className={`w-1 h-1 rounded-full me-1.5 ${isActive ? 'bg-green-500' : 'bg-gray-400'}`}
             />
-            {isActive ? 'Active' : 'Inactive'}
+            {isActive ? t('common:active') : t('common:inactive')}
           </span>
         </td>
 
         {/* Validity */}
         <td className="p-3 text-[11px] text-gray-500 dark:text-gray-400">
           <div className="flex flex-col">
-            <span>From: {formatDate(banner.valid_from)}</span>
-            <span>Until: {formatDate(banner.valid_until)}</span>
+            <span>{t('bannerRow.fromDate', { date: formatDate(banner.valid_from) })}</span>
+            <span>{t('bannerRow.untilDate', { date: formatDate(banner.valid_until) })}</span>
           </div>
         </td>
 
         {/* Actions */}
-        <td className="p-3 text-right">
+        <td className="p-3 text-end">
           <div className="flex items-center justify-end gap-1">
             {/* Active toggle */}
-            <label className="relative inline-flex items-center cursor-pointer mr-1">
+            <label className="relative inline-flex items-center cursor-pointer me-1">
               <input
                 type="checkbox"
                 checked={isActive}
@@ -156,14 +162,14 @@ const BannerRow = React.memo(
                 }}
                 className="sr-only peer"
               />
-              <div className="w-8 h-4 bg-gray-200 dark:bg-gray-600 rounded-full peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all" />
+              <div className="w-8 h-4 bg-gray-200 dark:bg-gray-600 rounded-full peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:start-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all" />
             </label>
 
             <button
               type="button"
               onClick={() => onViewDetails?.(banner)}
               className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
-              title="View details"
+              title={t('bannerRow.viewDetails')}
             >
               <Eye size={14} />
             </button>
@@ -171,7 +177,7 @@ const BannerRow = React.memo(
               type="button"
               onClick={() => onEdit?.(banner)}
               className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
-              title="Edit"
+              title={t('common:edit')}
             >
               <Edit size={14} />
             </button>
@@ -179,7 +185,7 @@ const BannerRow = React.memo(
               type="button"
               onClick={() => onDelete?.(banner.id)}
               className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-              title="Delete"
+              title={t('common:delete')}
             >
               <Trash2 size={14} />
             </button>

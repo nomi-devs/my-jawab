@@ -1,7 +1,9 @@
 // src/components/dashboard/overview/UserGrowthGraph.jsx
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const UserGrowthGraph = ({ data, formatNumber }) => {
+  const { t } = useTranslation('overview');
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const containerRef = useRef(null);
@@ -209,7 +211,7 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
   if (!data || data.length === 0) {
     return (
       <div className="h-48 sm:h-56 md:h-64 flex items-center justify-center">
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">No data available</p>
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('common:noData')}</p>
       </div>
     );
   }
@@ -227,32 +229,33 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
       {/* Info icon explaining how to read the graph */}
       <button
         type="button"
-        className="absolute top-2 right-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+        className="absolute top-2 end-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
         onMouseEnter={() => setShowInfo(true)}
         onMouseLeave={() => setShowInfo(false)}
-        aria-label="About this graph"
+        aria-label={t('userGrowthGraph.aboutGraph')}
       >
         <span className="text-xs font-semibold">i</span>
       </button>
 
       {showInfo && (
-        <div className="absolute top-9 right-2 z-20 max-w-xs rounded-md bg-gray-900 px-3 py-2 text-xs text-white shadow-lg dark:bg-gray-800">
-          <p className="font-semibold mb-1">User growth graph</p>
+        <div className="absolute top-9 end-2 z-20 max-w-xs rounded-md bg-gray-900 px-3 py-2 text-xs text-white shadow-lg dark:bg-gray-800">
+          <p className="font-semibold mb-1">{t('userGrowthGraph.infoTitle')}</p>
           <ul className="space-y-0.5 list-disc list-inside">
             <li>
-              <span className="font-semibold">Purple area &amp; line</span>: total users over time
-              (cumulative).
+              <span className="font-semibold">{t('userGrowthGraph.infoAreaLabel')}</span>:{' '}
+              {t('userGrowthGraph.infoAreaDesc')}
             </li>
             <li>
-              <span className="font-semibold">Blue dashed line</span>: new users added in each
-              period.
+              <span className="font-semibold">{t('userGrowthGraph.infoNewLabel')}</span>:{' '}
+              {t('userGrowthGraph.infoNewDesc')}
             </li>
             <li>
-              <span className="font-semibold">X‑axis</span>: time (days/weeks/months depending on
-              filter).
+              <span className="font-semibold">{t('userGrowthGraph.infoXAxisLabel')}</span>:{' '}
+              {t('userGrowthGraph.infoXAxisDesc')}
             </li>
             <li>
-              <span className="font-semibold">Y‑axis</span>: number of users.
+              <span className="font-semibold">{t('userGrowthGraph.infoYAxisLabel')}</span>:{' '}
+              {t('userGrowthGraph.infoYAxisDesc')}
             </li>
           </ul>
         </div>
@@ -475,12 +478,12 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
       {/* Legend */}
       <div className="mt-1 flex items-center justify-end gap-3 px-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
         <div className="flex items-center gap-1">
-          <span className="inline-block h-2 w-3 rounded-sm bg-gradient-to-r from-purple-600 to-purple-400" />
-          <span className="whitespace-nowrap">Total users (cumulative)</span>
+          <span className="inline-block h-2 w-3 rounded-sm bg-linear-to-r from-purple-600 to-purple-400" />
+          <span className="whitespace-nowrap">{t('userGrowthGraph.legendCumulative')}</span>
         </div>
         <div className="flex items-center gap-1">
           <span className="inline-block h-0.5 w-4 border-t border-dashed border-blue-500" />
-          <span className="whitespace-nowrap">New users per period</span>
+          <span className="whitespace-nowrap">{t('userGrowthGraph.legendNew')}</span>
         </div>
       </div>
 
@@ -544,15 +547,15 @@ const UserGrowthGraph = ({ data, formatNumber }) => {
               <div className="font-semibold mb-1 truncate">{item.label || item.date}</div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0"></div>
                   <span className="truncate">
-                    Cumulative: <strong>{formatNumber(cumulativeValue)}</strong>
+                    {t('userGrowthGraph.tooltipCumulative')} <strong>{formatNumber(cumulativeValue)}</strong>
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-300 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-300 shrink-0"></div>
                   <span className="truncate">
-                    New: <strong>{formatNumber(newValue)}</strong>
+                    {t('userGrowthGraph.tooltipNew')} <strong>{formatNumber(newValue)}</strong>
                   </span>
                 </div>
               </div>

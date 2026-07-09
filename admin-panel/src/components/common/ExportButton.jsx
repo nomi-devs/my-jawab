@@ -1,9 +1,11 @@
 // src/components/common/ExportButton.jsx
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, FileText, Table, ChevronDown, Loader2 } from 'lucide-react';
 import { convertToCSV, convertToExcelHTML, downloadFile } from '../../utils/exportUtils';
 
 const ExportButton = ({ fetchData, filename = 'export', disabled = false, className = '' }) => {
+  const { t } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const dropdownRef = useRef(null);
@@ -30,7 +32,7 @@ const ExportButton = ({ fetchData, filename = 'export', disabled = false, classN
       const data = await fetchData();
 
       if (!data || !data.length) {
-        alert('No data available to export');
+        alert(t('exportButton.noDataToExport'));
         return;
       }
 
@@ -46,7 +48,7 @@ const ExportButton = ({ fetchData, filename = 'export', disabled = false, classN
       }
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Failed to export data. Please try again.');
+      alert(t('exportButton.exportFailed'));
     } finally {
       setIsExporting(false);
     }
@@ -58,14 +60,14 @@ const ExportButton = ({ fetchData, filename = 'export', disabled = false, classN
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled || isExporting}
         className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-purple-200 dark:border-gray-600 rounded-lg text-xs font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-gray-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed group"
-        title="Export Data"
+        title={t('exportButton.title')}
       >
         {isExporting ? (
           <Loader2 size={16} className="animate-spin" />
         ) : (
           <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
         )}
-        <span>{isExporting ? 'Exporting...' : 'Export'}</span>
+        <span>{isExporting ? t('exportButton.exporting') : t('export')}</span>
         <ChevronDown
           size={14}
           className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
@@ -80,16 +82,16 @@ const ExportButton = ({ fetchData, filename = 'export', disabled = false, classN
       )}
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-purple-100 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute end-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-purple-100 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <div className="p-1">
             <button
               onClick={() => handleExport('csv')}
               className="w-full flex items-center gap-3 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/40 rounded-lg transition-colors group"
             >
               <FileText size={16} className="text-gray-400 group-hover:text-purple-600" />
-              <div className="text-left">
-                <span className="block font-medium">Export CSV</span>
-                <span className="text-[10px] text-gray-400">Comma separated</span>
+              <div className="text-start">
+                <span className="block font-medium">{t('exportButton.exportCsv')}</span>
+                <span className="text-[10px] text-gray-400">{t('exportButton.commaSeparated')}</span>
               </div>
             </button>
             <button
@@ -97,9 +99,9 @@ const ExportButton = ({ fetchData, filename = 'export', disabled = false, classN
               className="w-full flex items-center gap-3 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/40 rounded-lg transition-colors group mt-0.5"
             >
               <Table size={16} className="text-gray-400 group-hover:text-emerald-600" />
-              <div className="text-left">
-                <span className="block font-medium">Export Excel</span>
-                <span className="text-[10px] text-gray-400">Excel compatible</span>
+              <div className="text-start">
+                <span className="block font-medium">{t('exportButton.exportExcel')}</span>
+                <span className="text-[10px] text-gray-400">{t('exportButton.excelCompatible')}</span>
               </div>
             </button>
           </div>

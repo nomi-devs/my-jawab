@@ -48,7 +48,7 @@ const BrandLogo = ({ size = 'md', className = '', showText = false, variant = 'm
         )}
       </div>
       {showText && (
-        <div className="ml-3 flex flex-col">
+        <div className="mx-3 flex flex-col">
           <span
             className={`${sizes.text} font-bold text-gradient-purple dark:text-white transition-colors leading-tight`}
           >

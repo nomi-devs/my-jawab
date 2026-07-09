@@ -1,10 +1,12 @@
 // src/components/dashboard/topics/EditTopicModal.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Hash, Save } from 'lucide-react';
 import ConfirmationModal from '../../common/ConfirmationModal';
 import topicsApi from '../../../api/topicsApi';
 
 const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
+  const { t } = useTranslation('topics');
   const [formData, setFormData] = useState({
     topic_name: '',
     topic_slug: '',
@@ -222,23 +224,23 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Modal Header */}
         <div className="flex-shrink-0 px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <Hash className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Edit Topic
+                {t('editTopicModal.title')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                Modify topic details and settings
+                {t('editTopicModal.subtitle')}
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             {changes.length > 0 && (
               <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-full transition-colors">
-                {changes.length} change{changes.length !== 1 ? 's' : ''}
+                {t('editTopicModal.changesCount', { count: changes.length })}
               </span>
             )}
             <button
@@ -260,16 +262,16 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
           <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarGutter: 'stable' }}>
             {/* Basic Information Section */}
             <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3 transition-colors">
-              Basic Information
+              {t('editTopicModal.basicInformation')}
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Topic Name - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Hash size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Topic Name *</span>
+                    <span>{t('addTopicModal.topicName')}</span>
                   </div>
                 </label>
                 <input
@@ -279,14 +281,16 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                  placeholder="Enter topic name"
+                  placeholder={t('addTopicModal.topicNamePlaceholder')}
                   disabled={isSubmitting}
                 />
                 {/* Auto-generated Slug Display */}
                 {formData.topic_slug && (
                   <div className="mt-1.5 flex items-center gap-2">
                     <Hash size={12} className="text-gray-400 dark:text-gray-500" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Slug:</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('addTopicModal.slug')}
+                    </span>
                     <code className="text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded border border-purple-200 dark:border-purple-700 font-mono">
                       {formData.topic_slug}
                     </code>
@@ -298,9 +302,9 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
               {topic && topic.parent_id !== 0 && (
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <Hash size={14} className="text-purple-500 dark:text-purple-400" />
-                      <span>Parent Topic (Category)</span>
+                      <span>{t('addTopicModal.parentTopic')}</span>
                     </div>
                   </label>
                   <select
@@ -310,7 +314,7 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
                     className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                     disabled={isSubmitting || loadingParents}
                   >
-                    <option value={0}>None (Main Category)</option>
+                    <option value={0}>{t('addTopicModal.parentTopicNone')}</option>
                     {parentTopics.map((parent) => (
                       <option key={parent.id} value={parent.id}>
                         {parent.topic_name}
@@ -318,8 +322,7 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Select a parent topic to create a subtopic, or leave as "None" to create a main
-                    category
+                    {t('addTopicModal.parentTopicHelp')}
                   </p>
                 </div>
               )}
@@ -328,11 +331,10 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
               {topic && topic.parent_id === 0 && (
                 <div className="md:col-span-2">
                   <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <Hash size={14} className="text-purple-600 dark:text-purple-400" />
                       <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
-                        This is a parent category topic. Parent topics cannot have a parent
-                        category.
+                        {t('editTopicModal.parentCategoryInfo')}
                       </p>
                     </div>
                   </div>
@@ -342,7 +344,7 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
               {/* Description - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Description
+                  {t('common:description')}
                 </label>
                 <textarea
                   name="topic_description"
@@ -350,7 +352,7 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
                   onChange={handleInputChange}
                   rows="3"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all resize-none"
-                  placeholder="Describe this topic in detail..."
+                  placeholder={t('editTopicModal.descriptionPlaceholder')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -359,7 +361,7 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
               {(!formData.parent_id || formData.parent_id === 0) && (
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    Topic Image
+                    {t('addTopicModal.topicImage')}
                   </label>
                   {currentImageUrl && (
                     <div className="mb-2">
@@ -378,11 +380,11 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
                     name="topic_image"
                     onChange={handleFileChange}
                     accept="image/*"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:me-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
                     disabled={isSubmitting}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Maximum file size: 10MB. Only parent topics can have images.
+                    {t('addTopicModal.topicImageHelp')}
                   </p>
                 </div>
               )}
@@ -399,7 +401,7 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
               className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
               disabled={isSubmitting}
             >
-              Discard
+              {t('editTopicModal.discard')}
             </button>
             <button
               type="submit"
@@ -410,19 +412,19 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
               {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Saving...</span>
+                  <span>{t('editTopicModal.saving')}</span>
                 </>
               ) : (
                 <>
                   <Save size={16} />
-                  <span>Update Topic</span>
+                  <span>{t('editTopicModal.updateTopic')}</span>
                 </>
               )}
             </button>
           </div>
           {changes.length > 0 && (
             <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-              <span className="flex-shrink-0">Changes detected:</span>
+              <span className="flex-shrink-0">{t('editTopicModal.changesDetected')}</span>
               <div className="flex flex-wrap gap-1">
                 {changes.map((change, index) => (
                   <span
@@ -444,10 +446,10 @@ const EditTopicModal = React.memo(({ isOpen, onClose, topic, onSave }) => {
         onClose={() => setShowDiscardConfirm(false)}
         onConfirm={confirmDiscard}
         type="warning"
-        title="Discard Changes"
-        message="You have unsaved changes. Are you sure you want to discard them?"
-        confirmText="Discard"
-        cancelText="Cancel"
+        title={t('editTopicModal.discardChangesTitle')}
+        message={t('editTopicModal.discardChangesMessage')}
+        confirmText={t('editTopicModal.discard')}
+        cancelText={t('common:cancel')}
       />
     </div>
   );

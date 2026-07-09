@@ -1,5 +1,6 @@
 // src/components/dashboard/communities/CommunitiesDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Users,
@@ -28,6 +29,7 @@ const CommunitiesDetailsModal = ({
   onDelete,
   initialTab = 'details',
 }) => {
+  const { t } = useTranslation('communities');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const [communityDetails, setCommunityDetails] = useState(null);
@@ -86,7 +88,7 @@ const CommunitiesDetailsModal = ({
       });
     } catch (err) {
       console.error('Error fetching community details:', err);
-      setError('Failed to load community details');
+      setError(t('detailsModal.failedToLoad'));
       // Use provided communityData as fallback
       if (communityData) {
         setCommunityDetails({
@@ -129,7 +131,7 @@ const CommunitiesDetailsModal = ({
       await fetchCommunityDetails();
     } catch (err) {
       console.error('Error updating community status:', err);
-      setError('Failed to update community status');
+      setError(t('detailsModal.failedToUpdateStatus'));
     } finally {
       setUpdatingStatus(false);
     }
@@ -157,7 +159,7 @@ const CommunitiesDetailsModal = ({
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return t('detailsModal.notAvailable');
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       month: 'long',
@@ -179,7 +181,7 @@ const CommunitiesDetailsModal = ({
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col overflow-hidden animate-slideInFromTop">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {community && (
               <>
                 {(community.community_image || communityData?.community_image) && !imageError ? (
@@ -201,8 +203,8 @@ const CommunitiesDetailsModal = ({
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
                     {loading
-                      ? 'Loading...'
-                      : community.community_name || community.name || 'Community Details'}
+                      ? t('common:loading')
+                      : community.community_name || community.name || t('detailsModal.communityDetails')}
                   </h2>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     <span
@@ -213,17 +215,17 @@ const CommunitiesDetailsModal = ({
                       }`}
                     >
                       <span
-                        className={`w-1 h-1 rounded-full mr-1 ${
+                        className={`w-1 h-1 rounded-full me-1 ${
                           isActive
                             ? 'bg-green-500 dark:bg-green-400'
                             : 'bg-gray-500 dark:bg-gray-400'
                         }`}
                       ></span>
-                      {isActive ? 'Active' : 'Inactive'}
+                      {isActive ? t('common:active') : t('common:inactive')}
                     </span>
                     <span className="text-[10px] text-gray-400 dark:text-gray-500">•</span>
                     <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                      ID: {communityId}
+                      {t('detailsModal.idLabel', { id: communityId })}
                     </span>
                   </div>
                 </div>
@@ -232,7 +234,7 @@ const CommunitiesDetailsModal = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ml-3"
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ms-3"
           >
             <X size={18} />
           </button>
@@ -248,7 +250,7 @@ const CommunitiesDetailsModal = ({
                 : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            Details
+            {t('detailsModal.tabs.details')}
           </button>
           <button
             onClick={() => setActiveTab('members')}
@@ -258,7 +260,7 @@ const CommunitiesDetailsModal = ({
                 : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            Members
+            {t('detailsModal.tabs.members')}
             {community && (
               <span
                 className={`px-1.5 py-0.5 rounded-full text-[10px] ${
@@ -293,7 +295,7 @@ const CommunitiesDetailsModal = ({
                   {(community.community_image || communityData?.community_image) && !imageError && (
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Community Image
+                        {t('detailsModal.communityImage')}
                       </h3>
                       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                         <div className="relative w-full max-w-md mx-auto">
@@ -311,13 +313,13 @@ const CommunitiesDetailsModal = ({
                   {/* Description */}
                   <div>
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                      Description
+                      {t('common:description')}
                     </h3>
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                       <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                         {community.community_description ||
                           community.description ||
-                          'No description'}
+                          t('detailsModal.noDescription')}
                       </p>
                     </div>
                   </div>
@@ -329,7 +331,7 @@ const CommunitiesDetailsModal = ({
                         <div className="flex items-center gap-2 mb-1">
                           <Users size={18} className="text-purple-500" />
                           <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            Members
+                            {t('detailsModal.members')}
                           </span>
                         </div>
                         <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
@@ -342,7 +344,7 @@ const CommunitiesDetailsModal = ({
                         <div className="flex items-center gap-2 mb-1">
                           <FileText size={18} className="text-blue-500" />
                           <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            Topics
+                            {t('detailsModal.topicsStat')}
                           </span>
                         </div>
                         <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
@@ -355,7 +357,7 @@ const CommunitiesDetailsModal = ({
                         <div className="flex items-center gap-2 mb-1">
                           <User size={18} className="text-green-500" />
                           <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            Moderators
+                            {t('detailsModal.moderatorsStat')}
                           </span>
                         </div>
                         <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
@@ -367,11 +369,11 @@ const CommunitiesDetailsModal = ({
                       <div className="flex items-center gap-2 mb-1">
                         <TrendingUp size={18} className="text-amber-500" />
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                          Activity
+                          {t('detailsModal.activity')}
                         </span>
                       </div>
                       <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-                        {community.posts_per_day ? `${community.posts_per_day}/day` : '0/day'}
+                        {t('detailsModal.perDay', { count: community.posts_per_day || 0 })}
                       </p>
                     </div>
                   </div>
@@ -380,15 +382,17 @@ const CommunitiesDetailsModal = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Category
+                        {t('detailsModal.category')}
                       </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <span className="capitalize">{community.category || 'General'}</span>
+                        <span className="capitalize">
+                          {community.category || t('detailsModal.generalCategory')}
+                        </span>
                       </div>
                     </div>
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Created
+                        {t('common:created')}
                       </h3>
                       <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Calendar size={18} />
@@ -401,7 +405,7 @@ const CommunitiesDetailsModal = ({
                   {community.owner && (
                     <div>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
-                        Owner
+                        {t('detailsModal.owner')}
                       </h3>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center border-2 border-purple-200 dark:border-purple-700">
@@ -413,7 +417,7 @@ const CommunitiesDetailsModal = ({
                         </div>
                         <div>
                           <p className="font-semibold text-gray-800 dark:text-gray-200">
-                            {community.owner.name || community.owner.username || 'Unknown'}
+                            {community.owner.name || community.owner.username || t('detailsModal.unknownOwner')}
                           </p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             @{community.owner.username || 'user'}
@@ -432,35 +436,35 @@ const CommunitiesDetailsModal = ({
                     {membersLoading && members.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12">
                         <Loader2 size={32} className="animate-spin text-purple-600 mb-4" />
-                        <p className="text-sm text-gray-500">Loading members...</p>
+                        <p className="text-sm text-gray-500">{t('detailsModal.loadingMembers')}</p>
                       </div>
                     ) : members.length === 0 ? (
                       <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600">
                         <Users size={48} className="mx-auto text-gray-300 mb-4" />
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          No members found
+                          {t('detailsModal.noMembersFound')}
                         </h3>
                         <p className="text-xs text-gray-500 mt-1">
-                          This community doesn't have any members yet.
+                          {t('detailsModal.noMembersHint')}
                         </p>
                       </div>
                     ) : (
                       <>
                         <div className="overflow-x-auto">
-                          <table className="w-full text-left">
+                          <table className="w-full text-start">
                             <thead>
                               <tr className="border-b border-purple-100 dark:border-gray-700">
                                 <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  User
+                                  {t('detailsModal.columns.user')}
                                 </th>
                                 <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Role
+                                  {t('detailsModal.columns.role')}
                                 </th>
                                 <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">
-                                  Posts
+                                  {t('detailsModal.columns.posts')}
                                 </th>
-                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">
-                                  Joined
+                                <th className="pb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-end">
+                                  {t('detailsModal.columns.joined')}
                                 </th>
                               </tr>
                             </thead>
@@ -491,7 +495,7 @@ const CommunitiesDetailsModal = ({
                                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                               {member.user?.full_name ||
                                                 member.user?.username ||
-                                                'Unknown User'}
+                                                t('detailsModal.unknownUser')}
                                             </p>
                                             {member.user?.full_name && member.user?.username && (
                                               <span className="text-[10px] text-gray-400">
@@ -500,7 +504,7 @@ const CommunitiesDetailsModal = ({
                                             )}
                                           </div>
                                           <p className="text-[10px] text-gray-500">
-                                            {member.user?.email || 'No email provided'}
+                                            {member.user?.email || t('detailsModal.noEmail')}
                                           </p>
                                         </div>
                                       </div>
@@ -515,7 +519,7 @@ const CommunitiesDetailsModal = ({
                                               : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
                                         }`}
                                       >
-                                        {member.role || 'Member'}
+                                        {member.role || t('detailsModal.memberFallback')}
                                       </span>
                                     </td>
                                     <td className="py-4 text-center">
@@ -526,7 +530,7 @@ const CommunitiesDetailsModal = ({
                                         </span>
                                       </div>
                                     </td>
-                                    <td className="py-4 text-right">
+                                    <td className="py-4 text-end">
                                       <div className="flex flex-col items-end">
                                         <p className="text-xs text-gray-700 dark:text-gray-300">
                                           {formatDate(member.created_at).split(' at ')[0]}
@@ -546,9 +550,11 @@ const CommunitiesDetailsModal = ({
                         {totalPages > 1 && (
                           <div className="flex items-center justify-between pt-4 border-t border-purple-100 dark:border-gray-700">
                             <p className="text-[10px] text-gray-500">
-                              Showing {(membersPage - 1) * membersLimit + 1} to{' '}
-                              {Math.min(membersPage * membersLimit, totalMembers)} of {totalMembers}{' '}
-                              members
+                              {t('detailsModal.showingMembers', {
+                                from: (membersPage - 1) * membersLimit + 1,
+                                to: Math.min(membersPage * membersLimit, totalMembers),
+                                total: totalMembers,
+                              })}
                             </p>
                             <div className="flex gap-2">
                               <button
@@ -556,7 +562,7 @@ const CommunitiesDetailsModal = ({
                                 disabled={membersPage === 1 || membersLoading}
                                 className="px-3 py-1 text-[10px] font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md disabled:opacity-50 transition-colors"
                               >
-                                Previous
+                                {t('common:previous')}
                               </button>
                               <div className="flex items-center px-3 py-1 bg-purple-50 dark:bg-purple-900/20 rounded-md">
                                 <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
@@ -568,7 +574,7 @@ const CommunitiesDetailsModal = ({
                                 disabled={membersPage === totalPages || membersLoading}
                                 className="px-3 py-1 text-[10px] font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md disabled:opacity-50 transition-colors"
                               >
-                                Next
+                                {t('common:next')}
                               </button>
                             </div>
                           </div>
@@ -594,7 +600,7 @@ const CommunitiesDetailsModal = ({
                 className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-xs font-medium"
               >
                 <Trash2 size={16} />
-                <span>Delete</span>
+                <span>{t('common:delete')}</span>
               </button>
             )}
             {onEdit && (
@@ -606,7 +612,7 @@ const CommunitiesDetailsModal = ({
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-xs font-medium"
               >
                 <Edit size={16} />
-                <span>Edit</span>
+                <span>{t('common:edit')}</span>
               </button>
             )}
           </div>
@@ -616,7 +622,7 @@ const CommunitiesDetailsModal = ({
               onClick={onClose}
               className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95"
             >
-              Close
+              {t('common:close')}
             </button>
           </div>
         </div>

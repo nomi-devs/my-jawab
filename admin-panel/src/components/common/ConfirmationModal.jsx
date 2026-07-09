@@ -1,5 +1,6 @@
 // src/components/common/ConfirmationModal.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, AlertTriangle, CheckCircle, AlertCircle, Info, Trash2 } from 'lucide-react';
 
 const ConfirmationModal = ({
@@ -9,11 +10,13 @@ const ConfirmationModal = ({
   type = 'warning', // warning, danger, success, info
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   isLoading = false,
   icon: CustomIcon,
 }) => {
+  const { t } = useTranslation('common');
+
   if (!isOpen) return null;
 
   const typeStyles = {
@@ -56,7 +59,7 @@ const ConfirmationModal = ({
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-purple-100 dark:border-gray-700 transition-colors animate-in zoom-in-95 duration-300">
         {/* Modal Header */}
         <div className="px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div
               className={`p-1.5 rounded-lg ${
                 type === 'danger'
@@ -82,10 +85,10 @@ const ConfirmationModal = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
-                {title || 'Confirmation'}
+                {title || t('confirmation')}
               </h3>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Please confirm your action
+                {t('confirmationModal.subtitle')}
               </p>
             </div>
           </div>
@@ -101,7 +104,7 @@ const ConfirmationModal = ({
         {/* Modal Body */}
         <div className="px-6 py-5 bg-white dark:bg-gray-800 transition-colors">
           <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-            {message || 'Are you sure you want to proceed?'}
+            {message || t('confirmationModal.defaultMessage')}
           </p>
         </div>
 
@@ -113,7 +116,7 @@ const ConfirmationModal = ({
             className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
             disabled={isLoading}
           >
-            {cancelText}
+            {cancelText || t('cancel')}
           </button>
           <button
             type="button"
@@ -124,10 +127,10 @@ const ConfirmationModal = ({
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Processing...</span>
+                <span>{t('processing')}</span>
               </>
             ) : (
-              <span>{confirmText}</span>
+              <span>{confirmText || t('confirm')}</span>
             )}
           </button>
         </div>

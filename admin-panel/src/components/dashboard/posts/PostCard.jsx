@@ -1,5 +1,6 @@
 // src/components/dashboard/posts/PostCard.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MessageCircle,
   Heart,
@@ -17,6 +18,8 @@ import {
 
 const PostCard = React.memo(
   ({ post, onEdit, onDelete, onAnalytics, onUpdateStatus, onViewDetails }) => {
+    const { t } = useTranslation('posts');
+
     const formatTime = (timestamp) => {
       const date = new Date(timestamp);
       const now = new Date();
@@ -25,10 +28,16 @@ const PostCard = React.memo(
       const hours = Math.floor(diff / 3600000);
       const days = Math.floor(diff / 86400000);
 
-      if (minutes < 60) return `${minutes}m ago`;
-      if (hours < 24) return `${hours}h ago`;
-      if (days < 7) return `${days}d ago`;
+      if (minutes < 60) return t('postCard.time.minutesAgo', { count: minutes });
+      if (hours < 24) return t('postCard.time.hoursAgo', { count: hours });
+      if (days < 7) return t('postCard.time.daysAgo', { count: days });
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    const statusLabels = {
+      published: t('postCard.status.published'),
+      draft: t('postCard.status.draft'),
+      archived: t('postCard.status.archived'),
     };
 
     const getVisibilityIcon = (visibility) => {
@@ -90,7 +99,7 @@ const PostCard = React.memo(
                 <button
                   onClick={() => onViewDetails(post)}
                   className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="View Details"
+                  title={t('postCard.viewDetailsTitle')}
                 >
                   <Eye size={16} />
                 </button>
@@ -99,7 +108,7 @@ const PostCard = React.memo(
                 <button
                   onClick={() => onEdit(post)}
                   className="p-1.5 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
-                  title="Edit Post"
+                  title={t('postCard.editPostTitle')}
                 >
                   <Edit size={16} />
                 </button>
@@ -108,7 +117,7 @@ const PostCard = React.memo(
                 <button
                   onClick={() => onDelete(post.id)}
                   className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete Post"
+                  title={t('postCard.deletePostTitle')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -153,7 +162,7 @@ const PostCard = React.memo(
               ))}
               {post.tags.length > 3 && (
                 <span className="px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                  +{post.tags.length - 3} more
+                  {t('postCard.moreTags', { count: post.tags.length - 3 })}
                 </span>
               )}
             </div>
@@ -162,21 +171,21 @@ const PostCard = React.memo(
           {/* Stats */}
           <div className="flex items-center justify-between pt-3 border-t border-purple-100 dark:border-gray-700">
             <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 transition-colors">
-              <div className="flex items-center gap-1.5" title="Likes">
+              <div className="flex items-center gap-1.5" title={t('postCard.likesTitle')}>
                 <Heart
                   size={14}
                   className={post.stats.likes > 0 ? 'text-red-500 fill-red-500' : ''}
                 />
                 <span>{(post.stats.likes || 0).toLocaleString()}</span>
               </div>
-              <div className="flex items-center gap-1.5" title="Dislikes">
+              <div className="flex items-center gap-1.5" title={t('postCard.dislikesTitle')}>
                 <ThumbsDown
                   size={14}
                   className={post.stats.dislikes > 0 ? 'text-amber-600 fill-amber-600' : ''}
                 />
                 <span>{(post.stats.dislikes || 0).toLocaleString()}</span>
               </div>
-              <div className="flex items-center gap-1.5" title="Comments">
+              <div className="flex items-center gap-1.5" title={t('postCard.commentsTitle')}>
                 <MessageCircle size={14} />
                 <span>{(post.stats.comments || 0).toLocaleString()}</span>
               </div>
@@ -194,18 +203,18 @@ const PostCard = React.memo(
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   } transition-colors`}
                 >
-                  {post.post_status}
+                  {statusLabels[post.post_status] || post.post_status}
                 </span>
               )}
               {post.scheduled && (
                 <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                   <Clock size={12} />
-                  <span>Scheduled</span>
+                  <span>{t('postCard.scheduledLabel')}</span>
                 </div>
               )}
               {post.hidden && (
                 <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full transition-colors">
-                  Hidden
+                  {t('postCard.hiddenLabel')}
                 </span>
               )}
             </div>

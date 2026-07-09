@@ -1,5 +1,6 @@
 // src/components/dashboard/comments/CommentsHeader.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageSquare, Search, X, Filter, Grid, List, Download } from 'lucide-react';
 import RefreshButton from '../../common/RefreshButton';
 import ExportButton from '../../common/ExportButton';
@@ -20,6 +21,7 @@ const CommentsHeader = React.memo(
     sortOrder = 'DESC',
     onRefresh,
   }) => {
+    const { t } = useTranslation('comments');
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
     const [selectedStatus, setSelectedStatus] = useState(statusFilter);
     const [selectedSortBy, setSelectedSortBy] = useState(sortBy);
@@ -129,16 +131,16 @@ const CommentsHeader = React.memo(
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
           <div>
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
-              All Comments
+              {t('commentsHeader.title')}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
               {loading ? (
                 <span className="flex items-center">
-                  <span className="w-3 h-3 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin mr-2"></span>
-                  Loading...
+                  <span className="w-3 h-3 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin me-2"></span>
+                  {t('common:loading')}
                 </span>
               ) : (
-                `Total Comments: ${commentCount}`
+                t('commentsHeader.totalComments', { count: commentCount })
               )}
             </p>
           </div>
@@ -150,7 +152,7 @@ const CommentsHeader = React.memo(
               <button
                 onClick={() => onViewModeChange && onViewModeChange('list')}
                 className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-gray-600/50'}`}
-                title="List View"
+                title={t('commentsHeader.listView')}
                 disabled={loading}
               >
                 <List
@@ -165,7 +167,7 @@ const CommentsHeader = React.memo(
               <button
                 onClick={() => onViewModeChange && onViewModeChange('grid')}
                 className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-gray-600/50'}`}
-                title="Grid View"
+                title={t('commentsHeader.gridView')}
                 disabled={loading}
               >
                 <Grid
@@ -184,7 +186,7 @@ const CommentsHeader = React.memo(
               <RefreshButton
                 onClick={onRefresh}
                 loading={loading}
-                title="Refresh comments"
+                title={t('commentsHeader.refreshComments')}
                 size={18}
               />
             )}
@@ -202,19 +204,19 @@ const CommentsHeader = React.memo(
         <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
           {/* Search Input */}
           <div className="relative flex-1 w-full sm:w-auto sm:min-w-[200px]">
-            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
+            <Search className="absolute start-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search comments..."
+              placeholder={t('commentsHeader.searchPlaceholder')}
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
               disabled={loading}
-              className="w-full pl-9 pr-8 py-1.5 text-sm border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full ps-9 pe-8 py-1.5 text-sm border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             />
             {localSearchTerm && (
               <button
                 onClick={() => setLocalSearchTerm('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X size={18} />
               </button>
@@ -223,16 +225,16 @@ const CommentsHeader = React.memo(
 
           {/* Status Filter */}
           <div className="relative flex-shrink-0">
-            <Filter className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 pointer-events-none" />
+            <Filter className="absolute start-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 pointer-events-none" />
             <select
               value={selectedStatus}
               onChange={handleStatusChange}
               disabled={loading}
-              className="appearance-none bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 pl-8 pr-6 py-1.5 outline-none cursor-pointer w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="appearance-none bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 ps-8 pe-6 py-1.5 outline-none cursor-pointer w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <option value="all">All Status</option>
-              <option value="approved">Approved</option>
-              <option value="pending">Pending</option>
+              <option value="all">{t('commentsHeader.allStatus')}</option>
+              <option value="approved">{t('commentsHeader.approved')}</option>
+              <option value="pending">{t('commentsHeader.pending')}</option>
             </select>
           </div>
 
@@ -244,8 +246,8 @@ const CommentsHeader = React.memo(
               disabled={loading}
               className="appearance-none bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 px-3 py-1.5 outline-none cursor-pointer w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <option value="created_at">Sort: Date</option>
-              <option value="like_count">Sort: Likes</option>
+              <option value="created_at">{t('commentsHeader.sortDate')}</option>
+              <option value="like_count">{t('commentsHeader.sortLikes')}</option>
             </select>
           </div>
 
@@ -258,13 +260,17 @@ const CommentsHeader = React.memo(
                 ? 'border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-500 dark:bg-purple-900/40 dark:text-purple-200'
                 : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-200'
             }`}
-            title={`Sort ${selectedSortOrder === 'DESC' ? 'Newest first (↓)' : 'Oldest first (↑)'}`}
+            title={
+              selectedSortOrder === 'DESC'
+                ? t('commentsHeader.sortNewestFirst')
+                : t('commentsHeader.sortOldestFirst')
+            }
           >
             <span className="text-base leading-none">
               {selectedSortOrder === 'DESC' ? '↓' : '↑'}
             </span>
             <span className="hidden sm:inline">
-              {selectedSortOrder === 'DESC' ? 'Desc' : 'Asc'}
+              {selectedSortOrder === 'DESC' ? t('commentsHeader.desc') : t('commentsHeader.asc')}
             </span>
           </button>
 
@@ -277,10 +283,10 @@ const CommentsHeader = React.memo(
                 ? 'border-red-200 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-300 dark:hover:bg-red-900/30'
                 : 'border-gray-200 text-gray-500 dark:border-gray-600 dark:text-gray-400'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title={hasActiveFilters ? 'Clear all filters' : 'No filters to clear'}
+            title={hasActiveFilters ? t('commentsHeader.clearAllFilters') : t('commentsHeader.noFiltersToClear')}
           >
             <X size={14} />
-            <span>Clear</span>
+            <span>{t('commentsHeader.clear')}</span>
           </button>
         </div>
 
@@ -293,12 +299,12 @@ const CommentsHeader = React.memo(
           <div className="flex flex-wrap items-center gap-1.5">
             {localSearchTerm && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-md text-xs text-purple-700 dark:text-purple-300 animate-in fade-in slide-in-from-left-2 duration-200">
-                <span className="font-medium">Search:</span>
+                <span className="font-medium">{t('commentsHeader.searchLabel')}</span>
                 <span className="truncate max-w-[120px]">{localSearchTerm}</span>
                 <button
                   onClick={() => setLocalSearchTerm('')}
-                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ml-0.5 transition-colors"
-                  title="Remove search"
+                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ms-0.5 transition-colors"
+                  title={t('commentsHeader.removeSearch')}
                 >
                   <X size={12} />
                 </button>
@@ -307,15 +313,15 @@ const CommentsHeader = React.memo(
 
             {selectedStatus !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-md text-xs text-purple-700 dark:text-purple-300 animate-in fade-in slide-in-from-left-2 duration-200">
-                <span className="font-medium">Status:</span>
+                <span className="font-medium">{t('commentsHeader.statusLabel')}</span>
                 <span className="capitalize">{selectedStatus}</span>
                 <button
                   onClick={() => {
                     setSelectedStatus('all');
                     if (onStatusFilter) onStatusFilter('all');
                   }}
-                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ml-0.5 transition-colors"
-                  title="Remove status filter"
+                  className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 ms-0.5 transition-colors"
+                  title={t('commentsHeader.removeStatusFilter')}
                 >
                   <X size={12} />
                 </button>
@@ -324,7 +330,7 @@ const CommentsHeader = React.memo(
 
             {(selectedSortBy !== 'created_at' || selectedSortOrder !== 'DESC') && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-md text-xs text-purple-700 dark:text-purple-300 animate-in fade-in slide-in-from-left-2 duration-200">
-                <span className="font-medium">Sort:</span>
+                <span className="font-medium">{t('commentsHeader.sortLabel')}</span>
                 <span className="capitalize">
                   {selectedSortBy.replace('_', ' ')} {selectedSortOrder}
                 </span>

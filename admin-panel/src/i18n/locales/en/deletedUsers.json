@@ -1,0 +1,44 @@
+{
+  "title": "Deleted Users",
+  "subtitle": "Soft-deleted user accounts. Restore to re-activate, or permanently delete (only if user has no content).",
+  "searchPlaceholder": "Search deleted users...",
+  "refresh": "Refresh",
+  "updating": "Updating...",
+  "noDeletedUsers": "No deleted users",
+  "noMatch": "No deleted users match your search.",
+  "noUsersInSystem": "There are no deleted users in the system.",
+  "columns": {
+    "hash": "#",
+    "user": "User",
+    "email": "Email",
+    "role": "Role",
+    "deletedAt": "Deleted At",
+    "actions": "Actions"
+  },
+  "restore": "Restore",
+  "hardDelete": "Hard Delete",
+  "restoreModal": {
+    "title": "Restore User",
+    "message": "Restore user \"{{name}}\"? They will be able to log in again.",
+    "confirm": "Restore",
+    "cancel": "Cancel"
+  },
+  "hardDeleteModal": {
+    "title": "Permanently Delete User",
+    "message": "This CANNOT be undone. \"{{name}}\" will be removed from the database completely. Only works if the user has no posts, polls, or comments.",
+    "confirm": "Permanently Delete",
+    "cancel": "Cancel"
+  },
+  "alerts": {
+    "restoredTitle": "Restored",
+    "restoredMessage": "User restored successfully!",
+    "deletedTitle": "Deleted",
+    "deletedMessage": "User permanently deleted.",
+    "errorTitle": "Error",
+    "failedToLoad": "Failed to load deleted users.",
+    "failedToRestore": "Failed to restore user.",
+    "failedToDelete": "Failed to permanently delete user."
+  },
+  "warning": "Hard delete is irreversible. It only works for users who have no posts, polls, or comments. If a user has any content, permanent deletion is blocked — use Restore to bring them back or keep them soft-deleted.",
+  "itemName": "deleted users"
+}

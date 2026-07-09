@@ -1,5 +1,6 @@
 // src/components/dashboard/topics/TopicCard.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Hash,
   TrendingUp,
@@ -15,6 +16,7 @@ import { normalizeMediaUrl } from '../../../utils/mediaUtils';
 
 const TopicCard = React.memo(
   ({ topic: propTopic, onEdit, onDelete, onViewDetails, onToggleActive }) => {
+    const { t } = useTranslation('topics');
     // State for mock data - this will be used when no prop is provided
     const [mockData, setMockData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -114,7 +116,7 @@ const TopicCard = React.memo(
       return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-purple-100 dark:border-gray-700 p-4 sm:p-6 animate-pulse overflow-hidden transition-colors">
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3">
               <div className="p-3 rounded-xl bg-gray-200 dark:bg-gray-700 relative w-10 h-10 sm:w-12 sm:h-12"></div>
               <div className="space-y-2">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 sm:w-32"></div>
@@ -137,7 +139,7 @@ const TopicCard = React.memo(
       return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-purple-100 dark:border-gray-700 p-4 sm:p-6 overflow-hidden transition-colors">
           <div className="text-center text-gray-500 dark:text-gray-400 transition-colors">
-            <p>No topic data available</p>
+            <p>{t('topicCard.noTopicData')}</p>
           </div>
         </div>
       );
@@ -151,7 +153,7 @@ const TopicCard = React.memo(
       >
         {/* Topic Header */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-start space-x-2 sm:space-x-3 min-w-0 flex-1">
+          <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
             {topic.topic_image && (!topic.parent_id || topic.parent_id === 0) ? (
               <img
                 src={normalizeMediaUrl(topic.topic_image)}
@@ -170,37 +172,37 @@ const TopicCard = React.memo(
               <Hash size={18} className="text-white sm:w-5 sm:h-5" />
             </div>
             <div className="min-w-0 flex-1 overflow-hidden">
-              <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1 flex-wrap">
-                <div className="flex items-center space-x-1 sm:space-x-1.5 flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                <div className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0">
                   <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm sm:text-base">
-                    {topic.topic_name || topic.name || 'Untitled Topic'}
+                    {topic.topic_name || topic.name || t('topicCard.untitledTopic')}
                   </h3>
                 </div>
                 {/* Status badges - shown inline with topic name */}
-                <div className="flex items-center space-x-1 flex-shrink-0 mt-1 sm:mt-0">
+                <div className="flex items-center gap-1 flex-shrink-0 mt-1 sm:mt-0">
                   {!propTopic && (
                     <span className="px-1.5 sm:px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full whitespace-nowrap">
-                      Mock Data
+                      {t('topicCard.mockData')}
                     </span>
                   )}
                   {topic.is_active === false && (
                     <span className="px-1.5 sm:px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs font-medium rounded-full whitespace-nowrap">
-                      Inactive
+                      {t('common:inactive')}
                     </span>
                   )}
                   {typeof topic.parent_id !== 'undefined' &&
                     topic.parent_id !== null &&
                     Number(topic.parent_id) !== 0 && (
                       <span className="px-1.5 sm:px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full whitespace-nowrap">
-                        Subtopic
+                        {t('topicCard.subtopic')}
                       </span>
                     )}
                 </div>
               </div>
               {topic.parent_name && (
-                <div className="flex items-center space-x-2 mt-1">
+                <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-purple-600 dark:text-purple-400 font-medium whitespace-nowrap">
-                    Parent: {topic.parent_name}
+                    {t('topicCard.parent')}: {topic.parent_name}
                   </span>
                 </div>
               )}
@@ -210,7 +212,7 @@ const TopicCard = React.memo(
 
         {/* Topic Description */}
         <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 line-clamp-2 break-words">
-          {topic.topic_description || topic.description || 'No description available'}
+          {topic.topic_description || topic.description || t('topicCard.noDescription')}
         </p>
 
         {/* Stats */}
@@ -218,13 +220,17 @@ const TopicCard = React.memo(
           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-2 sm:p-3 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
             <div className="flex items-center justify-between mb-1">
               <Hash size={14} className="text-purple-500 dark:text-purple-400 sm:w-4 sm:h-4" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">Status</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {t('common:status')}
+              </span>
             </div>
             <div className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
-              {topic.is_active ? 'Active' : 'Inactive'}
+              {topic.is_active ? t('common:active') : t('common:inactive')}
             </div>
             <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 truncate">
-              {topic.parent_id && topic.parent_id > 0 ? 'Subtopic' : 'Category'}
+              {topic.parent_id && topic.parent_id > 0
+                ? t('topicCard.subtopic')
+                : t('topicCard.category')}
             </div>
           </div>
 
@@ -234,13 +240,17 @@ const TopicCard = React.memo(
                 size={14}
                 className="text-green-500 dark:text-green-400 sm:w-4 sm:h-4"
               />
-              <span className="text-xs text-gray-500 dark:text-gray-400">Slug</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {t('topicCard.slug')}
+              </span>
             </div>
             <div className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">
-              {topic.topic_slug || 'N/A'}
+              {topic.topic_slug || t('topicCard.notAvailable')}
             </div>
             <div className="text-xs text-green-600 dark:text-green-400 mt-1 truncate">
-              {topic.parent_id && topic.parent_id > 0 ? 'Subtopic' : 'Category'}
+              {topic.parent_id && topic.parent_id > 0
+                ? t('topicCard.subtopic')
+                : t('topicCard.category')}
             </div>
           </div>
         </div>
@@ -250,7 +260,7 @@ const TopicCard = React.memo(
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <div className="flex items-center">
               <svg
-                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 mr-1.5 flex-shrink-0"
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 me-1.5 flex-shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -263,14 +273,14 @@ const TopicCard = React.memo(
                 />
               </svg>
               <span className="text-xs whitespace-nowrap truncate">
-                Created:{' '}
+                {t('common:created')}:{' '}
                 {formatDate(topic.created_at || topic.createdAt || new Date().toISOString())}
               </span>
             </div>
             {topic.updated_at && (
               <div className="flex items-center">
                 <svg
-                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 mr-1.5 flex-shrink-0"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 me-1.5 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -283,7 +293,7 @@ const TopicCard = React.memo(
                   />
                 </svg>
                 <span className="text-xs whitespace-nowrap truncate">
-                  Updated: {formatDate(topic.updated_at)}
+                  {t('common:updated')}: {formatDate(topic.updated_at)}
                 </span>
               </div>
             )}
@@ -301,7 +311,9 @@ const TopicCard = React.memo(
               <label
                 className="relative inline-flex items-center cursor-pointer"
                 onClick={(e) => e.stopPropagation()}
-                title={topic.is_active ? 'Deactivate topic' : 'Activate topic'}
+                title={
+                  topic.is_active ? t('topicCard.deactivateTopic') : t('topicCard.activateTopic')
+                }
               >
                 <input
                   type="checkbox"
@@ -312,7 +324,7 @@ const TopicCard = React.memo(
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-8 h-4 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                <div className="w-8 h-4 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600 rtl:peer-checked:after:-translate-x-full"></div>
               </label>
             )}
             {onViewDetails && (
@@ -322,7 +334,7 @@ const TopicCard = React.memo(
                   onViewDetails(topic);
                 }}
                 className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                title="View Details"
+                title={t('topicCard.viewDetails')}
               >
                 <Eye size={16} />
               </button>
@@ -334,7 +346,7 @@ const TopicCard = React.memo(
                   onEdit(topic);
                 }}
                 className="p-1.5 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
-                title="Edit Topic"
+                title={t('topicCard.editTopic')}
               >
                 <Edit size={16} />
               </button>
@@ -346,7 +358,7 @@ const TopicCard = React.memo(
                   onDelete(topic.id);
                 }}
                 className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                title="Delete Topic"
+                title={t('topicCard.deleteTopic')}
               >
                 <Trash2 size={16} />
               </button>

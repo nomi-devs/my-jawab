@@ -1,7 +1,9 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DarkModeProvider } from './contexts/DarkModeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { BASE_PATH, BASE_URL } from './config/app';
 import Login from './components/auth/Login';
 import ResetPassword from './components/auth/ResetPassword';
@@ -61,6 +63,7 @@ const DashboardLayout = ({ onLogout }) => {
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
+  const { t } = useTranslation('common');
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -78,7 +81,7 @@ const ProtectedRoute = ({ children }) => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-200 dark:border-gray-700 border-t-purple-600 dark:border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Checking authentication...</p>
+          <p className="text-gray-600 dark:text-gray-300">{t('checkingAuth')}</p>
         </div>
       </div>
     );
@@ -93,6 +96,7 @@ const ProtectedRoute = ({ children }) => {
 
 // Public Route Wrapper (for login/register pages)
 const PublicRoute = ({ children }) => {
+  const { t } = useTranslation('common');
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -110,7 +114,7 @@ const PublicRoute = ({ children }) => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-200 dark:border-gray-700 border-t-purple-600 dark:border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-300">{t('loading')}</p>
         </div>
       </div>
     );
@@ -172,68 +176,70 @@ const App = () => {
   };
 
   return (
-    <DarkModeProvider>
-      <Router basename={basePath}>
-        <Routes>
-          {/* Public Routes */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login onLogin={handleLogin} onForgotPassword={handleForgotPassword} />
-              </PublicRoute>
-            }
-          />
+    <LanguageProvider>
+      <DarkModeProvider>
+        <Router basename={basePath}>
+          <Routes>
+            {/* Public Routes */}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login onLogin={handleLogin} onForgotPassword={handleForgotPassword} />
+                </PublicRoute>
+              }
+            />
 
-          <Route
-            path="/forgot"
-            element={
-              <PublicRoute>
-                <ForgotPassword />
-              </PublicRoute>
-            }
-          />
-          <Route path="/reset-password" element={<ResetPassword />} />
+            <Route
+              path="/forgot"
+              element={
+                <PublicRoute>
+                  <ForgotPassword />
+                </PublicRoute>
+              }
+            />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Protected Dashboard Routes */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout onLogout={handleLogout} />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardOverview />} />
+            {/* Protected Dashboard Routes */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout onLogout={handleLogout} />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<DashboardOverview />} />
 
-            <Route path="users" element={<UsersTable />} />
-            <Route path="users/deleted" element={<DeletedUsersPage />} />
-            <Route path="posts" element={<PostsList />} />
-            <Route path="communities" element={<CommunitiesPage />} />
-            <Route path="topics" element={<TopicsPage />} />
-            <Route path="sub-topics" element={<SubTopicsPage />} />
-            <Route path="comments" element={<CommentsView />} />
-            <Route path="polls" element={<PollsPage />} />
-            <Route path="subscriptions" element={<SubscriptionsPage />} />
-            <Route path="payments" element={<PaymentsPage />} />
-            <Route path="currencies" element={<CurrenciesPage />} />
-            <Route path="settings" element={<AppSettingsPage />} />
-            <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
-            <Route path="support" element={<SupportPage />} />
-            <Route path="banners" element={<BannersPage />} />
-            <Route path="profile" element={<ProfileSettings />} />
-            <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="users" element={<UsersTable />} />
+              <Route path="users/deleted" element={<DeletedUsersPage />} />
+              <Route path="posts" element={<PostsList />} />
+              <Route path="communities" element={<CommunitiesPage />} />
+              <Route path="topics" element={<TopicsPage />} />
+              <Route path="sub-topics" element={<SubTopicsPage />} />
+              <Route path="comments" element={<CommentsView />} />
+              <Route path="polls" element={<PollsPage />} />
+              <Route path="subscriptions" element={<SubscriptionsPage />} />
+              <Route path="payments" element={<PaymentsPage />} />
+              <Route path="currencies" element={<CurrenciesPage />} />
+              <Route path="settings" element={<AppSettingsPage />} />
+              <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="support" element={<SupportPage />} />
+              <Route path="banners" element={<BannersPage />} />
+              <Route path="profile" element={<ProfileSettings />} />
+              <Route path="notifications" element={<NotificationsPage />} />
 
-            {/* Catch all - redirect to dashboard */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Route>
+              {/* Catch all - redirect to dashboard */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
 
-          {/* Catch all other routes */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
-    </DarkModeProvider>
+            {/* Catch all other routes */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Router>
+      </DarkModeProvider>
+    </LanguageProvider>
   );
 };
 

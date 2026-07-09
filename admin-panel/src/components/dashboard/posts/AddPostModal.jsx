@@ -1,5 +1,6 @@
 // src/components/dashboard/posts/AddPostModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   FilePlus,
@@ -14,6 +15,7 @@ import topicsApi from '../../../api/topicsApi';
 import TopicsPickerModal from '../../common/TopicsPickerModal';
 
 const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
+  const { t } = useTranslation('posts');
   const [formData, setFormData] = useState({
     post_slug: '',
     post_title: '',
@@ -206,16 +208,16 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[90%] h-[90vh] flex flex-col border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Fixed Modal Header */}
         <div className="flex-shrink-0 px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 transition-colors">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <FilePlus className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Create New Post
+                {t('addPostModal.title')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                Fill in the post details
+                {t('addPostModal.subtitle')}
               </p>
             </div>
           </div>
@@ -239,9 +241,9 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
               {/* Post Title - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <FilePlus size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Post Title *</span>
+                    <span>{t('addPostModal.postTitleLabel')} *</span>
                   </div>
                 </label>
                 <input
@@ -252,14 +254,16 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                   required
                   maxLength={255}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
-                  placeholder="Enter post title"
+                  placeholder={t('addPostModal.postTitlePlaceholder')}
                   disabled={isSubmitting}
                 />
                 {/* Auto-generated Slug Display */}
                 {formData.post_slug && (
                   <div className="mt-1.5 flex items-center gap-2">
                     <Hash size={12} className="text-gray-400 dark:text-gray-500" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Slug:</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('addPostModal.slugLabel')}
+                    </span>
                     <code className="text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded border border-purple-200 dark:border-purple-700 font-mono">
                       {formData.post_slug}
                     </code>
@@ -270,9 +274,9 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
               {/* Topic and Status - Side by side */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Tag size={14} className="text-purple-500 dark:text-purple-400" />
-                    <span>Topic (Optional)</span>
+                    <span>{t('addPostModal.topicLabel')}</span>
                   </div>
                 </label>
                 <div className="flex items-center gap-2">
@@ -290,7 +294,7 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                                 if (child) return child.name;
                               }
                             }
-                            return 'Selected Topic';
+                            return t('addPostModal.selectedTopicFallback');
                           })()}
                         </span>
                         <button
@@ -302,7 +306,9 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                         </button>
                       </div>
                     ) : (
-                      <span className="text-gray-400 dark:text-gray-500">No topic selected</span>
+                      <span className="text-gray-400 dark:text-gray-500">
+                        {t('addPostModal.noTopicSelected')}
+                      </span>
                     )}
                   </div>
                   <button
@@ -311,13 +317,13 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                     className="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors text-xs"
                     disabled={isSubmitting || loadingTopics}
                   >
-                    Select
+                    {t('addPostModal.selectButton')}
                   </button>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Post Status
+                  {t('addPostModal.postStatusLabel')}
                 </label>
                 <select
                   name="post_status"
@@ -326,16 +332,16 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                   disabled={isSubmitting}
                 >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="archived">Archived</option>
+                  <option value="draft">{t('addPostModal.statusOptions.draft')}</option>
+                  <option value="published">{t('addPostModal.statusOptions.published')}</option>
+                  <option value="archived">{t('addPostModal.statusOptions.archived')}</option>
                 </select>
               </div>
 
               {/* Post Content - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Post Content *
+                  {t('addPostModal.postContentLabel')} *
                 </label>
                 <textarea
                   name="post_content"
@@ -344,7 +350,7 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                   required
                   rows="5"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all resize-none"
-                  placeholder="Write your post content here..."
+                  placeholder={t('addPostModal.postContentPlaceholder')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -352,45 +358,45 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
               {/* Media URLs - Full width, 3 columns */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Media URLs (Optional)
+                  {t('addPostModal.mediaUrlsLabel')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div className="relative">
-                    <ImageIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                    <ImageIcon className="absolute start-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="url"
                       name="post_image"
                       value={formData.post_image}
                       onChange={handleInputChange}
-                      placeholder="Image URL"
+                      placeholder={t('addPostModal.imageUrlPlaceholder')}
                       maxLength={500}
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
+                      className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                       disabled={isSubmitting}
                     />
                   </div>
                   <div className="relative">
-                    <Video className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                    <Video className="absolute start-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="url"
                       name="post_video"
                       value={formData.post_video}
                       onChange={handleInputChange}
-                      placeholder="Video URL"
+                      placeholder={t('addPostModal.videoUrlPlaceholder')}
                       maxLength={500}
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
+                      className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                       disabled={isSubmitting}
                     />
                   </div>
                   <div className="relative">
-                    <LinkIcon className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                    <LinkIcon className="absolute start-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="url"
                       name="post_link"
                       value={formData.post_link}
                       onChange={handleInputChange}
-                      placeholder="Link URL"
+                      placeholder={t('addPostModal.linkUrlPlaceholder')}
                       maxLength={500}
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
+                      className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                       disabled={isSubmitting}
                     />
                   </div>
@@ -400,14 +406,14 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
               {/* File Upload - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Upload Files (Optional - Max 3 files, 50MB each)
+                  {t('addPostModal.uploadFilesLabel')}
                 </label>
                 <input
                   type="file"
                   multiple
                   accept="image/*,video/*,audio/*"
                   onChange={handleFileChange}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all file:me-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900/30 dark:file:text-purple-400"
                   disabled={isSubmitting}
                 />
                 {selectedFiles.length > 0 && (
@@ -427,7 +433,7 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
               {/* Tags - Full width */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                  Tags (Optional)
+                  {t('addPostModal.tagsLabel')}
                 </label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {formData.post_tags.map((tag, index) => (
@@ -435,12 +441,12 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                       key={index}
                       className="inline-flex items-center px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs transition-colors"
                     >
-                      <Hash size={10} className="mr-1" />
+                      <Hash size={10} className="me-1" />
                       {tag}
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="ml-1.5 text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                        className="ms-1.5 text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
                         disabled={isSubmitting}
                       >
                         <X size={10} />
@@ -450,14 +456,14 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                 </div>
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
-                    <Hash className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                    <Hash className="absolute start-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="Add a tag..."
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
+                      placeholder={t('addPostModal.tagPlaceholder')}
+                      className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all"
                       disabled={isSubmitting}
                     />
                   </div>
@@ -467,7 +473,7 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                     className="px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors text-sm"
                     disabled={isSubmitting}
                   >
-                    Add
+                    {t('common:add')}
                   </button>
                 </div>
               </div>
@@ -477,10 +483,10 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-colors">
                   <div>
                     <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
-                      Featured Post
+                      {t('addPostModal.featuredPostLabel')}
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                      Mark this post as featured
+                      {t('addPostModal.featuredPostDescription')}
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -492,7 +498,7 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
                       className="sr-only peer"
                       disabled={isSubmitting}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                   </label>
                 </div>
               </div>
@@ -516,7 +522,7 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
             className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             type="submit"
@@ -527,12 +533,12 @@ const AddPostModal = React.memo(({ isOpen, onClose, onAddPost }) => {
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Creating...</span>
+                <span>{t('addPostModal.creatingButton')}</span>
               </>
             ) : (
               <>
                 <Save size={16} />
-                <span>Create Post</span>
+                <span>{t('addPostModal.createPostButton')}</span>
               </>
             )}
           </button>

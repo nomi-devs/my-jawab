@@ -1,0 +1,206 @@
+{
+  "addSubscriptionModal": {
+    "title": "Add Subscription",
+    "subscriptionType": "Subscription Type *",
+    "subscriptionName": "Subscription Name *",
+    "namePlaceholder": "e.g., Pro Plan",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the subscription plan...",
+    "price": "Price *",
+    "pricePlaceholder": "29.99",
+    "currency": "Currency *",
+    "selectCurrency": "Select...",
+    "duration": "Duration *",
+    "durationPlaceholder": "30",
+    "durationType": "Type *",
+    "planTypes": {
+      "free": "Free",
+      "pro": "Pro",
+      "premium": "Premium"
+    },
+    "durationTypes": {
+      "days": "Days",
+      "weeks": "Weeks",
+      "months": "Months",
+      "years": "Years"
+    },
+    "activeStatus": "Active Status",
+    "activeStatusDescription": "Enable or disable this subscription",
+    "create": "Create Subscription",
+    "creating": "Creating...",
+    "errors": {
+      "nameRequired": "Subscription name is required",
+      "priceRequired": "Price is required",
+      "priceMin": "Price must be 0 or greater",
+      "durationRequired": "Duration is required",
+      "durationMin": "Duration must be at least 1",
+      "currencyRequired": "Currency is required",
+      "createFailed": "Failed to create subscription. Please try again."
+    }
+  },
+  "editSubscriptionModal": {
+    "title": "Edit Subscription",
+    "subscriptionType": "Subscription Type *",
+    "subscriptionName": "Subscription Name *",
+    "description": "Description",
+    "price": "Price *",
+    "currency": "Currency *",
+    "selectCurrency": "Select...",
+    "duration": "Duration *",
+    "durationType": "Type *",
+    "planTypes": {
+      "free": "Free",
+      "pro": "Pro",
+      "premium": "Premium"
+    },
+    "durationTypes": {
+      "days": "Days",
+      "weeks": "Weeks",
+      "months": "Months",
+      "years": "Years"
+    },
+    "activeStatus": "Active Status",
+    "activeStatusDescription": "Enable or disable this subscription",
+    "update": "Update Subscription",
+    "updating": "Updating...",
+    "errors": {
+      "nameRequired": "Subscription name is required",
+      "priceRequired": "Price is required",
+      "priceMin": "Price must be 0 or greater",
+      "durationRequired": "Duration is required",
+      "durationMin": "Duration must be at least 1",
+      "currencyRequired": "Currency is required",
+      "updateFailed": "Failed to update subscription. Please try again."
+    }
+  },
+  "featuresEditor": {
+    "entitlementsTitle": "Entitlements",
+    "quotasTitle": "Quotas & Limits",
+    "quotasHint": "(use -1 for unlimited, 0 to disable)",
+    "unlimited": "UNLIMITED",
+    "toggleUnlimitedTitle": "Toggle unlimited (-1)",
+    "features": {
+      "canCreatePolls": { "label": "Create polls", "description": "Allow creating polls" },
+      "canCreateCommunities": {
+        "label": "Create communities",
+        "description": "Allow creating new communities"
+      },
+      "videoUploads": {
+        "label": "Video uploads",
+        "description": "Allow attaching videos to posts"
+      },
+      "verifiedBadge": {
+        "label": "Verified badge",
+        "description": "Show verified badge on profile"
+      },
+      "prioritySupport": {
+        "label": "Priority support",
+        "description": "Access to priority support channel"
+      },
+      "earlyAccess": {
+        "label": "Early access",
+        "description": "Access to beta features"
+      },
+      "adsEnabled": {
+        "label": "Show ads / banners",
+        "description": "If true, users on this plan see ad banners in feed"
+      }
+    },
+    "quotas": {
+      "dailyPostLimit": { "label": "Daily post limit", "unit": "posts/day" },
+      "dailyCommentLimit": { "label": "Daily comment limit", "unit": "comments/day" },
+      "maxCommunitiesJoined": { "label": "Max communities joined", "unit": "communities" },
+      "maxTopicSubscriptions": { "label": "Max topic subscriptions", "unit": "topics" },
+      "maxVideoSize": { "label": "Max video size", "unit": "MB" },
+      "maxBioLength": { "label": "Max bio length", "unit": "chars" }
+    },
+    "featuresConfigured_one": "{{count}} feature configured",
+    "featuresConfigured_other": "{{count}} features configured",
+    "savedPrefix": "Saved as JSON in the",
+    "savedSuffix": "column"
+  },
+  "subscriptionCard": {
+    "price": "Price",
+    "duration": "Duration",
+    "notAvailable": "N/A",
+    "viewDetails": "View Details"
+  },
+  "subscriptionRow": {
+    "notAvailable": "N/A",
+    "viewDetails": "View Details"
+  },
+  "subscriptionDetailsModal": {
+    "defaultTitle": "Subscription Details",
+    "tabs": {
+      "details": "Details",
+      "users": "Users ({{count}})"
+    },
+    "basicInformation": "Basic Information",
+    "subscriptionName": "Subscription Name",
+    "price": "Price",
+    "duration": "Duration",
+    "notAvailable": "N/A",
+    "noUsersSubscribed": "No users subscribed to this plan",
+    "subscriptionActive": "Subscription Active",
+    "statusLabel": "Status: {{status}}",
+    "startedLabel": "Started: {{date}}"
+  },
+  "subscriptionsHeader": {
+    "allSubscriptions": "All Subscriptions",
+    "totalSubscriptions": "Total Subscriptions: {{count}}",
+    "listView": "List View",
+    "gridView": "Grid View",
+    "refreshTitle": "Refresh subscriptions",
+    "addSubscription": "Add Subscription",
+    "searchPlaceholder": "Search subscriptions...",
+    "filterTypeAll": "All Types",
+    "filterStatusAll": "All Status",
+    "planTypes": {
+      "free": "Free",
+      "pro": "Pro",
+      "premium": "Premium"
+    },
+    "sortDate": "Sort: Date",
+    "sortName": "Sort: Name",
+    "sortPrice": "Sort: Price",
+    "sortDesc": "Desc",
+    "sortAsc": "Asc",
+    "sortTitleNewest": "Sort Newest first (↓)",
+    "sortTitleOldest": "Sort Oldest first (↑)",
+    "clear": "Clear",
+    "clearAllFiltersTitle": "Clear all filters",
+    "noFiltersTitle": "No filters to clear",
+    "activeFilterSearch": "Search:",
+    "activeFilterType": "Type:",
+    "activeFilterStatus": "Status:",
+    "activeFilterSort": "Sort:",
+    "removeSearchTitle": "Remove search",
+    "removeTypeFilterTitle": "Remove type filter",
+    "removeStatusFilterTitle": "Remove status filter"
+  },
+  "subscriptionsList": {
+    "loadingSubscriptions": "Loading subscriptions...",
+    "noSubscriptionsFound": "No subscriptions found",
+    "createFirstSubscription": "Create your first subscription to get started",
+    "tableHeaders": {
+      "subscription": "Subscription",
+      "typeAndPrice": "Type & Price",
+      "duration": "Duration"
+    }
+  },
+  "subscriptionsPage": {
+    "deleteSubscriptionTitle": "Delete Subscription",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "deleteSuccess": "Subscription \"{{name}}\" deleted successfully!",
+    "deleteFailed": "Failed to delete subscription. Please try again.",
+    "createSuccess": "Subscription created successfully!",
+    "updateSuccess": "Subscription updated successfully!",
+    "noSubscriptionsFound": "No subscriptions found",
+    "tryChangingFilters": "Try changing your search or filters",
+    "startAddingFirst": "Start by adding your first subscription",
+    "addFirstSubscription": "Add First Subscription",
+    "loadingSubscriptions": "Loading subscriptions...",
+    "updating": "Updating...",
+    "itemName": "subscriptions"
+  }
+}

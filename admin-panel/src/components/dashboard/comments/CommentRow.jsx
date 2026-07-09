@@ -1,5 +1,6 @@
 // src/components/dashboard/comments/CommentRow.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MessageSquare,
   ThumbsUp,
@@ -22,8 +23,10 @@ const CommentRow = React.memo(
     onUnapprove,
     index = 0,
   }) => {
+    const { t } = useTranslation('comments');
+
     const formatDate = (timestamp) => {
-      if (!timestamp) return 'N/A';
+      if (!timestamp) return t('commentRow.na');
       const date = new Date(timestamp);
       return date.toLocaleDateString('en-US', {
         month: 'short',
@@ -33,7 +36,7 @@ const CommentRow = React.memo(
     };
 
     const truncateText = (text, maxLength = 60) => {
-      if (!text) return 'No content';
+      if (!text) return t('commentRow.noContent');
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
     };
@@ -46,22 +49,22 @@ const CommentRow = React.memo(
       if (comment.is_reported) {
         return (
           <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
-            <AlertCircle size={9} className="mr-0.5" />
-            Reported
+            <AlertCircle size={9} className="me-0.5" />
+            {t('commentRow.status.reported')}
           </span>
         );
       } else if (!comment.is_approved) {
         return (
           <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
-            <Clock size={9} className="mr-0.5" />
-            Pending
+            <Clock size={9} className="me-0.5" />
+            {t('commentRow.status.pending')}
           </span>
         );
       } else {
         return (
           <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-            <CheckCircle size={9} className="mr-0.5" />
-            Approved
+            <CheckCircle size={9} className="me-0.5" />
+            {t('commentRow.status.approved')}
           </span>
         );
       }
@@ -76,7 +79,7 @@ const CommentRow = React.memo(
       >
         {/* User & Content */}
         <td className="p-2 transition-colors">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold transition-colors flex-shrink-0 ${
                 comment.user?.role === 'admin'
@@ -90,7 +93,7 @@ const CommentRow = React.memo(
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-xs text-gray-800 dark:text-gray-200 transition-colors truncate">
-                {comment.user?.name || 'Anonymous'}
+                {comment.user?.name || t('commentRow.anonymous')}
               </div>
             </div>
           </div>
@@ -110,14 +113,14 @@ const CommentRow = React.memo(
         <td className="p-2 transition-colors">
           <div className="flex flex-col gap-0.5 text-[10px] text-gray-500 dark:text-gray-400">
             <div className="truncate" title={comment.post?.title}>
-              {truncateText(comment.post?.title || 'Unknown Post', 30)}
+              {truncateText(comment.post?.title || t('commentRow.unknownPost'), 30)}
             </div>
-            <div className="flex items-center space-x-1.5">
-              <span className="flex items-center space-x-0.5" title="Likes">
+            <div className="flex items-center gap-1.5">
+              <span className="flex items-center gap-0.5" title={t('commentRow.likes')}>
                 <ThumbsUp size={9} />
                 <span>{comment.likes_count || comment.like_count || 0}</span>
               </span>
-              <span className="flex items-center space-x-0.5 text-red-500" title="Unlikes">
+              <span className="flex items-center gap-0.5 text-red-500" title={t('commentRow.unlikes')}>
                 <ThumbsDown size={9} />
                 <span>{comment.dislike_count || 0}</span>
               </span>
@@ -131,12 +134,12 @@ const CommentRow = React.memo(
         </td>
 
         {/* Actions */}
-        <td className="p-2 text-right transition-colors">
-          <div className="flex items-center justify-end space-x-1">
+        <td className="p-2 text-end transition-colors">
+          <div className="flex items-center justify-end gap-1">
             <button
               onClick={() => onViewDetails && onViewDetails(comment)}
               className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded transition-colors"
-              title="View Details"
+              title={t('commentRow.viewDetails')}
             >
               <Eye size={14} />
             </button>
@@ -144,7 +147,7 @@ const CommentRow = React.memo(
               <button
                 onClick={() => onApprove(comment.id)}
                 className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
-                title="Approve Comment"
+                title={t('commentRow.approveComment')}
               >
                 <CheckCircle size={14} />
               </button>
@@ -153,7 +156,7 @@ const CommentRow = React.memo(
               <button
                 onClick={() => onUnapprove(comment.id)}
                 className="p-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors"
-                title="Unapprove Comment"
+                title={t('commentRow.unapproveComment')}
               >
                 <AlertCircle size={14} />
               </button>
@@ -162,7 +165,7 @@ const CommentRow = React.memo(
             <button
               onClick={() => onDelete && onDelete(comment.id)}
               className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-              title="Delete Comment"
+              title={t('commentRow.deleteComment')}
             >
               <Trash2 size={14} />
             </button>

@@ -1,5 +1,6 @@
 // src/components/dashboard/banners/BannerDetailsModal.jsx
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Image as ImageIcon,
@@ -38,19 +39,21 @@ const formatDate = (d) => {
 };
 
 const Chip = ({ children }) => (
-  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 mr-1 mb-1">
+  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 me-1 mb-1">
     {children}
   </span>
 );
 
 const CsvList = ({ csv }) => {
-  if (!csv) return <span className="text-[11px] text-gray-400">All (no restriction)</span>;
+  const { t } = useTranslation('banners');
+  if (!csv)
+    return <span className="text-[11px] text-gray-400">{t('bannerDetailsModal.allNoRestriction')}</span>;
   const items = csv
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
   if (items.length === 0)
-    return <span className="text-[11px] text-gray-400">All (no restriction)</span>;
+    return <span className="text-[11px] text-gray-400">{t('bannerDetailsModal.allNoRestriction')}</span>;
   return (
     <div className="flex flex-wrap gap-0.5 mt-0.5">
       {items.map((v, i) => (
@@ -61,13 +64,15 @@ const CsvList = ({ csv }) => {
 };
 
 const MappedList = ({ csv, lookup }) => {
-  if (!csv) return <span className="text-[11px] text-gray-400">All (no restriction)</span>;
+  const { t } = useTranslation('banners');
+  if (!csv)
+    return <span className="text-[11px] text-gray-400">{t('bannerDetailsModal.allNoRestriction')}</span>;
   const items = csv
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
   if (items.length === 0)
-    return <span className="text-[11px] text-gray-400">All (no restriction)</span>;
+    return <span className="text-[11px] text-gray-400">{t('bannerDetailsModal.allNoRestriction')}</span>;
   return (
     <div className="flex flex-wrap gap-0.5 mt-0.5">
       {items.map((id, i) => {
@@ -79,6 +84,7 @@ const MappedList = ({ csv, lookup }) => {
 };
 
 const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
+  const { t } = useTranslation('banners');
   const [topicMap, setTopicMap] = useState({});
   const [subMap, setSubMap] = useState({});
 
@@ -135,9 +141,11 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">
-                Banner Details
+                {t('bannerDetailsModal.title')}
               </h2>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">ID: {banner.id}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                {t('bannerDetailsModal.idLabel', { id: banner.id })}
+              </p>
             </div>
           </div>
           <button
@@ -157,7 +165,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
           {banner.banner_image && (
             <div>
               <h3 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-                Banner Image
+                {t('bannerDetailsModal.bannerImage')}
               </h3>
               <img
                 src={banner.banner_image}
@@ -171,22 +179,26 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-                Title
+                {t('common:title')}
               </h3>
               <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                 {banner.banner_title || (
-                  <span className="italic text-gray-400 font-normal">Untitled</span>
+                  <span className="italic text-gray-400 font-normal">
+                    {t('bannerDetailsModal.untitled')}
+                  </span>
                 )}
               </div>
             </div>
             <div>
               <h3 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
-                <Layers size={10} /> Type
+                <Layers size={10} /> {t('common:type')}
               </h3>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${typeClass}`}
               >
-                {banner.banner_type || 'promotion'}
+                {t(`bannerTypes.${banner.banner_type || 'promotion'}`, {
+                  defaultValue: banner.banner_type || t('bannerTypes.promotion'),
+                })}
               </span>
             </div>
           </div>
@@ -195,7 +207,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
           {banner.banner_description && (
             <div>
               <h3 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-                Description
+                {t('common:description')}
               </h3>
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 text-sm text-gray-700 dark:text-gray-300">
                 {banner.banner_description}
@@ -207,7 +219,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
           {banner.banner_link && (
             <div>
               <h3 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
-                <LinkIcon size={10} /> Link
+                <LinkIcon size={10} /> {t('bannerDetailsModal.link')}
               </h3>
               <a
                 href={banner.banner_link}
@@ -225,7 +237,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-                Status
+                {t('common:status')}
               </h3>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
@@ -235,14 +247,14 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
                 }`}
               >
                 <span
-                  className={`w-1 h-1 rounded-full mr-1.5 ${isActive ? 'bg-green-500' : 'bg-gray-400'}`}
+                  className={`w-1 h-1 rounded-full me-1.5 ${isActive ? 'bg-green-500' : 'bg-gray-400'}`}
                 />
-                {isActive ? 'Active' : 'Inactive'}
+                {isActive ? t('common:active') : t('common:inactive')}
               </span>
             </div>
             <div>
               <h3 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-                Display Order
+                {t('bannerDetailsModal.displayOrder')}
               </h3>
               <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
                 {banner.display_order ?? 0}
@@ -254,12 +266,12 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
           <div className="pt-3 border-t border-purple-100 dark:border-gray-700">
             <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
               <Calendar size={14} className="text-purple-500" />
-              Scheduling
+              {t('bannerDetailsModal.scheduling')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h4 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
-                  Valid From
+                  {t('bannerDetailsModal.validFrom')}
                 </h4>
                 <div className="text-sm text-gray-700 dark:text-gray-300">
                   {formatDate(banner.valid_from)}
@@ -267,7 +279,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
               </div>
               <div>
                 <h4 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
-                  Valid Until
+                  {t('bannerDetailsModal.validUntil')}
                 </h4>
                 <div className="text-sm text-gray-700 dark:text-gray-300">
                   {formatDate(banner.valid_until)}
@@ -280,24 +292,24 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
           <div className="pt-3 border-t border-purple-100 dark:border-gray-700">
             <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
               <Globe size={14} className="text-green-500" />
-              Target (show to)
+              {t('bannerDetailsModal.targetTitle')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <h4 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase flex items-center gap-1">
-                  <Globe size={9} /> Countries
+                  <Globe size={9} /> {t('bannerDetailsModal.countries')}
                 </h4>
                 <CsvList csv={banner.target_countries} />
               </div>
               <div>
                 <h4 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase flex items-center gap-1">
-                  <Hash size={9} /> Topics
+                  <Hash size={9} /> {t('bannerDetailsModal.topics')}
                 </h4>
                 <MappedList csv={banner.target_topic_ids} lookup={topicMap} />
               </div>
               <div>
                 <h4 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase flex items-center gap-1">
-                  <CreditCard size={9} /> Subscriptions
+                  <CreditCard size={9} /> {t('bannerDetailsModal.subscriptions')}
                 </h4>
                 <MappedList csv={banner.target_subscription_ids} lookup={subMap} />
               </div>
@@ -308,24 +320,24 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
           <div className="pt-3 border-t border-purple-100 dark:border-gray-700">
             <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
               <Globe size={14} className="text-red-500" />
-              Exclude (hide from)
+              {t('bannerDetailsModal.excludeTitle')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <h4 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">
-                  Countries
+                  {t('bannerDetailsModal.countries')}
                 </h4>
                 <CsvList csv={banner.excluded_countries} />
               </div>
               <div>
                 <h4 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">
-                  Topics
+                  {t('bannerDetailsModal.topics')}
                 </h4>
                 <MappedList csv={banner.excluded_topic_ids} lookup={topicMap} />
               </div>
               <div>
                 <h4 className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">
-                  Subscriptions
+                  {t('bannerDetailsModal.subscriptions')}
                 </h4>
                 <MappedList csv={banner.excluded_subscription_ids} lookup={subMap} />
               </div>
@@ -334,8 +346,8 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
 
           {/* Timestamps */}
           <div className="pt-3 border-t border-purple-100 dark:border-gray-700 grid grid-cols-2 gap-4 text-[11px] text-gray-500 dark:text-gray-400">
-            <div>Created: {formatDate(banner.created_at)}</div>
-            <div>Updated: {formatDate(banner.updated_at)}</div>
+            <div>{t('bannerDetailsModal.createdLabel', { date: formatDate(banner.created_at) })}</div>
+            <div>{t('bannerDetailsModal.updatedLabel', { date: formatDate(banner.updated_at) })}</div>
           </div>
         </div>
 
@@ -351,7 +363,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
                 className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-xs font-medium"
               >
                 <Trash2 size={14} />
-                Delete
+                {t('common:delete')}
               </button>
             )}
             {onEdit && (
@@ -363,7 +375,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-xs font-medium"
               >
                 <Edit size={14} />
-                Edit
+                {t('common:edit')}
               </button>
             )}
           </div>
@@ -371,7 +383,7 @@ const BannerDetailsModal = ({ isOpen, onClose, banner, onEdit, onDelete }) => {
             onClick={onClose}
             className="px-6 py-2 purple-gradient text-white rounded-lg text-xs font-semibold shadow-sm hover:shadow-md active:scale-95 transition-all"
           >
-            Close
+            {t('common:close')}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 // src/components/dashboard/communities/CommunityRow.jsx
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users, Globe, Lock, Edit, Trash2, Eye } from 'lucide-react';
 
 const CommunityRow = React.memo(
@@ -13,10 +14,11 @@ const CommunityRow = React.memo(
     index = 0,
     serialNumber = 0,
   }) => {
+    const { t } = useTranslation('communities');
     const [imageError, setImageError] = useState(false);
 
     const formatDate = (timestamp) => {
-      if (!timestamp) return 'N/A';
+      if (!timestamp) return t('row.notAvailable');
       const date = new Date(timestamp);
       return date.toLocaleDateString('en-US', {
         month: 'short',
@@ -26,7 +28,7 @@ const CommunityRow = React.memo(
     };
 
     const truncateText = (text, maxLength = 60) => {
-      if (!text) return 'No description';
+      if (!text) return t('row.noDescription');
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
     };
@@ -43,7 +45,7 @@ const CommunityRow = React.memo(
         </td>
         {/* Community Name & Icon */}
         <td className="p-2 transition-colors">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             {community.community_image && !imageError ? (
               <div className="w-10 h-10 rounded-lg overflow-hidden border border-purple-200 dark:border-gray-600 flex-shrink-0">
                 <img
@@ -82,7 +84,7 @@ const CommunityRow = React.memo(
                 </div>
               ) : (
                 <div className="text-gray-400 dark:text-gray-500 text-[10px] transition-colors">
-                  No topics
+                  {t('row.noTopics')}
                 </div>
               )}
             </div>
@@ -107,13 +109,13 @@ const CommunityRow = React.memo(
               }`}
             >
               <span
-                className={`w-1 h-1 rounded-full mr-1 ${
+                className={`w-1 h-1 rounded-full me-1 ${
                   community.is_active
                     ? 'bg-green-500 dark:bg-green-400'
                     : 'bg-gray-500 dark:bg-gray-400'
                 }`}
               ></span>
-              {community.is_active ? 'Active' : 'Inactive'}
+              {community.is_active ? t('common:active') : t('common:inactive')}
             </span>
           </div>
         </td>
@@ -125,15 +127,15 @@ const CommunityRow = React.memo(
             className="flex flex-col gap-1 text-[10px] text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 group/members font-medium"
           >
             {community.members_count > 0 && (
-              <div className="flex items-center space-x-1 border-b border-purple-100 dark:border-purple-900/40 pb-0.5">
+              <div className="flex items-center gap-1 border-b border-purple-100 dark:border-purple-900/40 pb-0.5">
                 <Users size={10} />
                 <span className="group-hover/members:underline">
-                  {community.members_count} members
+                  {t('row.members', { count: community.members_count })}
                 </span>
               </div>
             )}
             {(!community.members_count || community.members_count === 0) && (
-              <span className="text-gray-400">No members</span>
+              <span className="text-gray-400">{t('row.noMembers')}</span>
             )}
           </button>
         </td>
@@ -151,25 +153,25 @@ const CommunityRow = React.memo(
               }`}
             >
               {(community.posts_per_day || 0) >= 2
-                ? 'High'
+                ? t('row.high')
                 : (community.posts_per_day || 0) >= 0.5
-                  ? 'Medium'
-                  : 'Low'}
+                  ? t('row.medium')
+                  : t('row.low')}
             </span>
-            <span className="ml-1.5 text-[10px] text-gray-400 font-medium">
+            <span className="ms-1.5 text-[10px] text-gray-400 font-medium">
               ({(community.posts_per_day || 0).toFixed(1)}/d)
             </span>
           </div>
         </td>
 
         {/* Actions */}
-        <td className="p-2 text-right transition-colors">
-          <div className="flex items-center justify-end space-x-1">
+        <td className="p-2 text-end transition-colors">
+          <div className="flex items-center justify-end gap-1">
             {/* Active / Inactive Switch */}
             {onToggleStatus && (
               <label
-                className="relative inline-flex items-center cursor-pointer mr-1"
-                title={community.is_active ? 'Deactivate community' : 'Activate community'}
+                className="relative inline-flex items-center cursor-pointer me-1"
+                title={community.is_active ? t('row.deactivateTooltip') : t('row.activateTooltip')}
               >
                 <input
                   type="checkbox"
@@ -180,27 +182,27 @@ const CommunityRow = React.memo(
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                <div className="w-9 h-5 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
             )}
             <button
               onClick={() => onViewDetails && onViewDetails(community)}
               className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700 rounded transition-colors"
-              title="View Details"
+              title={t('row.viewDetails')}
             >
               <Eye size={14} />
             </button>
             <button
               onClick={() => onEdit && onEdit(community)}
               className="p-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors"
-              title="Edit Community"
+              title={t('row.editCommunity')}
             >
               <Edit size={14} />
             </button>
             <button
               onClick={() => onDelete && onDelete(community.id)}
               className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-              title="Delete Community"
+              title={t('row.deleteCommunity')}
             >
               <Trash2 size={14} />
             </button>

@@ -1,5 +1,6 @@
 // src/components/dashboard/settings/AppSettingsPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings, Save, RefreshCw, DollarSign, Globe, Trophy } from 'lucide-react';
 import RefreshButton from '../../common/RefreshButton';
 import appSettingsApi from '../../../api/appSettingsApi';
@@ -37,6 +38,7 @@ const PointsValueInput = ({ value, onSave, disabled }) => {
 };
 
 const AppSettingsPage = () => {
+  const { t } = useTranslation('settings');
   const [settings, setSettings] = useState([]);
   const [currencies, setCurrencies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,11 +57,11 @@ const AppSettingsPage = () => {
       setCurrencies(currenciesRes.data.filter((c) => c.is_active));
     } catch (error) {
       console.error('Failed to fetch settings data:', error);
-      showAlert('error', 'Error', 'Failed to load settings. Please try again.');
+      showAlert('error', t('common:error'), t('appSettingsPage.alerts.fetchError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -85,10 +87,10 @@ const AppSettingsPage = () => {
           ? prev.map((s) => (s.setting_key === key ? { ...s, setting_value: value } : s))
           : [...prev, { setting_key: key, setting_value: value }];
       });
-      showAlert('success', 'Success', 'Setting updated successfully!');
+      showAlert('success', t('common:success'), t('appSettingsPage.alerts.updateSuccess'));
     } catch (error) {
       console.error(`Failed to update setting ${key}:`, error);
-      showAlert('error', 'Error', 'Failed to update setting.');
+      showAlert('error', t('common:error'), t('appSettingsPage.alerts.updateError'));
     } finally {
       setIsSaving(false);
     }
@@ -99,28 +101,28 @@ const AppSettingsPage = () => {
   };
 
   const tabs = [
-    { id: 'general', label: 'General Settings', icon: Globe },
-    { id: 'currency', label: 'Currency Settings', icon: DollarSign },
-    { id: 'points', label: 'Points & Gamification', icon: Trophy },
+    { id: 'general', label: t('appSettingsPage.tabs.general'), icon: Globe },
+    { id: 'currency', label: t('appSettingsPage.tabs.currency'), icon: DollarSign },
+    { id: 'points', label: t('appSettingsPage.tabs.points'), icon: Trophy },
   ];
 
   const pointsSettings = [
     {
       key: 'points_question_created',
-      label: 'Asking a Question',
-      description: 'Points awarded when a user posts a new question.',
+      label: t('appSettingsPage.points.items.questionCreated.label'),
+      description: t('appSettingsPage.points.items.questionCreated.description'),
       defaultValue: 5,
     },
     {
       key: 'points_poll_created',
-      label: 'Creating a Poll',
-      description: 'Points awarded when a user creates a new poll.',
+      label: t('appSettingsPage.points.items.pollCreated.label'),
+      description: t('appSettingsPage.points.items.pollCreated.description'),
       defaultValue: 5,
     },
     {
       key: 'points_answer_created',
-      label: 'Answering (Comment)',
-      description: 'Points awarded when a user comments on a post or poll. Weighted highest since answering is the core value of the app.',
+      label: t('appSettingsPage.points.items.answerCreated.label'),
+      description: t('appSettingsPage.points.items.answerCreated.description'),
       defaultValue: 10,
     },
   ];
@@ -144,15 +146,20 @@ const AppSettingsPage = () => {
         <div>
           <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             <Settings className="text-purple-600 w-5 h-5" />
-            Application Settings
+            {t('appSettingsPage.title')}
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Configure app-wide parameters and preferences.
+            {t('appSettingsPage.subtitle')}
           </p>
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <RefreshButton onClick={fetchData} loading={loading} title="Refresh settings" size={18} />
+          <RefreshButton
+            onClick={fetchData}
+            loading={loading}
+            title={t('appSettingsPage.refreshTitle')}
+            size={18}
+          />
         </div>
       </div>
 
@@ -185,17 +192,17 @@ const AppSettingsPage = () => {
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">
-                    General Configuration
+                    {t('appSettingsPage.general.heading')}
                   </h4>
                   <div className="space-y-4">
                     <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="space-y-0.5">
                           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                            App Name
+                            {t('appSettingsPage.general.appName.label')}
                           </label>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            The display name of the application.
+                            {t('appSettingsPage.general.appName.description')}
                           </p>
                         </div>
                         <div className="relative w-full md:w-64">
@@ -205,8 +212,8 @@ const AppSettingsPage = () => {
                             disabled
                             className="w-full px-4 py-2 bg-white dark:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-500 border border-gray-200 dark:border-gray-700 cursor-not-allowed text-sm font-medium"
                           />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 dark:bg-gray-900 px-1">
-                            Read only
+                          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 dark:bg-gray-900 px-1">
+                            {t('appSettingsPage.general.appName.readOnly')}
                           </span>
                         </div>
                       </div>
@@ -220,17 +227,16 @@ const AppSettingsPage = () => {
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">
-                    Currency Configuration
+                    {t('appSettingsPage.currency.heading')}
                   </h4>
                   <div className="p-6 bg-purple-50/30 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-800/30">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="space-y-1 max-w-md">
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                          Primary System Currency
+                          {t('appSettingsPage.currency.primaryLabel')}
                         </label>
                         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                          This currency will be used for all transactions and price displays across
-                          the platform. Ensure the selected currency is properly configured.
+                          {t('appSettingsPage.currency.primaryDescription')}
                         </p>
                       </div>
                       <div className="w-full md:w-64">
@@ -240,7 +246,7 @@ const AppSettingsPage = () => {
                           disabled={isSaving}
                           className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-purple-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm font-bold"
                         >
-                          <option value="">Select Currency</option>
+                          <option value="">{t('appSettingsPage.currency.selectPlaceholder')}</option>
                           {currencies.map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.currency_name} ({c.currency_symbol} - {c.currency_code})
@@ -253,7 +259,7 @@ const AppSettingsPage = () => {
                     {isSaving && (
                       <div className="mt-4 flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-[10px] uppercase tracking-widest animate-pulse">
                         <RefreshCw size={12} className="animate-spin" />
-                        Persisting changes to database...
+                        {t('appSettingsPage.persisting')}
                       </div>
                     )}
                   </div>
@@ -265,12 +271,10 @@ const AppSettingsPage = () => {
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-1 uppercase tracking-wider">
-                    Points & Gamification
+                    {t('appSettingsPage.points.heading')}
                   </h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Points users earn for contributing content, shown on their profile's "Points
-                    earned" card. Changes apply immediately to new activity points already
-                    awarded are not recalculated.
+                    {t('appSettingsPage.points.description')}
                   </p>
                   <div className="space-y-4">
                     {pointsSettings.map((ps) => (
@@ -302,7 +306,7 @@ const AppSettingsPage = () => {
                   {isSaving && (
                     <div className="mt-4 flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-[10px] uppercase tracking-widest animate-pulse">
                       <RefreshCw size={12} className="animate-spin" />
-                      Persisting changes to database...
+                      {t('appSettingsPage.persisting')}
                     </div>
                   )}
                 </div>
@@ -315,11 +319,10 @@ const AppSettingsPage = () => {
                   <Settings className="w-10 h-10 text-purple-200 dark:text-purple-900/50 animate-spin-slow" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-400 dark:text-gray-600 mb-2">
-                  Coming Soon
+                  {t('appSettingsPage.comingSoon.title')}
                 </h3>
                 <p className="text-sm text-gray-400 dark:text-gray-600 max-w-xs italic font-medium">
-                  These settings are being finalized and will be available in the next system
-                  update.
+                  {t('appSettingsPage.comingSoon.description')}
                 </p>
               </div>
             )}
@@ -327,8 +330,10 @@ const AppSettingsPage = () => {
 
           {/* Bottom Info Bar */}
           <div className="px-6 py-3 bg-gray-50 dark:bg-gray-900 text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest flex justify-between items-center border-t border-purple-50 dark:border-gray-700">
-            <span>Platform v1.4.0</span>
-            <span>Last updated: {new Date().toLocaleDateString()}</span>
+            <span>{t('appSettingsPage.footer.platformVersion', { version: 'v1.4.0' })}</span>
+            <span>
+              {t('appSettingsPage.footer.lastUpdated', { date: new Date().toLocaleDateString() })}
+            </span>
           </div>
         </div>
       </div>

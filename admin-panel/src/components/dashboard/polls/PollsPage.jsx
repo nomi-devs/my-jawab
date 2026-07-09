@@ -1,6 +1,7 @@
 // src/components/dashboard/polls/PollsPage.jsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BarChart3 } from 'lucide-react';
 import PollsHeader from './PollsHeader';
 import PollsList from './PollsList';
@@ -15,6 +16,7 @@ import TableSkeleton from '../../common/TableSkeleton';
 import { usePollsList, usePollActions } from '../../../hooks/usePolls';
 
 const PollsPage = () => {
+  const { t } = useTranslation('polls');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -141,7 +143,7 @@ const PollsPage = () => {
     async (pollData) => {
       try {
         await createPoll(pollData);
-        setSuccessMessage('Poll created successfully!');
+        setSuccessMessage(t('pollsPage.successCreated'));
         setTimeout(() => setSuccessMessage(''), 3000);
         setShowAddModal(false);
       } catch (err) {
@@ -167,7 +169,7 @@ const PollsPage = () => {
     if (!pollToDelete) return;
     try {
       await deletePoll(pollToDelete.id);
-      setSuccessMessage('Poll deleted successfully!');
+      setSuccessMessage(t('pollsPage.successDeleted'));
       setShowDeleteConfirm(false);
       setPollToDelete(null);
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -182,7 +184,7 @@ const PollsPage = () => {
         try {
           const pollId = typeof pollOrId === 'object' ? pollOrId.id : pollOrId;
           await updatePoll({ id: pollId, data: updatedData });
-          setSuccessMessage('Poll updated successfully!');
+          setSuccessMessage(t('pollsPage.successUpdated'));
           setTimeout(() => setSuccessMessage(''), 3000);
           setShowEditModal(false);
           setSelectedPollForEdit(null);
@@ -204,7 +206,7 @@ const PollsPage = () => {
     async (pollId, statusData) => {
       try {
         await updatePollStatus({ id: pollId, data: statusData });
-        setSuccessMessage('Poll status updated successfully!');
+        setSuccessMessage(t('pollsPage.successStatusUpdated'));
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error updating poll status:', err);
@@ -243,7 +245,7 @@ const PollsPage = () => {
   if (isError) {
     return (
       <ErrorMessage
-        message={queryError?.message || 'Failed to load polls'}
+        message={queryError?.message || t('pollsPage.loadFailedError')}
         onRetry={() => refetch()}
       />
     );
@@ -257,7 +259,7 @@ const PollsPage = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
 
@@ -269,14 +271,16 @@ const PollsPage = () => {
         }}
         onConfirm={confirmDeletePoll}
         type="danger"
-        title="Delete Poll"
+        title={t('pollsPage.deletePollTitle')}
         message={
           pollToDelete
-            ? `Are you sure you want to delete "${pollToDelete.poll_title || pollToDelete.title || pollToDelete.question}"? This action cannot be undone.`
+            ? t('pollsPage.deletePollMessage', {
+                title: pollToDelete.poll_title || pollToDelete.title || pollToDelete.question,
+              })
             : ''
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
         isLoading={isDeleting}
       />
 

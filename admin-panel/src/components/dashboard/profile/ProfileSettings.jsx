@@ -1,5 +1,6 @@
 // src/components/dashboard/profile/ProfileSettings.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   User,
   Lock,
@@ -17,6 +18,7 @@ import { useProfile, useProfileActions } from '../../../hooks/useProfile';
 import AlertModal from '../../common/AlertModal';
 
 const ProfileSettings = () => {
+  const { t } = useTranslation('profile');
   // Helper function to get today's date in YYYY-MM-DD format (max date for birthday)
   const getMaxDate = () => {
     const today = new Date();
@@ -186,14 +188,12 @@ const ProfileSettings = () => {
       }
 
       await updateProfile(formData);
-      setSuccessMessage('Profile updated successfully!');
+      setSuccessMessage(t('profileUpdatedSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error updating profile:', err);
       const errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        'Failed to update profile. Please try again.';
+        err.response?.data?.message || err.response?.data?.error || t('profileUpdateFailed');
       setError(errorMessage);
       setTimeout(() => setError(null), 5000);
     } finally {
@@ -220,22 +220,22 @@ const ProfileSettings = () => {
       !passwordData.new_password ||
       !passwordData.confirm_password
     ) {
-      setError('All password fields are required');
+      setError(t('allPasswordFieldsRequired'));
       return;
     }
 
     if (passwordData.new_password.length < 6) {
-      setError('New password must be at least 6 characters long');
+      setError(t('passwordMinLengthError'));
       return;
     }
 
     if (passwordData.new_password !== passwordData.confirm_password) {
-      setError('New password and confirm password do not match');
+      setError(t('passwordsDoNotMatch'));
       return;
     }
 
     if (passwordData.old_password === passwordData.new_password) {
-      setError('New password must be different from old password');
+      setError(t('passwordMustDiffer'));
       return;
     }
 
@@ -247,7 +247,7 @@ const ProfileSettings = () => {
         new_password: passwordData.new_password,
       });
 
-      setSuccessMessage('Password changed successfully!');
+      setSuccessMessage(t('passwordChangedSuccess'));
       setPasswordData({
         old_password: '',
         new_password: '',
@@ -257,9 +257,7 @@ const ProfileSettings = () => {
     } catch (err) {
       console.error('Error changing password:', err);
       const errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        'Failed to change password. Please check your old password.';
+        err.response?.data?.message || err.response?.data?.error || t('passwordChangeFailed');
       setError(errorMessage);
       setTimeout(() => setError(null), 5000);
     } finally {
@@ -274,7 +272,7 @@ const ProfileSettings = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
 
@@ -283,23 +281,23 @@ const ProfileSettings = () => {
         isOpen={!!error}
         onClose={() => setError(null)}
         type="error"
-        title="Error"
+        title={t('common:error')}
         message={error}
       />
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         {/* Header */}
         <div className="p-4 md:p-5 border-b border-purple-100 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <User className="text-purple-600 dark:text-purple-400" size={20} />
             </div>
             <div>
               <h2 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Profile Settings
+                {t('pageTitle')}
               </h2>
               <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 transition-colors">
-                Manage your account settings and password
+                {t('pageSubtitle')}
               </p>
             </div>
           </div>
@@ -310,14 +308,14 @@ const ProfileSettings = () => {
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2 transition-colors">
               <User size={16} className="text-purple-500 dark:text-purple-400" />
-              Account Information
+              {t('accountInformation')}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Username */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                  Username
+                  {t('username')}
                 </label>
                 <input
                   type="text"
@@ -326,30 +324,30 @@ const ProfileSettings = () => {
                   className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed transition-colors text-sm"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Username cannot be changed
+                  {t('usernameHint')}
                 </p>
               </div>
 
               {/* Email */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                  Email
+                  {t('common:email')}
                 </label>
                 <input
                   type="email"
-                  value={userInfo.email || 'Not available'}
+                  value={userInfo.email || t('emailNotAvailable')}
                   disabled
                   className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed transition-colors text-sm"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Email cannot be changed
+                  {t('emailHint')}
                 </p>
               </div>
 
               {/* Role */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                  Role
+                  {t('role')}
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -357,7 +355,7 @@ const ProfileSettings = () => {
                     value={
                       userInfo.role
                         ? userInfo.role.charAt(0).toUpperCase() + userInfo.role.slice(1)
-                        : 'Admin'
+                        : t('defaultRole')
                     }
                     disabled
                     className="flex-1 px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed transition-colors text-sm"
@@ -371,32 +369,32 @@ const ProfileSettings = () => {
               {/* Account Status */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                  Account Status
+                  {t('accountStatus')}
                 </label>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     {userInfo.is_active ? (
                       <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                        <CheckCircle size={14} className="mr-1" />
-                        Active
+                        <CheckCircle size={14} className="me-1" />
+                        {t('common:active')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                        <XCircle size={14} className="mr-1" />
-                        Inactive
+                        <XCircle size={14} className="me-1" />
+                        {t('common:inactive')}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     {userInfo.is_verified ? (
                       <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                        <CheckCircle size={14} className="mr-1" />
-                        Verified
+                        <CheckCircle size={14} className="me-1" />
+                        {t('verified')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
-                        <XCircle size={14} className="mr-1" />
-                        Unverified
+                        <XCircle size={14} className="me-1" />
+                        {t('unverified')}
                       </span>
                     )}
                   </div>
@@ -410,28 +408,28 @@ const ProfileSettings = () => {
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2 transition-colors">
                 <User size={16} className="text-purple-500 dark:text-purple-400" />
-                Profile Information
+                {t('profileInformation')}
               </h3>
 
               {/* Profile images */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Profile Picture
+                    {t('profilePicture')}
                   </label>
                   {profilePreview.profile_picture && (
                     <div className="mb-2">
                       <img
                         src={profilePreview.profile_picture}
-                        alt="Profile preview"
+                        alt={t('profilePreviewAlt')}
                         className="w-16 h-16 rounded-full object-cover border border-purple-200 dark:border-gray-600"
                       />
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <label className="inline-flex items-center px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
-                      <ImageIcon size={14} className="mr-1" />
-                      Upload
+                      <ImageIcon size={14} className="me-1" />
+                      {t('upload')}
                       <input
                         type="file"
                         name="profile_picture"
@@ -443,27 +441,27 @@ const ProfileSettings = () => {
                     </label>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Recommended size: 128x128px
+                    {t('profilePictureHint')}
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Profile Background
+                    {t('profileBackground')}
                   </label>
                   {profilePreview.profile_background && (
                     <div className="mb-2">
                       <img
                         src={profilePreview.profile_background}
-                        alt="Background preview"
+                        alt={t('backgroundPreviewAlt')}
                         className="w-full h-20 rounded-lg object-cover border border-purple-200 dark:border-gray-600"
                       />
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <label className="inline-flex items-center px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
-                      <ImageIcon size={14} className="mr-1" />
-                      Upload
+                      <ImageIcon size={14} className="me-1" />
+                      {t('upload')}
                       <input
                         type="file"
                         name="profile_background"
@@ -475,7 +473,7 @@ const ProfileSettings = () => {
                     </label>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Shown on your profile header
+                    {t('profileBackgroundHint')}
                   </p>
                 </div>
               </div>
@@ -484,7 +482,7 @@ const ProfileSettings = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Full Name
+                    {t('fullName')}
                   </label>
                   <input
                     type="text"
@@ -492,13 +490,13 @@ const ProfileSettings = () => {
                     value={profileData.full_name}
                     onChange={handleProfileInputChange}
                     className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
-                    placeholder="Your full name"
+                    placeholder={t('fullNamePlaceholder')}
                     disabled={isSubmittingProfile}
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Tagline
+                    {t('tagline')}
                   </label>
                   <input
                     type="text"
@@ -506,13 +504,13 @@ const ProfileSettings = () => {
                     value={profileData.tagline}
                     onChange={handleProfileInputChange}
                     className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
-                    placeholder="Short tagline (e.g. Senior Developer)"
+                    placeholder={t('taglinePlaceholder')}
                     disabled={isSubmittingProfile}
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Website
+                    {t('website')}
                   </label>
                   <div className="flex items-center gap-2">
                     <LinkIcon size={14} className="text-gray-400 dark:text-gray-500" />
@@ -522,14 +520,14 @@ const ProfileSettings = () => {
                       value={profileData.profile_website}
                       onChange={handleProfileInputChange}
                       className="flex-1 px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
-                      placeholder="https://your-site.com"
+                      placeholder={t('websitePlaceholder')}
                       disabled={isSubmittingProfile}
                     />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Location
+                    {t('location')}
                   </label>
                   <div className="flex items-center gap-2">
                     <MapPin size={14} className="text-gray-400 dark:text-gray-500" />
@@ -539,14 +537,14 @@ const ProfileSettings = () => {
                       value={profileData.profile_location}
                       onChange={handleProfileInputChange}
                       className="flex-1 px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
-                      placeholder="City, Country"
+                      placeholder={t('locationPlaceholder')}
                       disabled={isSubmittingProfile}
                     />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Birthday
+                    {t('birthday')}
                   </label>
                   <input
                     type="date"
@@ -560,7 +558,7 @@ const ProfileSettings = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Gender
+                    {t('gender')}
                   </label>
                   <select
                     name="profile_gender"
@@ -569,17 +567,17 @@ const ProfileSettings = () => {
                     className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
                     disabled={isSubmittingProfile}
                   >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="">{t('selectGender')}</option>
+                    <option value="male">{t('male')}</option>
+                    <option value="female">{t('female')}</option>
+                    <option value="other">{t('other')}</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                  Bio
+                  {t('bio')}
                 </label>
                 <textarea
                   name="profile_bio"
@@ -587,7 +585,7 @@ const ProfileSettings = () => {
                   onChange={handleProfileInputChange}
                   rows="3"
                   className="w-full px-4 py-2.5 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm resize-none"
-                  placeholder="Tell people a little about yourself..."
+                  placeholder={t('bioPlaceholder')}
                   disabled={isSubmittingProfile}
                 />
               </div>
@@ -596,17 +594,17 @@ const ProfileSettings = () => {
                 <button
                   type="submit"
                   disabled={isSubmittingProfile}
-                  className="purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white font-semibold px-6 py-2.5 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
+                  className="purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white font-semibold px-6 py-2.5 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                 >
                   {isSubmittingProfile ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Saving...</span>
+                      <span>{t('saving')}</span>
                     </>
                   ) : (
                     <>
                       <Save size={16} />
-                      <span>Save Profile</span>
+                      <span>{t('saveProfile')}</span>
                     </>
                   )}
                 </button>
@@ -619,14 +617,14 @@ const ProfileSettings = () => {
             <form onSubmit={handleChangePassword} className="space-y-4">
               <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2 transition-colors">
                 <Lock size={16} className="text-purple-500 dark:text-purple-400" />
-                Change Password
+                {t('changePassword')}
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Old Password */}
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Current Password *
+                    {t('currentPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -635,14 +633,14 @@ const ProfileSettings = () => {
                       value={passwordData.old_password}
                       onChange={handlePasswordChange}
                       required
-                      className="w-full px-4 py-2.5 pr-10 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
-                      placeholder="Enter current password"
+                      className="w-full px-4 py-2.5 pe-10 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
+                      placeholder={t('currentPasswordPlaceholder')}
                       disabled={isSubmittingPassword}
                     />
                     <button
                       type="button"
                       onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                     >
                       {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -652,7 +650,7 @@ const ProfileSettings = () => {
                 {/* New Password */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    New Password *
+                    {t('newPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -662,27 +660,27 @@ const ProfileSettings = () => {
                       onChange={handlePasswordChange}
                       required
                       minLength={6}
-                      className="w-full px-4 py-2.5 pr-10 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
-                      placeholder="Enter new password (min 6 chars)"
+                      className="w-full px-4 py-2.5 pe-10 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
+                      placeholder={t('newPasswordPlaceholder')}
                       disabled={isSubmittingPassword}
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                     >
                       {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Minimum 6 characters
+                    {t('minimumCharacters')}
                   </p>
                 </div>
 
                 {/* Confirm Password */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
-                    Confirm New Password *
+                    {t('confirmNewPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -692,14 +690,14 @@ const ProfileSettings = () => {
                       onChange={handlePasswordChange}
                       required
                       minLength={6}
-                      className="w-full px-4 py-2.5 pr-10 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
-                      placeholder="Confirm new password"
+                      className="w-full px-4 py-2.5 pe-10 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 outline-none transition-all text-sm"
+                      placeholder={t('confirmPasswordPlaceholder')}
                       disabled={isSubmittingPassword}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                     >
                       {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -712,17 +710,17 @@ const ProfileSettings = () => {
                 <button
                   type="submit"
                   disabled={isSubmittingPassword}
-                  className="purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white font-semibold px-6 py-2.5 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
+                  className="purple-gradient hover:bg-gradient-to-r hover:from-purple-700 hover:to-purple-900 text-white font-semibold px-6 py-2.5 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                 >
                   {isSubmittingPassword ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Changing...</span>
+                      <span>{t('changing')}</span>
                     </>
                   ) : (
                     <>
                       <Save size={16} />
-                      <span>Change Password</span>
+                      <span>{t('changePassword')}</span>
                     </>
                   )}
                 </button>

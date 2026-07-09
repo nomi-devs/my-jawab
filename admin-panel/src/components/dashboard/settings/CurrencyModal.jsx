@@ -1,8 +1,10 @@
 // src/components/dashboard/settings/CurrencyModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Save, AlertCircle } from 'lucide-react';
 
 const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) => {
+  const { t } = useTranslation('settings');
   const [formData, setFormData] = useState({
     currency_name: '',
     currency_code: '',
@@ -32,9 +34,12 @@ const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) 
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.currency_name.trim()) newErrors.currency_name = 'Name is required';
-    if (!formData.currency_code.trim()) newErrors.currency_code = 'Code is required';
-    if (!formData.currency_symbol.trim()) newErrors.currency_symbol = 'Symbol is required';
+    if (!formData.currency_name.trim())
+      newErrors.currency_name = t('currencyModal.fields.name.error');
+    if (!formData.currency_code.trim())
+      newErrors.currency_code = t('currencyModal.fields.code.error');
+    if (!formData.currency_symbol.trim())
+      newErrors.currency_symbol = t('currencyModal.fields.symbol.error');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -53,14 +58,14 @@ const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-purple-100 dark:border-gray-700 animate-in zoom-in-95 duration-300">
         {/* Modal Header */}
         <div className="px-5 py-4 border-b border-purple-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <Save className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">{title}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Fill in the currency details
+                {t('currencyModal.subtitle')}
               </p>
             </div>
           </div>
@@ -76,11 +81,11 @@ const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) 
           <div className="p-6 space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                Currency Name
+                {t('currencyModal.fields.name.label')}
               </label>
               <input
                 type="text"
-                placeholder="e.g. US Dollar"
+                placeholder={t('currencyModal.fields.name.placeholder')}
                 value={formData.currency_name}
                 onChange={(e) => setFormData({ ...formData, currency_name: e.target.value })}
                 className={`w-full px-4 py-2 text-sm rounded-lg border ${errors.currency_name ? 'border-red-500' : 'border-purple-100 dark:border-gray-600'} bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900 transition-all outline-none`}
@@ -95,7 +100,7 @@ const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  Code (3-4 chars)
+                  {t('currencyModal.fields.code.label')}
                 </label>
                 <input
                   type="text"
@@ -114,7 +119,7 @@ const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) 
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  Symbol
+                  {t('currencyModal.fields.symbol.label')}
                 </label>
                 <input
                   type="text"
@@ -142,7 +147,7 @@ const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) 
                 htmlFor="is_active"
                 className="text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer user-select-none"
               >
-                Mark as Active
+                {t('currencyModal.fields.isActive')}
               </label>
             </div>
           </div>
@@ -155,7 +160,7 @@ const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) 
               className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium transition-colors"
               disabled={isLoading}
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
@@ -165,12 +170,16 @@ const CurrencyModal = ({ isOpen, onClose, onSave, currency, title, isLoading }) 
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Processing...</span>
+                  <span>{t('common:processing')}</span>
                 </>
               ) : (
                 <>
                   <Save size={16} />
-                  <span>{currency ? 'Update Currency' : 'Create Currency'}</span>
+                  <span>
+                    {currency
+                      ? t('currencyModal.buttons.update')
+                      : t('currencyModal.buttons.create')}
+                  </span>
                 </>
               )}
             </button>

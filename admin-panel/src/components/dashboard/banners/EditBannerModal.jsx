@@ -1,5 +1,6 @@
 // src/components/dashboard/banners/EditBannerModal.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Image as ImageIcon, Save } from 'lucide-react';
 import BannerForm from './BannerForm';
 
@@ -15,6 +16,7 @@ const toDatetimeLocal = (value) => {
 };
 
 const EditBannerModal = ({ isOpen, onClose, banner, onSave }) => {
+  const { t } = useTranslation('banners');
   const [formData, setFormData] = useState({
     banner_title: '',
     banner_description: '',
@@ -89,7 +91,7 @@ const EditBannerModal = ({ isOpen, onClose, banner, onSave }) => {
       await onSave(banner.id, fd);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to update banner');
+      setError(err.response?.data?.message || err.message || t('editBannerModal.updateFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -111,9 +113,11 @@ const EditBannerModal = ({ isOpen, onClose, banner, onSave }) => {
               <ImageIcon className="text-purple-600 dark:text-purple-400" size={20} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Edit Banner</h2>
+              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">
+                {t('editBannerModal.title')}
+              </h2>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                ID: {banner.id} · Update banner details & targeting.
+                {t('editBannerModal.subtitleWithId', { id: banner.id })}
               </p>
             </div>
           </div>
@@ -151,7 +155,7 @@ const EditBannerModal = ({ isOpen, onClose, banner, onSave }) => {
             disabled={isSubmitting}
             className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-medium"
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             type="submit"
@@ -162,12 +166,12 @@ const EditBannerModal = ({ isOpen, onClose, banner, onSave }) => {
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Saving...</span>
+                <span>{t('editBannerModal.saving')}</span>
               </>
             ) : (
               <>
                 <Save size={16} />
-                <span>Save Changes</span>
+                <span>{t('editBannerModal.saveChanges')}</span>
               </>
             )}
           </button>

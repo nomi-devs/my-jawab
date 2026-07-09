@@ -1,6 +1,7 @@
 // src/components/dashboard/communities/CommunitiesPage.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Users } from 'lucide-react';
 import communitiesApi from '../../../api/communitiesApi';
 import CommunitiesGrid from './CommunitiesGrid';
@@ -16,6 +17,7 @@ import TableSkeleton from '../../common/TableSkeleton';
 import { useCommunitiesList, useCommunityActions } from '../../../hooks/useCommunities';
 
 const CommunitiesPage = () => {
+  const { t } = useTranslation('communities');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -153,12 +155,14 @@ const CommunitiesPage = () => {
         // Success message handling
         const community = communities.find((c) => c.id === communityId);
         setSuccessMessage(
-          `Community "${community?.name}" ${newStatus ? 'activated' : 'deactivated'} successfully!`,
+          newStatus
+            ? t('page.communityActivated', { name: community?.name })
+            : t('page.communityDeactivated', { name: community?.name }),
         );
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error toggling community status:', err);
-        setLocalError('Failed to update community status. Please try again.');
+        setLocalError(t('page.failedToUpdateStatus'));
         setTimeout(() => setLocalError(null), 5000);
       }
     },
@@ -227,9 +231,9 @@ const CommunitiesPage = () => {
           console.error('Error syncing community topics:', topicError);
           // Don't block the main success on topic sync error, but surface message
           setLocalError(
-            `Community updated, but topics sync failed: ${
-              topicError.response?.data?.message || topicError.message
-            }`,
+            t('page.communityUpdatedTopicsFailed', {
+              message: topicError.response?.data?.message || topicError.message,
+            }),
           );
           setTimeout(() => setLocalError(null), 5000);
         }
@@ -238,13 +242,19 @@ const CommunitiesPage = () => {
         await refetch();
 
         const community = communities.find((c) => c.id === communityId);
-        setSuccessMessage(`Community "${community?.name || 'Community'}" updated successfully!`);
+        setSuccessMessage(
+          t('page.communityUpdated', { name: community?.name || t('page.defaultCommunity') }),
+        );
         setShowEditModal(false);
         setSelectedCommunityForEdit(null);
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error updating community:', err);
-        setLocalError(`Failed to update community: ${err.response?.data?.message || err.message}`);
+        setLocalError(
+          t('page.failedToUpdateCommunity', {
+            message: err.response?.data?.message || err.message,
+          }),
+        );
         setTimeout(() => setLocalError(null), 5000);
       }
     },
@@ -267,14 +277,13 @@ const CommunitiesPage = () => {
     try {
       await deleteCommunity(communityToDelete.id);
 
-      setSuccessMessage(`Community "${communityToDelete.name}" deleted successfully!`);
+      setSuccessMessage(t('page.communityDeleted', { name: communityToDelete.name }));
       setShowDeleteConfirm(false);
       setCommunityToDelete(null);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting community:', err);
-      const errorMsg =
-        err.response?.data?.message || 'Failed to delete community. Please try again.';
+      const errorMsg = err.response?.data?.message || t('page.failedToDeleteCommunity');
       setLocalError(errorMsg);
       setShowDeleteConfirm(false);
       setCommunityToDelete(null);
@@ -292,12 +301,16 @@ const CommunitiesPage = () => {
     async (communityData) => {
       try {
         await createCommunity(communityData);
-        setSuccessMessage('Community created successfully!');
+        setSuccessMessage(t('page.communityCreated'));
         setShowAddModal(false);
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error creating community:', err);
-        setLocalError(`Failed to create community: ${err.response?.data?.message || err.message}`);
+        setLocalError(
+          t('page.failedToCreateCommunity', {
+            message: err.response?.data?.message || err.message,
+          }),
+        );
         setTimeout(() => setLocalError(null), 5000);
       }
     },
@@ -330,7 +343,7 @@ const CommunitiesPage = () => {
   if (isError && !communities.length) {
     return (
       <ErrorMessage
-        message={queryError?.message || 'Failed to load communities'}
+        message={queryError?.message || t('page.failedToLoad')}
         onRetry={() => refetch()}
       />
     );
@@ -343,7 +356,7 @@ const CommunitiesPage = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
 
@@ -352,7 +365,7 @@ const CommunitiesPage = () => {
         isOpen={!!localError}
         onClose={() => setLocalError(null)}
         type="error"
-        title="Error"
+        title={t('common:error')}
         message={localError}
       />
 
@@ -364,7 +377,7 @@ const CommunitiesPage = () => {
           setAlertMessage('');
         }}
         type="info"
-        title="Information"
+        title={t('page.information')}
         message={alertMessage}
         duration={0}
       />
@@ -411,14 +424,14 @@ const CommunitiesPage = () => {
         }}
         onConfirm={confirmDeleteCommunity}
         type="danger"
-        title="Delete Community"
+        title={t('page.deleteCommunityTitle')}
         message={
           communityToDelete
-            ? `Are you sure you want to delete "${communityToDelete.name}"? This action cannot be undone.`
+            ? t('page.deleteCommunityMessage', { name: communityToDelete.name })
             : ''
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
         isLoading={isDeleting}
       />
 
@@ -447,9 +460,9 @@ const CommunitiesPage = () => {
           }`}
         >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('page.updating')}</span>
             </div>
           </div>
         </div>
@@ -466,7 +479,7 @@ const CommunitiesPage = () => {
             <div className="p-12">
               <div className="flex flex-col items-center justify-center">
                 <div className="w-12 h-12 border-4 border-purple-200 dark:border-purple-700 border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Loading communities...</p>
+                <p className="text-gray-600 dark:text-gray-400">{t('page.loadingCommunities')}</p>
               </div>
             </div>
           ) : communities.length === 0 ? (
@@ -475,18 +488,18 @@ const CommunitiesPage = () => {
                 <Users className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No communities found
+                {t('page.noCommunitiesFound')}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || statusFilter !== 'all'
-                  ? 'Try changing your search or filters'
-                  : 'Start by adding your first community'}
+                  ? t('page.tryChangingFilters')
+                  : t('page.startAdding')}
               </p>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
-                Add First Community
+                {t('page.addFirstCommunity')}
               </button>
             </div>
           ) : (

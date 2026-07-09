@@ -1,5 +1,6 @@
 // src/components/dashboard/banners/BannersPage.jsx
 import React, { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBannersList, useBannerActions } from '../../../hooks/useBanners';
 
 import BannersHeader from './BannersHeader';
@@ -14,6 +15,7 @@ import ConfirmationModal from '../../common/ConfirmationModal';
 import ErrorMessage from '../../common/ErrorMessage';
 
 const BannersPage = () => {
+  const { t } = useTranslation('banners');
   // Modals
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -96,14 +98,18 @@ const BannersPage = () => {
     async (formData) => {
       try {
         await createBanner(formData);
-        showAlert('success', 'Created', 'Banner created successfully!');
+        showAlert('success', t('bannersPage.created'), t('bannersPage.createdMessage'));
       } catch (err) {
         const msg = err.response?.data?.message || err.message;
-        showAlert('error', 'Error', `Failed to create banner: ${msg}`);
+        showAlert(
+          'error',
+          t('common:error'),
+          t('bannersPage.createFailedMessage', { msg }),
+        );
         throw err; // let modal keep the error visible
       }
     },
-    [createBanner, showAlert],
+    [createBanner, showAlert, t],
   );
 
   const handleEdit = useCallback((banner) => {
@@ -115,14 +121,18 @@ const BannersPage = () => {
     async (id, formData) => {
       try {
         await updateBanner({ id, data: formData });
-        showAlert('success', 'Updated', 'Banner updated successfully!');
+        showAlert('success', t('bannersPage.updated'), t('bannersPage.updatedMessage'));
       } catch (err) {
         const msg = err.response?.data?.message || err.message;
-        showAlert('error', 'Error', `Failed to update banner: ${msg}`);
+        showAlert(
+          'error',
+          t('common:error'),
+          t('bannersPage.updateFailedMessage', { msg }),
+        );
         throw err;
       }
     },
-    [updateBanner, showAlert],
+    [updateBanner, showAlert, t],
   );
 
   const handleViewDetails = useCallback((banner) => {
@@ -134,12 +144,20 @@ const BannersPage = () => {
     async (id, isActive) => {
       try {
         await updateBannerStatus({ id, is_active: isActive });
-        showAlert('success', 'Updated', isActive ? 'Banner activated!' : 'Banner deactivated!');
+        showAlert(
+          'success',
+          t('bannersPage.updated'),
+          isActive ? t('bannersPage.activated') : t('bannersPage.deactivated'),
+        );
       } catch (err) {
-        showAlert('error', 'Error', err.response?.data?.message || 'Failed to update status');
+        showAlert(
+          'error',
+          t('common:error'),
+          err.response?.data?.message || t('bannersPage.statusUpdateFailed'),
+        );
       }
     },
-    [updateBannerStatus, showAlert],
+    [updateBannerStatus, showAlert, t],
   );
 
   const handleDelete = useCallback(
@@ -157,11 +175,15 @@ const BannersPage = () => {
       await deleteBanner(bannerToDelete.id);
       setShowDeleteConfirm(false);
       setBannerToDelete(null);
-      showAlert('success', 'Deleted', 'Banner deleted successfully!');
+      showAlert('success', t('bannersPage.deleted'), t('bannersPage.deletedMessage'));
     } catch (err) {
-      showAlert('error', 'Error', err.response?.data?.message || 'Failed to delete banner');
+      showAlert(
+        'error',
+        t('common:error'),
+        err.response?.data?.message || t('bannersPage.deleteFailed'),
+      );
     }
-  }, [bannerToDelete, deleteBanner, showAlert]);
+  }, [bannerToDelete, deleteBanner, showAlert, t]);
 
   // ─── Loading & Error States ────────────────
   if (isLoading && banners.length === 0) {
@@ -171,7 +193,7 @@ const BannersPage = () => {
   if (isError && banners.length === 0) {
     return (
       <ErrorMessage
-        message={error?.message || 'Failed to load banners'}
+        message={error?.message || t('bannersPage.loadFailed')}
         onRetry={() => refetch()}
       />
     );
@@ -196,10 +218,14 @@ const BannersPage = () => {
         }}
         onConfirm={confirmDelete}
         type="error"
-        title="Delete Banner"
-        message={`Are you sure you want to delete "${bannerToDelete?.banner_title || `Banner #${bannerToDelete?.id}`}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('bannersPage.deleteBannerTitle')}
+        message={t('bannersPage.deleteConfirmMessage', {
+          name:
+            bannerToDelete?.banner_title ||
+            t('bannersPage.bannerFallback', { id: bannerToDelete?.id }),
+        })}
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
         isLoading={isDeleting}
       />
 
@@ -243,7 +269,7 @@ const BannersPage = () => {
           onPageChange={handlePageChange}
           totalItems={totalBanners}
           itemsPerPage={itemsPerPage}
-          itemName="banners"
+          itemName={t('bannersHeader.title').toLowerCase()}
         />
       )}
 

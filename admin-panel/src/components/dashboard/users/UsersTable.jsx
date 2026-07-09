@@ -1,6 +1,7 @@
 // src/components/dashboard/users/UsersTable.jsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { User } from 'lucide-react';
 import AddUserModal from './AddUserModal';
 import EditUserModal from './EditUserModal';
@@ -16,6 +17,7 @@ import userApi from '../../../api/userApi';
 import { useUsersList, useUserActions } from '../../../hooks/useUsers';
 
 const UsersTable = () => {
+  const { t } = useTranslation('users');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -131,7 +133,7 @@ const UsersTable = () => {
         };
 
         await createUser(apiData);
-        setSuccessMessage('User created successfully!');
+        setSuccessMessage(t('usersTable.userCreated'));
         setTimeout(() => setSuccessMessage(''), 3000);
         setShowAddUserModal(false);
       } catch (err) {
@@ -190,14 +192,14 @@ const UsersTable = () => {
           });
 
           if (Object.keys(dataToUpdate).length === 0) {
-            setSuccessMessage('No changes to save.');
+            setSuccessMessage(t('usersTable.noChangesToSave'));
             setShowEditUserModal(false);
             return;
           }
         }
 
         await updateUser({ id: userId, data: dataToUpdate });
-        setSuccessMessage('User updated successfully!');
+        setSuccessMessage(t('usersTable.userUpdated'));
         setTimeout(() => setSuccessMessage(''), 3000);
         setShowEditUserModal(false);
         setSelectedUser(null);
@@ -222,7 +224,7 @@ const UsersTable = () => {
     try {
       await deleteUser(userToDelete.id);
       setSuccessMessage(
-        `User "${userToDelete.name || userToDelete.username}" deleted successfully!`,
+        t('usersTable.userDeleted', { name: userToDelete.name || userToDelete.username }),
       );
       setShowDeleteConfirm(false);
       setUserToDelete(null);
@@ -299,13 +301,13 @@ const UsersTable = () => {
             <span className="text-red-600 dark:text-red-400 text-2xl">!</span>
           </div>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {queryError?.message || 'Failed to load users'}
+            {queryError?.message || t('usersTable.failedToLoad')}
           </p>
           <button
             onClick={() => refetch()}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
-            Retry
+            {t('usersTable.retry')}
           </button>
         </div>
       </div>
@@ -320,7 +322,7 @@ const UsersTable = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
 
@@ -332,14 +334,16 @@ const UsersTable = () => {
         }}
         onConfirm={confirmDeleteUser}
         type="danger"
-        title="Delete User"
+        title={t('usersTable.deleteUserTitle')}
         message={
           userToDelete
-            ? `Are you sure you want to delete "${userToDelete.name || userToDelete.username}"? This action cannot be undone.`
+            ? t('usersTable.deleteConfirmMessage', {
+                name: userToDelete.name || userToDelete.username,
+              })
             : ''
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
         isLoading={isDeleting}
       />
 
@@ -399,9 +403,11 @@ const UsersTable = () => {
           className={`relative overflow-hidden transition-all duration-300 ${isRefreshing ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {t('usersTable.updating')}
+              </span>
             </div>
           </div>
         </div>
@@ -420,18 +426,18 @@ const UsersTable = () => {
                 <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No users found
+                {t('usersTable.noUsersFound')}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
-                  ? 'Try changing your search or filters'
-                  : 'Start by adding your first user'}
+                  ? t('usersTable.tryChangingFilters')
+                  : t('usersTable.startAddingFirstUser')}
               </p>
               <button
                 onClick={() => setShowAddUserModal(true)}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
-                Add First User
+                {t('usersTable.addFirstUser')}
               </button>
             </div>
           ) : viewMode === 'grid' ? (
@@ -442,16 +448,16 @@ const UsersTable = () => {
               onViewDetails={handleViewDetails}
             />
           ) : (
-            <table className="w-full text-left border-collapse transition-opacity duration-300">
+            <table className="w-full text-start border-collapse transition-opacity duration-300">
               <thead className="bg-purple-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium transition-colors">
                 <tr>
-                  <th className="p-4 w-16">#</th>
-                  <th className="p-4">User</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">Role</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Joined</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4 w-16">{t('usersTable.columnHash')}</th>
+                  <th className="p-4">{t('usersTable.columnUser')}</th>
+                  <th className="p-4">{t('common:email')}</th>
+                  <th className="p-4">{t('usersTable.columnRole')}</th>
+                  <th className="p-4">{t('common:status')}</th>
+                  <th className="p-4">{t('usersTable.columnJoined')}</th>
+                  <th className="p-4 text-end">{t('common:actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-100 dark:divide-gray-700 text-sm">

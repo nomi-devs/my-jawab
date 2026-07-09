@@ -1,5 +1,6 @@
 // src/components/dashboard/subscriptions/AddSubscriptionModal.jsx
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Package, Save } from 'lucide-react';
 import { useSubscriptionActions } from '../../../hooks/useSubscriptions';
 import currenciesApi from '../../../api/currenciesApi';
@@ -56,6 +57,7 @@ const DEFAULT_FEATURES_BY_TYPE = {
 };
 
 const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
+  const { t } = useTranslation('subscriptions');
   const [formData, setFormData] = useState({
     subscription_type: 'pro',
     subscription_name: '',
@@ -125,18 +127,20 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
     setError(null);
 
     const validationErrors = [];
-    if (!formData.subscription_name.trim()) validationErrors.push('Subscription name is required');
+    if (!formData.subscription_name.trim())
+      validationErrors.push(t('addSubscriptionModal.errors.nameRequired'));
     if (formData.subscription_price === '' || formData.subscription_price === null) {
-      validationErrors.push('Price is required');
+      validationErrors.push(t('addSubscriptionModal.errors.priceRequired'));
     } else if (parseFloat(formData.subscription_price) < 0) {
-      validationErrors.push('Price must be 0 or greater');
+      validationErrors.push(t('addSubscriptionModal.errors.priceMin'));
     }
     if (formData.subscription_duration === '' || formData.subscription_duration === null) {
-      validationErrors.push('Duration is required');
+      validationErrors.push(t('addSubscriptionModal.errors.durationRequired'));
     } else if (parseInt(formData.subscription_duration) < 1) {
-      validationErrors.push('Duration must be at least 1');
+      validationErrors.push(t('addSubscriptionModal.errors.durationMin'));
     }
-    if (!formData.subscription_currency) validationErrors.push('Currency is required');
+    if (!formData.subscription_currency)
+      validationErrors.push(t('addSubscriptionModal.errors.currencyRequired'));
 
     if (validationErrors.length > 0) {
       setError(validationErrors.join('. '));
@@ -159,7 +163,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
       onSuccess();
     } catch (err) {
       console.error('Error creating subscription:', err);
-      setError(err.response?.data?.message || 'Failed to create subscription. Please try again.');
+      setError(err.response?.data?.message || t('addSubscriptionModal.errors.createFailed'));
     } finally {
       // isCreating is handled by hook
     }
@@ -170,10 +174,10 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[90%] h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-purple-100 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Add Subscription
+              {t('addSubscriptionModal.title')}
             </h2>
           </div>
           <button
@@ -201,7 +205,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Subscription Type *
+                  {t('addSubscriptionModal.subscriptionType')}
                 </label>
                 <select
                   name="subscription_type"
@@ -210,15 +214,15 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
                   required
                   className="w-full px-3 py-1.5 text-xs border border-purple-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent"
                 >
-                  <option value="free">Free</option>
-                  <option value="pro">Pro</option>
-                  <option value="premium">Premium</option>
+                  <option value="free">{t('addSubscriptionModal.planTypes.free')}</option>
+                  <option value="pro">{t('addSubscriptionModal.planTypes.pro')}</option>
+                  <option value="premium">{t('addSubscriptionModal.planTypes.premium')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Subscription Name *
+                  {t('addSubscriptionModal.subscriptionName')}
                 </label>
                 <input
                   type="text"
@@ -227,7 +231,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-1.5 text-xs border border-purple-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent"
-                  placeholder="e.g., Pro Plan"
+                  placeholder={t('addSubscriptionModal.namePlaceholder')}
                 />
               </div>
             </div>
@@ -235,7 +239,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
             {/* Description */}
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description
+                {t('addSubscriptionModal.description')}
               </label>
               <textarea
                 name="subscription_description"
@@ -243,7 +247,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
                 onChange={handleChange}
                 rows={3}
                 className="w-full px-3 py-1.5 text-xs border border-purple-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent resize-none"
-                placeholder="Describe the subscription plan..."
+                placeholder={t('addSubscriptionModal.descriptionPlaceholder')}
               />
             </div>
 
@@ -252,7 +256,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Price *
+                    {t('addSubscriptionModal.price')}
                   </label>
                   <input
                     type="number"
@@ -263,12 +267,12 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
                     min="0"
                     step="0.01"
                     className="w-full px-3 py-1.5 text-xs border border-purple-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent"
-                    placeholder="29.99"
+                    placeholder={t('addSubscriptionModal.pricePlaceholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Currency *
+                    {t('addSubscriptionModal.currency')}
                   </label>
                   <select
                     name="subscription_currency"
@@ -278,7 +282,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
                     disabled={loadingCurrencies}
                     className="w-full px-3 py-1.5 text-xs border border-purple-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent"
                   >
-                    <option value="">Select...</option>
+                    <option value="">{t('addSubscriptionModal.selectCurrency')}</option>
                     {currencies.map((currency) => (
                       <option key={currency.id} value={currency.currency_code}>
                         {currency.currency_code}
@@ -291,7 +295,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Duration *
+                    {t('addSubscriptionModal.duration')}
                   </label>
                   <input
                     type="number"
@@ -301,12 +305,12 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
                     required
                     min="1"
                     className="w-full px-3 py-1.5 text-xs border border-purple-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent"
-                    placeholder="30"
+                    placeholder={t('addSubscriptionModal.durationPlaceholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Type *
+                    {t('addSubscriptionModal.durationType')}
                   </label>
                   <select
                     name="subscription_duration_type"
@@ -315,10 +319,12 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
                     required
                     className="w-full px-3 py-1.5 text-xs border border-purple-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent"
                   >
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                    <option value="years">Years</option>
+                    <option value="days">{t('addSubscriptionModal.durationTypes.days')}</option>
+                    <option value="weeks">{t('addSubscriptionModal.durationTypes.weeks')}</option>
+                    <option value="months">
+                      {t('addSubscriptionModal.durationTypes.months')}
+                    </option>
+                    <option value="years">{t('addSubscriptionModal.durationTypes.years')}</option>
                   </select>
                 </div>
               </div>
@@ -338,10 +344,10 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-colors">
                 <div>
                   <label className="text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors">
-                    Active Status
+                    {t('addSubscriptionModal.activeStatus')}
                   </label>
                   <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                    Enable or disable this subscription
+                    {t('addSubscriptionModal.activeStatusDescription')}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -368,7 +374,7 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
             disabled={isCreating}
             className="px-6 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             type="submit"
@@ -379,12 +385,12 @@ const AddSubscriptionModal = ({ isOpen, onClose, onSuccess }) => {
             {isCreating ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Creating...</span>
+                <span>{t('addSubscriptionModal.creating')}</span>
               </>
             ) : (
               <>
                 <Save size={14} />
-                <span>Create Subscription</span>
+                <span>{t('addSubscriptionModal.create')}</span>
               </>
             )}
           </button>

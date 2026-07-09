@@ -1,9 +1,11 @@
 // src/components/dashboard/users/UsersTableFooter.jsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import PaginationFooter from '../../common/PaginationFooter';
 
 const UsersTableFooter = React.memo(
   ({ currentPage, totalPages, onPageChange, userCount, usersPerPage = 10 }) => {
+    const { t } = useTranslation('users');
     return (
       <PaginationFooter
         currentPage={currentPage}
@@ -11,7 +13,7 @@ const UsersTableFooter = React.memo(
         onPageChange={onPageChange}
         totalItems={userCount}
         itemsPerPage={usersPerPage}
-        itemName="users"
+        itemName={t('usersTableFooter.itemName')}
       />
     );
   },

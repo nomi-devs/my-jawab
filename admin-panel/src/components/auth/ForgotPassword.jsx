@@ -1,10 +1,12 @@
 // src/components/auth/ForgotPassword.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Mail, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import authApi from '../../api/authApi';
 
 const ForgotPassword = () => {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,13 +17,13 @@ const ForgotPassword = () => {
     e.preventDefault();
 
     if (!email.trim()) {
-      setError('Please enter your email address');
+      setError(t('forgotPassword.emailRequired'));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
+      setError(t('forgotPassword.emailInvalid'));
       return;
     }
 
@@ -35,12 +37,12 @@ const ForgotPassword = () => {
       if (response.status >= 200 && response.status < 300) {
         setSuccess(true);
       } else {
-        throw new Error('Failed to send reset code');
+        throw new Error(t('forgotPassword.failedToSend'));
       }
     } catch (err) {
       console.error('Forgot password error:', err);
 
-      let errorMessage = 'Failed to send reset code. Please try again.';
+      let errorMessage = t('forgotPassword.genericError');
 
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
@@ -76,10 +78,10 @@ const ForgotPassword = () => {
         {/* Back Button */}
         <button
           onClick={handleBack}
-          className="absolute top-4 left-4 p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors z-10"
+          className="absolute top-4 start-4 p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors z-10"
           disabled={loading}
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-6 h-6 rtl:rotate-180" />
         </button>
 
         <div className="p-6">
@@ -90,28 +92,28 @@ const ForgotPassword = () => {
                 <CheckCircle className="w-6 h-6" />
               </div>
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                Reset Code Sent!
+                {t('forgotPassword.successTitle')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-                We've sent a 6-digit reset code to{' '}
+                {t('forgotPassword.successMessagePrefix')}{' '}
                 <span className="font-semibold text-purple-600">{email}</span>
               </p>
               <div className="space-y-3">
                 <p className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-2.5 rounded-lg">
-                  <strong>Next Steps:</strong> Check your email for the reset code, then use it to
-                  reset your password.
+                  <strong>{t('forgotPassword.nextStepsLabel')}</strong>{' '}
+                  {t('forgotPassword.nextStepsMessage')}
                 </p>
                 <button
                   onClick={handleResetWithCode}
                   className="w-full px-4 py-2.5 purple-gradient text-white font-semibold rounded-lg hover:opacity-90 transition-all active:scale-[0.98] text-sm"
                 >
-                  Enter Reset Code
+                  {t('forgotPassword.enterResetCode')}
                 </button>
                 <button
                   onClick={handleBack}
                   className="w-full px-4 py-2.5 border border-purple-200 dark:border-gray-600 text-purple-600 dark:text-purple-400 font-medium rounded-lg hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors text-sm"
                 >
-                  Back to Login
+                  {t('forgotPassword.backToLogin')}
                 </button>
               </div>
             </div>
@@ -122,13 +124,13 @@ const ForgotPassword = () => {
                 <Mail className="w-6 h-6" />
               </div>
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                Forgot Password
+                {t('forgotPassword.title')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-                Enter your email and we'll send you a reset code.
+                {t('forgotPassword.subtitle')}
               </p>
 
-              <form onSubmit={handleSubmit} className="space-y-4 text-left">
+              <form onSubmit={handleSubmit} className="space-y-4 text-start">
                 {error && (
                   <div className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm animate-in slide-in-from-top duration-200 flex items-start gap-2">
                     <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -138,7 +140,7 @@ const ForgotPassword = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 transition-colors">
-                    Email Address
+                    {t('forgotPassword.emailLabel')}
                   </label>
                   <input
                     type="email"
@@ -148,7 +150,7 @@ const ForgotPassword = () => {
                       if (error) setError('');
                     }}
                     className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 outline-none transition-all disabled:opacity-50 text-sm"
-                    placeholder="admin@social.com"
+                    placeholder={t('forgotPassword.emailPlaceholder')}
                     required
                     disabled={loading}
                   />
@@ -162,30 +164,30 @@ const ForgotPassword = () => {
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Sending Reset Code...
+                      {t('forgotPassword.sendingResetCode')}
                     </>
                   ) : (
-                    'Send Reset Code'
+                    t('forgotPassword.sendResetCode')
                   )}
                 </button>
 
                 <div className="text-center pt-3 border-t border-gray-100 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Remember your password?{' '}
+                    {t('forgotPassword.rememberPassword')}{' '}
                     <Link
                       to="/login"
                       className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
                     >
-                      Back to Login
+                      {t('forgotPassword.backToLogin')}
                     </Link>
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    Already have a reset code?{' '}
+                    {t('forgotPassword.alreadyHaveCode')}{' '}
                     <Link
                       to="/reset-password"
                       className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
                     >
-                      Reset Password Now
+                      {t('forgotPassword.resetPasswordNow')}
                     </Link>
                   </p>
                 </div>

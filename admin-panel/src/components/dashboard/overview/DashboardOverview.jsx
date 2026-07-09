@@ -1,6 +1,7 @@
 // src/components/dashboard/overview/DashboardOverview.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Users,
   Crown,
@@ -24,6 +25,7 @@ import UserGrowthGraph from './UserGrowthGraph';
 import { useDashboardStats, useUserGrowth } from '../../../hooks/useDashboard';
 
 const DashboardOverview = () => {
+  const { t } = useTranslation('overview');
   const navigate = useNavigate();
   // State for filters
   const [timeRange, setTimeRange] = useState('all'); // week, month, year, all
@@ -109,7 +111,7 @@ const DashboardOverview = () => {
   const error = statsError
     ? statsErrorObj?.response?.data?.message ||
       statsErrorObj?.message ||
-      'Failed to load dashboard statistics'
+      t('dashboardOverview.defaultError')
     : null;
 
   // Handle time range change
@@ -165,68 +167,87 @@ const DashboardOverview = () => {
 
     return [
       {
-        title: 'Total Users',
+        title: t('dashboardOverview.stats.totalUsers'),
         count: formatNumber(stats.total_users),
         icon: Users,
         trend: getTrend('total_users_change', trends),
-        description: `${formatNumber(stats.active_users)} active • ${formatNumber(stats.recent_users || 0)} new`,
+        description: t('dashboardOverview.stats.totalUsersDesc', {
+          active: formatNumber(stats.active_users),
+          recent: formatNumber(stats.recent_users || 0),
+        }),
       },
       {
-        title: 'Pro Users',
+        title: t('dashboardOverview.stats.proUsers'),
         count: formatNumber(stats.pro_users),
         icon: Crown,
         trend: getTrend('pro_users_change', trends),
-        description:
-          stats.total_users > 0
-            ? `${Math.round((stats.pro_users / stats.total_users) * 100)}% of total users`
-            : '0% of total users',
+        description: t('dashboardOverview.stats.proUsersDesc', {
+          percent:
+            stats.total_users > 0 ? Math.round((stats.pro_users / stats.total_users) * 100) : 0,
+        }),
       },
       {
-        title: 'Communities',
+        title: t('dashboardOverview.stats.communities'),
         count: formatNumber(stats.total_communities),
         icon: Globe,
         trend: getTrend('total_communities_change', trends),
-        description: `${formatNumber(stats.active_communities)} active communities`,
+        description: t('dashboardOverview.stats.communitiesDesc', {
+          count: stats.active_communities,
+          formatted: formatNumber(stats.active_communities),
+        }),
       },
       {
-        title: 'Total Posts',
+        title: t('dashboardOverview.stats.totalPosts'),
         count: formatNumber(stats.total_posts),
         icon: FileText,
         trend: getTrend('total_posts_change', trends),
-        description: `${formatNumber(stats.published_posts)} published • ${formatNumber(stats.recent_posts || 0)} new`,
+        description: t('dashboardOverview.stats.totalPostsDesc', {
+          published: formatNumber(stats.published_posts),
+          recent: formatNumber(stats.recent_posts || 0),
+        }),
       },
       {
-        title: 'Comments',
+        title: t('dashboardOverview.stats.comments'),
         count: formatNumber(stats.total_comments),
         icon: MessageCircle,
         trend: getTrend('total_comments_change', trends),
         description: stats.engagement_rate
-          ? `Engagement: ${stats.engagement_rate.toFixed(1)}%`
-          : 'Comments across all posts',
+          ? t('dashboardOverview.stats.commentsDescEngagement', {
+              rate: stats.engagement_rate.toFixed(1),
+            })
+          : t('dashboardOverview.stats.commentsDescDefault'),
       },
       {
-        title: 'Topics',
+        title: t('dashboardOverview.stats.topics'),
         count: formatNumber(stats.total_topics),
         icon: Hash,
         trend: getTrend('total_topics_change', trends),
-        description: `${formatNumber(stats.active_topics)} active topics`,
+        description: t('dashboardOverview.stats.topicsDesc', {
+          count: stats.active_topics,
+          formatted: formatNumber(stats.active_topics),
+        }),
       },
       {
-        title: 'Verified Users',
+        title: t('dashboardOverview.stats.verifiedUsers'),
         count: formatNumber(stats.verified_users),
         icon: CheckCircle,
         trend: getTrend('verified_users_change', trends),
-        description:
-          stats.total_users > 0
-            ? `${Math.round((stats.verified_users / stats.total_users) * 100)}% verification rate`
-            : '0% verification rate',
+        description: t('dashboardOverview.stats.verifiedUsersDesc', {
+          percent:
+            stats.total_users > 0
+              ? Math.round((stats.verified_users / stats.total_users) * 100)
+              : 0,
+        }),
       },
       {
-        title: 'Published Polls',
+        title: t('dashboardOverview.stats.publishedPolls'),
         count: formatNumber(stats.published_polls),
         icon: BarChart2,
         trend: getTrend('published_polls_change', trends),
-        description: `${formatNumber(stats.total_polls)} total polls created`,
+        description: t('dashboardOverview.stats.publishedPollsDesc', {
+          count: stats.total_polls,
+          formatted: formatNumber(stats.total_polls),
+        }),
       },
     ];
   };
@@ -340,10 +361,10 @@ const DashboardOverview = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Dashboard Overview
+                {t('dashboardOverview.title')}
               </h2>
               <p className="text-gray-500 dark:text-gray-400 transition-colors">
-                Welcome to your daily social analysis.
+                {t('dashboardOverview.subtitle')}
               </p>
             </div>
           </div>
@@ -354,7 +375,7 @@ const DashboardOverview = () => {
             <AlertCircle className="text-red-600 dark:text-red-400" size={32} />
           </div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 transition-colors">
-            Error Loading Dashboard
+            {t('dashboardOverview.errorLoadingDashboard')}
           </h3>
           <p className="text-gray-600 dark:text-gray-300 mb-6 transition-colors">{error}</p>
           <button
@@ -362,7 +383,7 @@ const DashboardOverview = () => {
             className="px-6 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors flex items-center gap-2 mx-auto"
           >
             <RefreshCw size={18} />
-            Try Again
+            {t('dashboardOverview.tryAgain')}
           </button>
         </div>
       </div>
@@ -380,10 +401,10 @@ const DashboardOverview = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
             <div>
               <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                Dashboard Overview
+                {t('dashboardOverview.title')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
-                Welcome to your daily social analysis.
+                {t('dashboardOverview.subtitle')}
               </p>
             </div>
 
@@ -391,7 +412,7 @@ const DashboardOverview = () => {
               {loading && (
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 transition-colors">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Updating...</span>
+                  <span>{t('dashboardOverview.updating')}</span>
                 </div>
               )}
 
@@ -409,7 +430,7 @@ const DashboardOverview = () => {
                       }`}
                       disabled={loading}
                     >
-                      {range.charAt(0).toUpperCase() + range.slice(1)}
+                      {t(`dashboardOverview.timeRange.${range}`)}
                     </button>
                   ))}
                 </div>
@@ -428,7 +449,9 @@ const DashboardOverview = () => {
                       className="text-xs px-2 py-1 bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded border border-purple-200 dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-colors"
                       disabled={loading}
                     />
-                    <span className="text-gray-500 dark:text-gray-400 text-xs">to</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-xs">
+                      {t('dashboardOverview.dateTo')}
+                    </span>
                     <input
                       type="date"
                       value={endDate}
@@ -442,7 +465,7 @@ const DashboardOverview = () => {
                       onClick={clearCustomDateRange}
                       className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                       disabled={loading}
-                      title="Clear custom date range"
+                      title={t('dashboardOverview.clearCustomRange')}
                     >
                       <X size={14} />
                     </button>
@@ -458,7 +481,7 @@ const DashboardOverview = () => {
                   className="px-3 py-1.5 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1.5 border border-purple-200 dark:border-gray-600"
                 >
                   <Calendar size={14} />
-                  Custom Range
+                  {t('dashboardOverview.customRange')}
                 </button>
               )}
 
@@ -466,7 +489,7 @@ const DashboardOverview = () => {
                 onClick={handleRefresh}
                 disabled={loading}
                 className="p-2 text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
-                title="Refresh statistics"
+                title={t('dashboardOverview.refreshStatistics')}
               >
                 <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
               </button>
@@ -489,18 +512,18 @@ const DashboardOverview = () => {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                User Growth
+                {t('dashboardOverview.userGrowth')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
                 {filterMode === 'custom' && startDate && endDate
                   ? `${new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                   : timeRange === 'week'
-                    ? 'Last 7 days'
+                    ? t('dashboardOverview.period.week')
                     : timeRange === 'month'
-                      ? 'Last 30 days'
+                      ? t('dashboardOverview.period.month')
                       : timeRange === 'year'
-                        ? 'Last 365 days'
-                        : 'All time'}
+                        ? t('dashboardOverview.period.year')
+                        : t('dashboardOverview.period.all')}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -520,15 +543,17 @@ const DashboardOverview = () => {
                       <TrendingDown size={16} />
                     )}
                     <span>
-                      {stats.trends.total_users_change > 0 ? '+' : ''}
-                      {stats.trends.total_users_change.toFixed(1)}% growth
+                      {t('dashboardOverview.growth', {
+                        sign: stats.trends.total_users_change > 0 ? '+' : '',
+                        value: stats.trends.total_users_change.toFixed(1),
+                      })}
                     </span>
                   </div>
                 )}
 
               <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                 <span>
-                  Engagement:{' '}
+                  {t('dashboardOverview.engagementLabel')}{' '}
                   {stats?.engagement_rate &&
                     stats.engagement_rate > 0 &&
                     stats.engagement_rate.toFixed(1)}
@@ -549,7 +574,9 @@ const DashboardOverview = () => {
             <div className="h-64 flex items-center justify-center">
               <div className="text-center">
                 <BarChart2 className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">No chart data available</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('dashboardOverview.noChartData')}
+                </p>
               </div>
             </div>
           )}
@@ -559,10 +586,10 @@ const DashboardOverview = () => {
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-gray-700 transition-colors">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
-              Trending Topics
+              {t('dashboardOverview.trendingTopics')}
             </h3>
             <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full transition-colors">
-              {stats?.trending_topics?.length || 0} topics
+              {t('dashboardOverview.counts.topics', { count: stats?.trending_topics?.length || 0 })}
             </span>
           </div>
 
@@ -584,7 +611,10 @@ const DashboardOverview = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-gray-500 dark:text-gray-400 transition-colors">
-                        {formatNumber(topic.usage_count)} uses
+                        {t('dashboardOverview.counts.uses', {
+                          count: topic.usage_count,
+                          formatted: formatNumber(topic.usage_count),
+                        })}
                       </span>
                       {i < 3 && (
                         <span
@@ -608,8 +638,18 @@ const DashboardOverview = () => {
                     ></div>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">
-                    <span>{formatNumber(topic.community_count)} communities</span>
-                    <span>{formatNumber(topic.post_count)} posts</span>
+                    <span>
+                      {t('dashboardOverview.counts.communities', {
+                        count: topic.community_count,
+                        formatted: formatNumber(topic.community_count),
+                      })}
+                    </span>
+                    <span>
+                      {t('dashboardOverview.counts.posts', {
+                        count: topic.post_count,
+                        formatted: formatNumber(topic.post_count),
+                      })}
+                    </span>
                   </div>
                 </div>
               );
@@ -621,7 +661,7 @@ const DashboardOverview = () => {
                   <Hash className="text-gray-400 dark:text-gray-500" size={24} />
                 </div>
                 <p className="text-gray-500 dark:text-gray-400 transition-colors">
-                  No trending topics data available
+                  {t('dashboardOverview.noTrendingTopics')}
                 </p>
               </div>
             )}
@@ -633,7 +673,7 @@ const DashboardOverview = () => {
                 onClick={() => navigate('/topics')}
                 className="w-full text-center text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
               >
-                View all {stats.trending_topics.length} topics →
+                {t('dashboardOverview.viewAllTopics', { count: stats.trending_topics.length })} →
               </button>
             </div>
           )}
@@ -644,12 +684,12 @@ const DashboardOverview = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-purple-100 dark:border-gray-700 transition-colors">
           <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">
-            Content Overview
+            {t('dashboardOverview.contentOverview')}
           </h4>
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Published Posts
+                {t('dashboardOverview.publishedPosts')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.published_posts &&
@@ -659,7 +699,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Draft Posts
+                {t('dashboardOverview.draftPosts')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.draft_posts && stats.draft_posts > 0 && formatNumber(stats.draft_posts)}
@@ -667,7 +707,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Total Comments
+                {t('dashboardOverview.totalComments')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.total_comments &&
@@ -677,7 +717,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Published Polls
+                {t('dashboardOverview.stats.publishedPolls')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.published_polls &&
@@ -690,12 +730,12 @@ const DashboardOverview = () => {
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-purple-100 dark:border-gray-700 transition-colors">
           <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">
-            User Engagement
+            {t('dashboardOverview.userEngagement')}
           </h4>
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Active Users
+                {t('dashboardOverview.activeUsers')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.active_users && stats.active_users > 0 && formatNumber(stats.active_users)}
@@ -703,7 +743,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Daily Active
+                {t('dashboardOverview.dailyActive')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.daily_active_users &&
@@ -713,7 +753,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Weekly Active
+                {t('dashboardOverview.weeklyActive')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.weekly_active_users &&
@@ -723,7 +763,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Monthly Active
+                {t('dashboardOverview.monthlyActive')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.monthly_active_users &&
@@ -733,7 +773,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Engagement Rate
+                {t('dashboardOverview.engagementRate')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.engagement_rate &&
@@ -747,12 +787,12 @@ const DashboardOverview = () => {
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-purple-100 dark:border-gray-700 transition-colors">
           <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 transition-colors">
-            Platform Activity
+            {t('dashboardOverview.platformActivity')}
           </h4>
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Active Communities
+                {t('dashboardOverview.activeCommunities')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.active_communities &&
@@ -762,7 +802,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Active Topics
+                {t('dashboardOverview.activeTopics')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.active_topics &&
@@ -772,7 +812,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Total Polls
+                {t('dashboardOverview.totalPolls')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.total_polls && stats.total_polls > 0 && formatNumber(stats.total_polls)}
@@ -780,7 +820,7 @@ const DashboardOverview = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400 transition-colors">
-                Content Ratio
+                {t('dashboardOverview.contentRatio')}
               </span>
               <span className="font-semibold text-gray-900 dark:text-gray-100 transition-colors">
                 {stats?.total_posts && stats?.total_comments
@@ -800,10 +840,13 @@ const DashboardOverview = () => {
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-gray-700 transition-colors">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                  Top Posts
+                  {t('dashboardOverview.topPosts')}
                 </h3>
                 <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full transition-colors">
-                  {stats.top_posts.length} posts
+                  {t('dashboardOverview.counts.posts', {
+                    count: stats.top_posts.length,
+                    formatted: stats.top_posts.length,
+                  })}
                 </span>
               </div>
               <div className="space-y-3">
@@ -830,7 +873,7 @@ const DashboardOverview = () => {
                           </p>
                         </div>
                         <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400 transition-colors">
-                          <span>@{post.user?.username || 'Unknown'}</span>
+                          <span>@{post.user?.username || t('dashboardOverview.unknown')}</span>
                           {post.like_count > 0 && (
                             <span className="flex items-center gap-1">
                               <Heart className="w-3 h-3" />
@@ -857,10 +900,13 @@ const DashboardOverview = () => {
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-gray-700 transition-colors">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
-                  Top Users
+                  {t('dashboardOverview.topUsers')}
                 </h3>
                 <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full transition-colors">
-                  {stats.top_users.length} users
+                  {t('dashboardOverview.counts.users', {
+                    count: stats.top_users.length,
+                    formatted: stats.top_users.length,
+                  })}
                 </span>
               </div>
               <div className="space-y-3">
@@ -870,7 +916,7 @@ const DashboardOverview = () => {
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {i < 3 && (
                           <span
-                            className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                            className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
                               i === 0
                                 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
                                 : i === 1
@@ -889,13 +935,19 @@ const DashboardOverview = () => {
                             {user.post_count > 0 && (
                               <span className="flex items-center gap-1">
                                 <FileText className="w-3 h-3" />
-                                {formatNumber(user.post_count)} posts
+                                {t('dashboardOverview.counts.posts', {
+                                  count: user.post_count,
+                                  formatted: formatNumber(user.post_count),
+                                })}
                               </span>
                             )}
                             {user.comment_count > 0 && (
                               <span className="flex items-center gap-1">
                                 <MessageCircle className="w-3 h-3" />
-                                {formatNumber(user.comment_count)} comments
+                                {t('dashboardOverview.counts.comments', {
+                                  count: user.comment_count,
+                                  formatted: formatNumber(user.comment_count),
+                                })}
                               </span>
                             )}
                           </div>
@@ -915,10 +967,10 @@ const DashboardOverview = () => {
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-gray-700 mt-4 transition-colors">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 transition-colors">
-              Recent Activity
+              {t('dashboardOverview.recentActivity')}
             </h3>
             <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full transition-colors">
-              {stats.recent_activity.length} activities
+              {t('dashboardOverview.counts.activities', { count: stats.recent_activity.length })}
             </span>
           </div>
           <div className="space-y-2">
@@ -928,7 +980,7 @@ const DashboardOverview = () => {
                 className="flex items-start gap-3 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-gray-700/30 transition-colors"
               >
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                     activity.type === 'post'
                       ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
@@ -942,7 +994,7 @@ const DashboardOverview = () => {
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] text-gray-500 dark:text-gray-400 transition-colors">
-                      @{activity.user?.username || 'Unknown'}
+                      @{activity.user?.username || t('dashboardOverview.unknown')}
                     </span>
                     <span className="text-[10px] text-gray-400 dark:text-gray-500 transition-colors">
                       •
@@ -955,7 +1007,7 @@ const DashboardOverview = () => {
                             hour: '2-digit',
                             minute: '2-digit',
                           })
-                        : 'Recently'}
+                        : t('dashboardOverview.recently')}
                     </span>
                   </div>
                 </div>

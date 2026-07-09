@@ -1,6 +1,7 @@
 // src/components/dashboard/topics/SubTopicsPage.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useTopicsList, useTopicActions } from '../../../hooks/useTopics';
 import TopicsHeader from './TopicsHeader';
 import TopicsGrid from './TopicsGrid';
@@ -14,6 +15,7 @@ import PaginationFooter from '../../common/PaginationFooter';
 import TableSkeleton from '../../common/TableSkeleton';
 
 const SubTopicsPage = () => {
+  const { t } = useTranslation('topics');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -71,7 +73,7 @@ const SubTopicsPage = () => {
 
   // Use effective loading state for UI (shimmer only on initial load)
   const loading = isInitialLoading;
-  const error = isError ? queryError?.message || 'Failed to load sub-topics' : null;
+  const error = isError ? queryError?.message || t('subTopicsPage.failedToLoad') : null;
 
   useEffect(() => {
     const state = location.state;
@@ -139,7 +141,7 @@ const SubTopicsPage = () => {
     async (topicData) => {
       try {
         await createTopic(topicData);
-        setSuccessMessage('Topic created successfully!');
+        setSuccessMessage(t('subTopicsPage.topicCreated'));
         setShowAddModal(false);
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
@@ -153,7 +155,7 @@ const SubTopicsPage = () => {
         // We can add a secondary error state for actions/modals if we want strict parity.
         // For now, let's use alert modal via a temp state or side-effect?
         // Actually, let's keep it simple:
-        alert(`Failed to create topic: ${err.message}`);
+        alert(`${t('subTopicsPage.failedCreate')}: ${err.message}`);
       }
     },
     [createTopic],
@@ -168,13 +170,13 @@ const SubTopicsPage = () => {
     async (topicId, updatedData) => {
       try {
         await updateTopic({ id: topicId, data: updatedData });
-        setSuccessMessage('Topic updated successfully!');
+        setSuccessMessage(t('subTopicsPage.topicUpdated'));
         setShowEditModal(false);
         setSelectedTopicForEdit(null);
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error updating topic:', err);
-        alert(`Failed to update topic: ${err.message}`);
+        alert(`${t('subTopicsPage.failedUpdate')}: ${err.message}`);
       }
     },
     [updateTopic],
@@ -186,19 +188,19 @@ const SubTopicsPage = () => {
         const status = isActive ? 'active' : 'inactive';
         await updateTopicStatus({ id: topicId, is_active: status });
 
-        const topic = topics.find((t) => t.id === topicId);
+        const topic = topics.find((tp) => tp.id === topicId);
         setSuccessMessage(
           isActive
-            ? `Topic "${topic?.topic_name || 'Topic'}" activated!`
-            : `Topic "${topic?.topic_name || 'Topic'}" deactivated!`,
+            ? t('subTopicsPage.topicActivated', { name: topic?.topic_name || t('subTopicsPage.defaultTopicName') })
+            : t('subTopicsPage.topicDeactivated', { name: topic?.topic_name || t('subTopicsPage.defaultTopicName') }),
         );
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (err) {
         console.error('Error toggling topic status:', err);
-        alert(`Failed to update status: ${err.message}`);
+        alert(`${t('subTopicsPage.failedStatus')}: ${err.message}`);
       }
     },
-    [topics, updateTopicStatus],
+    [topics, updateTopicStatus, t],
   );
 
   const handleDeleteTopic = useCallback(
@@ -214,17 +216,17 @@ const SubTopicsPage = () => {
     if (!topicToDelete) return;
     try {
       await deleteTopic(topicToDelete.id);
-      setSuccessMessage(`Topic "${topicToDelete.topic_name}" deleted!`);
+      setSuccessMessage(t('subTopicsPage.topicDeleted', { name: topicToDelete.topic_name }));
       setShowDeleteConfirm(false);
       setTopicToDelete(null);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error deleting topic:', err);
-      alert(`Failed to delete topic: ${err.message}`);
+      alert(`${t('subTopicsPage.failedDelete')}: ${err.message}`);
       setShowDeleteConfirm(false);
       setTopicToDelete(null);
     }
-  }, [topicToDelete, deleteTopic]);
+  }, [topicToDelete, deleteTopic, t]);
 
   const handleViewDetails = useCallback((topic) => {
     setSelectedTopicForDetails(topic);
@@ -263,14 +265,14 @@ const SubTopicsPage = () => {
         isOpen={!!successMessage}
         onClose={() => setSuccessMessage('')}
         type="success"
-        title="Success"
+        title={t('common:success')}
         message={successMessage}
       />
       <AlertModal
         isOpen={!!error}
         onClose={() => setError(null)}
         type="error"
-        title="Error"
+        title={t('common:error')}
         message={error}
       />
       <ConfirmationModal
@@ -281,10 +283,14 @@ const SubTopicsPage = () => {
         }}
         onConfirm={confirmDeleteTopic}
         type="danger"
-        title="Delete Topic"
-        message={topicToDelete ? `Permanently delete "${topicToDelete.topic_name}"?` : ''}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('subTopicsPage.deleteTopicTitle')}
+        message={
+          topicToDelete
+            ? t('subTopicsPage.deleteTopicMessage', { name: topicToDelete.topic_name })
+            : ''
+        }
+        confirmText={t('common:delete')}
+        cancelText={t('common:cancel')}
         isLoading={loading}
       />
 
@@ -318,8 +324,8 @@ const SubTopicsPage = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 overflow-hidden transition-colors">
         <TopicsHeader
-          title="Sub Topics"
-          countLabel="Total Sub Topics"
+          title={t('subTopicsPage.pageTitle')}
+          countLabel={t('subTopicsPage.countLabel')}
           topicCount={totalTopics}
           onAddClick={() => setShowAddModal(true)}
           onSearch={handleSearch}
@@ -341,9 +347,11 @@ const SubTopicsPage = () => {
           className={`relative overflow-hidden transition-all duration-300 ${loading && topics.length > 0 ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className="p-4 border-b border-purple-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 dark:border-purple-700 dark:border-t-purple-400 rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Updating...</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {t('subTopicsPage.updating')}
+              </span>
             </div>
           </div>
         </div>
@@ -359,10 +367,10 @@ const SubTopicsPage = () => {
           {topics.length === 0 ? (
             <div className="p-12 text-center">
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No sub-topics found
+                {t('subTopicsPage.noSubTopicsFound')}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">
-                Try changing filters or search terms.
+                {t('subTopicsPage.tryChangingFilters')}
               </p>
             </div>
           ) : (
